@@ -7,7 +7,7 @@
     <h1>Repositories</h1>
     <ul>
         {% for repo in repositories %}
-            <li>{{ repo.name }} - {{ repo.description }}</li>
+            <li><a href="{{ repo.html_url }}">{{ repo.name }}</a> - {{ repo.description }}</li>
         {% endfor %}
     </ul>
 </body>
