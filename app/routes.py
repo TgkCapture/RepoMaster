@@ -2,8 +2,10 @@ import os
 import requests
 from app import app
 from flask import render_template
+from flask import request
 
 github_username = os.environ.get('GITHUB_USERNAME')
+# TODO: retrive github token
 
 @app.route('/')
 def index():
@@ -40,13 +42,35 @@ def show_issues(repo_name):
         return f"Failed to fetch issues for {repo_name} from GitHub API"
 
 
-@app.route('/delete_repo')
+@app.route('/delete_repo', methods=['GET', 'POST'])
 def delete_repository():
-    
-    repositories = [
-        {'name': 'Repo 1', 'description': 'First repository'},
-        {'name': 'Repo 2', 'description': 'Second repository'}
+    if request.method == 'POST':
+        repos_to_delete = request.form.getlist('repo_to_delete[]')
+        deleted_repos = []
+
+        for repo_name in repos_to_delete:
+            delete_url = f'https://api.github.com/repos/{github_username}/{repo_name}'
+
+            headers = {
+                'Authorization': f'token {GITHUB_TOKEN}',
+                'Accept': 'application/vnd.github.v3+json'
+            }
+            
+            response = requests.delete(delete_url, headers=headers)
+
+            if response.status_code == 204:
+                deleted_repos.append(repo_name)
         
-    ]
-    return render_template('delete_repo.html', repositories=repositories)
+        if deleted_repos:
+            message = f"Repositories '{', '.join(deleted_repos)}' deleted successfully"
+        else:
+            message = "No Repos were Deleted"
+
+        return message
+    else:
+        repositories = get_github_repositories()
+        if repositories:
+            return render_template('delete_repo.html', repositories=repositories)
+        else:
+            return "Failed to Fetch Repos from Github"
 
