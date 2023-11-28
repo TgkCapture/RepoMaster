@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Issues - {{ repo_name }}</title>
+</head>
+<body>
+    <h1>Issues for {{ repo_name }}</h1>
+    <ul>
+        {% for issue in issues %}
+            <li>{{ issue.title }} - {{ issue.description }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
