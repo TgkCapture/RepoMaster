@@ -7,7 +7,7 @@
     <h1>Issues for {{ repo_name }}</h1>
     <ul>
         {% for issue in issues %}
-            <li>{{ issue.title }} - {{ issue.description }}</li>
+            <li><a href="{{ issue.html_url }}">{{ issue.title }}</a> - {{ issue.body }}</li>
         {% endfor %}
     </ul>
 </body>

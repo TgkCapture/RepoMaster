@@ -27,15 +27,18 @@ def show_repositories():
     else:
         return "Failed to Fetch repo from Github"
 
-@app.route('/issues/<repo_name>')
+@app.route('/repositories/<repo_name>/issues')
 def show_issues(repo_name):
     
-    issues = [
-        {'title': 'Issue 1', 'description': 'First issue'},
-        {'title': 'Issue 2', 'description': 'Second issue'}
-        
-    ]
-    return render_template('issues.html', repo_name=repo_name, issues=issues)
+    url = f'https://api.github.com/repos/{github_username}/{repo_name}/issues'
+
+    response = requests.get(url)
+    if response.status_code == 200:
+        issues = response.json()
+        return render_template('issues.html', repo_name=repo_name, issues=issues)
+    else:
+        return f"Failed to fetch issues for {repo_name} from GitHub API"
+
 
 @app.route('/delete_repo')
 def delete_repository():
