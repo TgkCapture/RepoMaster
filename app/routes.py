@@ -74,3 +74,18 @@ def delete_repository():
         else:
             return "Failed to Fetch Repos from Github"
 
+
+@app.route('/repositories/<owner>/<repo_name>/pulls')
+def list_pull_requests(owner, repo_name):
+    
+    headers = {'Authorization': f'token {github_token}'}
+    
+    api_url = f'https://api.github.com/repos/{owner}/{repo_name}/pulls'
+    response = requests.get(api_url, headers=headers)
+
+    if response.status_code == 200:
+        pull_requests = response.json()
+        return render_template('pull_requests.html', pull_requests=pull_requests)
+    else:
+        return f"Failed to fetch pull requests: {response.status_code}"
+
