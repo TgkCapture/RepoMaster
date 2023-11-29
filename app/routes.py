@@ -89,3 +89,16 @@ def list_pull_requests(owner, repo_name):
     else:
         return f"Failed to fetch pull requests: {response.status_code}"
 
+@app.route('/repositories/<owner>/<repo_name>/pulls/<pull_number>')
+def view_pull_request(owner, repo_name, pull_number):
+    
+    headers = {'Authorization': f'token {github_token}'}
+    
+    api_url = f'https://api.github.com/repos/{owner}/{repo_name}/pulls/{pull_number}'
+    response = requests.get(api_url, headers=headers)
+    
+    if response.status_code == 200:
+        pull_request = response.json()
+        return render_template('pull_request_details.html', pull_request=pull_request)
+    else:
+        return f"Failed to fetch pull request details: {response.status_code}"
