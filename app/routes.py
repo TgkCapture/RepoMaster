@@ -5,7 +5,7 @@ from flask import render_template
 from flask import request
 
 github_username = os.environ.get('GITHUB_USERNAME')
-# TODO: retrive github token
+github_token = os.environ.get('GITHUB_TOKEN')
 
 @app.route('/')
 def index():
@@ -52,7 +52,7 @@ def delete_repository():
             delete_url = f'https://api.github.com/repos/{github_username}/{repo_name}'
 
             headers = {
-                'Authorization': f'token {GITHUB_TOKEN}',
+                'Authorization': f'token {github_token}',
                 'Accept': 'application/vnd.github.v3+json'
             }
             
