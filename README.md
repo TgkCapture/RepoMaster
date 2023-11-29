@@ -33,3 +33,67 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
 These functionalities represent only the initial set of features in RepoMaster. I encourage contributors to expand and enhance the application by implementing additional functionalities such as pull request management, user authentication, or any other GitHub-related features. Feel free to fork this repository and submit pull requests with your improvements!
 
 Your contributions are greatly appreciated! 🚀
+
+## Setting Up the Project Locally
+
+### For Windows:
+
+1. **Clone the Repository:**
+   ```bash
+   git clone <repository_url>
+   cd RepoMaster
+
+2. **Set Up Python Virtual Environment:**
+    ```bash
+      python -m venv venv
+      venv\Scripts\activate
+
+3. **Install Dependencies:**
+    ```bash
+    pip install -r requirements.txt
+
+4. **Set Environment Variables:**
+    ```bash
+    set GITHUB_USERNAME=your_github_username
+    set GITHUB_TOKEN=your_github_token
+
+5. **Run the Flask Application:**
+    ```bash
+    python run.py
+
+6. **Access the Application:**
+Open a web browser and visit http://127.0.0.1:5000/ to access the application.
+
+
+### For Linux 
+
+1. **Clone the Repository:**
+   ```bash
+   git clone <repository_url>
+   cd RepoMaster
+
+2. **Set Up Python Virtual Environment:**
+    ```bash
+    python -m venv venv
+    source venv/bin/activate
+
+3. **Install Dependencies:**
+    ```bash 
+      pip install -r requirements.txt
+
+4. **Set Environment Variables:**
+    ```bash
+    export GITHUB_USERNAME=your_github_username
+    export GITHUB_TOKEN=your_github_token
+
+5. **Run the Flask Application:**
+    ```bash
+    python run.py
+
+6. **Access the Application:**
+Open a web browser and visit http://127.0.0.1:5000/ to access the application.
+
+
+## Contributors
+
+- [@Tawonga Grant Kanyenda](https://github.com/TgkCapture)

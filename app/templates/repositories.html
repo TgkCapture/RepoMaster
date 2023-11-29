@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Repositories</title>
+</head>
+<body>
+    <h1>Repositories</h1>
+    <ul>
+        {% for repo in repositories %}
+            <li><a href="{{ repo.html_url }}">{{ repo.name }}</a> - {{ repo.description }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

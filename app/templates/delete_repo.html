@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Delete Repositories</title>
+</head>
+<body>
+    <h1>Delete Repositories</h1>
+    <form method="post" action="/delete_repo">
+        <ul>
+            {% for repo in repositories %}
+                <li>
+                    <input type="checkbox" name="repo_to_delete[]" value="{{ repo.name }}">
+                    {{ repo.name }} - {{ repo.description }}
+                </li>
+            {% endfor %}
+        </ul>
+        <input type="submit" value="Delete Selected Repositories">
+    </form>
+</body>
+</html>
