@@ -102,3 +102,22 @@ def view_pull_request(owner, repo_name, pull_number):
         return render_template('pull_request_details.html', pull_request=pull_request)
     else:
         return f"Failed to fetch pull request details: {response.status_code}"
+
+@app.route('/repositories/<owner>/<repo_name>/pulls', methods=['POST'])
+def create_pull_request(owner, repo_name):
+    title = request.form.get('title')
+    base = request.form.get('base')
+    head = request.form.get('head')
+    
+    
+    headers = {'Authorization': f'token {github_token}'}
+    payload = {'title': title, 'base': base, 'head': head}
+    
+    api_url = f'https://api.github.com/repos/{owner}/{repo_name}/pulls'
+    response = requests.post(api_url, headers=headers, json=payload)
+    
+    if response.status_code == 201:
+        return "Pull request created successfully!"
+    else:
+        return f"Failed to create pull request: {response.status_code}"
+
