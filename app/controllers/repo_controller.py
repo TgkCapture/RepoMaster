@@ -2,43 +2,37 @@
 """
 import os
 import requests
-from flask import Blueprint, render_template, request
-from app.controllers.github_controller import get_github_repositories
+from flask import Blueprint
 
 repo_controller = Blueprint('repo', __name__)
 
 github_username = os.environ.get('GITHUB_USERNAME')
 github_token = os.environ.get('GITHUB_TOKEN')
 
-@repo_controller.route('/delete_repo', methods=['GET', 'POST'])
-def delete_repository():
-    if request.method == 'POST':
-        repos_to_delete = request.form.getlist('repo_to_delete[]')
-        deleted_repos = []
+def delete_repository(repos_to_delete):
+    """Deletes GitHub repositories."""
 
-        for repo_name in repos_to_delete:
-            delete_url = f'https://api.github.com/repos/{github_username}/{repo_name}'
+    deleted_repos = []
 
-            headers = {
-                'Authorization': f'token {github_token}',
-                'Accept': 'application/vnd.github.v3+json'
-            }
+    for repo_name in repos_to_delete:
+        delete_url = f'https://api.github.com/repos/{github_username}/{repo_name}'
 
+        headers = {
+            'Authorization': f'token {github_token}',
+            'Accept': 'application/vnd.github.v3+json'
+        }
+
+        try:
             response = requests.delete(delete_url, headers=headers, timeout=60)
+            response.raise_for_status()
 
             if response.status_code == 204:
                 deleted_repos.append(repo_name)
+        except requests.exceptions.RequestException as e:
+            print(f"Failed to delete repository {github_username}/{repo_name}: {e}")
 
-        if deleted_repos:
-            message = f"Repositories '{', '.join(deleted_repos)}' deleted successfully"
-        else:
-            message = "No Repos were Deleted"
-
-        return message
+    if deleted_repos:
+        return f"Repositories '{', '.join(deleted_repos)}' deleted successfully"
     else:
-        repositories = get_github_repositories()
-        if repositories:
-            return render_template('delete_repo.html', repositories=repositories)
-        else:
-            return "Failed to Fetch Repos from Github"
+        return "No Repos were Deleted"
 
