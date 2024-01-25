@@ -1,8 +1,8 @@
 """main_routes.py
 """
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, request
 from app.controllers.github_controller import get_github_repositories as github_repositories
-# from app.controllers.repo_controller import show_issues
+from app.controllers.repo_controller import delete_repository
 from app.controllers.main_controller import get_home_message, get_github_issues, get_pull_requests
 
 main_routes = Blueprint('main', __name__)
@@ -38,10 +38,24 @@ def show_issues(repo_name):
 @main_routes.route('/repositories/<owner>/<repo_name>/pulls')
 def list_pull_requests(owner, repo_name):
     """Renders and returns pull requests for a GitHub repository."""
-    
+
     pull_requests = get_pull_requests(owner, repo_name)
 
     if pull_requests:
         return render_template('pull_requests.html', pull_requests=pull_requests)
     else:
         return f"Failed to fetch pull requests for {owner}/{repo_name} from GitHub"
+
+@main_routes.route('/delete_repo', methods=['GET', 'POST'])
+def delete_repo():
+    """Deletes GitHub repositories."""
+    if request.method == 'POST':
+        repos_to_delete = request.form.getlist('repo_to_delete[]')
+        message = delete_repository(repos_to_delete)
+        return message
+    else:
+        repositories = github_repositories()
+        if repositories:
+            return render_template('delete_repo.html', repositories=repositories)
+        else:
+            return "Failed to Fetch Repos from Github"
