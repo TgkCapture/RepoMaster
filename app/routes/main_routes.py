@@ -2,8 +2,10 @@
 """
 from flask import Blueprint, render_template, request
 from app.controllers.github_controller import get_github_repositories as github_repositories
-from app.controllers.repo_controller import delete_repository, view_pull_request, create_pull_request
-from app.controllers.main_controller import get_home_message, get_github_issues, get_pull_requests
+from app.controllers.repo_controller import delete_repository
+from app.controllers.pull_requests_controller import view_pull_request, create_pull_request, get_pull_requests
+from app.controllers.main_controller import get_home_message
+from app.controllers.issues_controller import get_github_issues
 
 main_routes = Blueprint('main', __name__)
 
@@ -24,7 +26,7 @@ def show_github_repositories():
     else:
         return "Failed to Fetch repo from Github"
 
-@main_routes.routes('/repositories/<repo_name>/issues')
+@main_routes.route('/repositories/<repo_name>/issues')
 def show_issues(repo_name):
     """Renders and returns github issues within a repo """
 
@@ -75,7 +77,7 @@ def view_pull_request_route(owner, repo_name, pull_number):
 @main_routes.route('/repositories/<owner>/<repo_name>/pulls', methods=['POST'])
 def create_pull_request_route(owner, repo_name):
     """Creates a new GitHub pull request."""
-    
+
     title = request.form.get('title')
     base = request.form.get('base')
     head = request.form.get('head')
