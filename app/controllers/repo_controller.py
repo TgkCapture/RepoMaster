@@ -10,18 +10,6 @@ repo_controller = Blueprint('repo', __name__)
 github_username = os.environ.get('GITHUB_USERNAME')
 github_token = os.environ.get('GITHUB_TOKEN')
 
-@repo_controller.route('/repositories/<repo_name>/issues')
-def show_issues(repo_name):
-
-    url = f'https://api.github.com/repos/{github_username}/{repo_name}/issues'
-
-    response = requests.get(url, timeout=60)
-    if response.status_code == 200:
-        issues = response.json()
-        return render_template('issues.html', repo_name=repo_name, issues=issues)
-    else:
-        return f"Failed to fetch issues for {repo_name} from GitHub API"
-
 @repo_controller.route('/delete_repo', methods=['GET', 'POST'])
 def delete_repository():
     if request.method == 'POST':
