@@ -41,3 +41,21 @@ def view_pull_request(owner, repo_name, pull_number):
         print(f"Failed to fetch pull request details: {e}")
 
     return None
+
+def create_pull_request(owner, repo_name, title, base, head):
+    """Creates a new GitHub pull request."""
+
+    headers = {'Authorization': f'token {github_token}'}
+    payload = {'title': title, 'base': base, 'head': head}
+    api_url = f'https://api.github.com/repos/{owner}/{repo_name}/pulls'
+
+    try:
+        response = requests.post(api_url, headers=headers, json=payload)
+        response.raise_for_status()
+
+        if response.status_code == 201:
+            return "Pull request created successfully!"
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to create pull request: {e}")
+
+    return f"Failed to create pull request: {response.status_code}"
