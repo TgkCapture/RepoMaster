@@ -24,3 +24,20 @@ def get_pull_requests(owner, repo_name):
 
         print(f"Failed to fetch pull requests: {e}")
         return None
+
+def view_pull_request(owner, repo_name, pull_number):
+    """Fetches details for a GitHub pull request."""
+
+    headers = {'Authorization': f'token {github_token}'}
+    api_url = f'https://api.github.com/repos/{owner}/{repo_name}/pulls/{pull_number}'
+
+    try:
+        response = requests.get(api_url, headers=headers)
+        response.raise_for_status()
+
+        if response.status_code == 200:
+            return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to fetch pull request details: {e}")
+
+    return None
