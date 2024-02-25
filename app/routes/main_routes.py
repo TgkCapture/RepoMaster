@@ -26,10 +26,11 @@ def show_github_repositories():
     """Renders andd returns github repositories
     """
     repositories = github_repositories()
-    if repositories:
-        return render_template('repositories.html', repositories=repositories)
-    else:
-        return "Failed to Fetch repo from Github"
+    # if repositories:
+    #     return render_template('repositories.html', repositories=repositories)
+    # else:
+    #     return "Failed to Fetch repo from Github"
+    return render_template('repositories.html')
 
 @main_routes.route('/repositories/<repo_name>/issues')
 def show_issues(repo_name):

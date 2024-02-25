@@ -1,14 +1,189 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Repositories</title>
+    <title>Repositories | RepoMaster</title>
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        }
+
+        .page-description {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .github-cards {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0;
+            list-style: none;
+        }
+
+        .github-card {
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            /* margin: 10px; */
+            padding: 20px;
+            color: #555;
+            text-decoration: none;
+            font-size: 13px;
+            min-width: 250px;
+            flex: 1 1 calc(20% - 20px); 
+        }
+
+        .github-card > h3 {
+            margin-top: 0;
+            color: #4078c0;
+            font-size: 15px;
+        }
+
+        .github-card__meta {
+            margin-top: 10px;
+        }
+
+        .github-card__meta > i {
+            font-size: 16px;
+            margin-right: 5px;
+        }
+
+        footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        background-color: #555;
+        color: #fff;
+        padding: 20px 0;
+    }
+
+    footer ul {
+        display: flex;
+    }
+
+    footer ul li {
+        margin-left: 16px;
+    }
+
+    footer p {
+        text-transform: uppercase;
+        font-size: 14px;
+        opacity: 0.6;
+        align-self: center;
+    }
+
+    @media (max-width: 1100px) {
+        footer {
+            flex-direction: column;
+        }
+
+        footer p {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        footer ul li {
+            margin: 0 8px;
+        }
+    }
+
+    </style>
 </head>
 <body>
-    <h1>Repositories</h1>
-    <ul>
-        {% for repo in repositories %}
-            <li><a href="{{ repo.html_url }}">{{ repo.name }}</a> - {{ repo.description }}</li>
-        {% endfor %}
-    </ul>
+    <div class="page-description">
+        <h1>Welcome to RepoMaster!</h1>
+        <p>View and explore your GitHub repositories in style.</p>
+    </div>
+
+    <div class="github-cards">
+    <a href="https://github.com/TgkCapture" class="github-card" data-github=" ">
+        <h3>Name</h3>
+        <p>Decription</p>
+        <span class="github-card__meta">
+        <span class="github-card__language-icon" style="color: #7A0410;">●</span> Ruby
+        </span>
+        <span class="github-card__meta">
+        <i class="fa fa-star" aria-hidden="true"></i>
+        <span data-stars>
+            <i class="fa fa-spinner" aria-hidden="true"></i>
+        </span>
+        </span>
+        <span class="github-card__meta">
+        <i class="fa fa-code-fork" aria-hidden="true"></i>
+        <span data-forks>
+            <i class="fa fa-spinner" aria-hidden="true"></i>
+        </span>
+        </span>
+    </a>
+
+    <a href="https://github.com/TgkCapture" class="github-card" data-github=" ">
+        <h3>Name</h3>
+        <p>Description</p>
+        <span class="github-card__meta">
+        <span class="github-card__language-icon" style="color: #4C5E99;">●</span> PHP
+        </span>
+        <span class="github-card__meta">
+        <i class="fa fa-star" aria-hidden="true"></i>
+        <span data-stars>
+            <i class="fa fa-spinner" aria-hidden="true"></i>
+        </span>
+        </span>
+        <span class="github-card__meta">
+        <i class="fa fa-code-fork" aria-hidden="true"></i>
+        <span data-forks>
+            <i class="fa fa-spinner" aria-hidden="true"></i>
+        </span>
+        </span>
+    </a>
+
+    <a href="https://github.com/TgkCapture" class="github-card" data-github=" ">
+        <h3>Name</h3>
+        <p>Description</p>
+        <span class="github-card__meta">
+        <span class="github-card__language-icon" style="color: #3572A5;">●</span> Python
+        </span>
+        <span class="github-card__meta">
+        <i class="fa fa-star" aria-hidden="true"></i>
+        <span data-stars>
+            <i class="fa fa-spinner" aria-hidden="true"></i>
+        </span>
+        </span>
+        <span class="github-card__meta">
+        <i class="fa fa-code-fork" aria-hidden="true"></i>
+        <span data-forks>
+            <i class="fa fa-spinner" aria-hidden="true"></i>
+        </span>
+        </span>
+    </a>
+
+ 
+    </div>
+
+    <!-- <footer>
+        <p>RepoMaster</p>
+        <p>Made With Love by Grant Corp</p>
+        <ul>
+        <li><a href="#"><i class="fa fa-twitter-square fa-2x"></i></a></li>
+        <li><a href="#"><i class="fa fa-facebook-square fa-2x"></i></a></li>
+        <li><a href="#"><i class="fa fa-snapchat-square fa-2x"></i></a></li>
+        </ul>
+    </footer> -->
+
+    <script>
+    $('[data-github]').each(function () {
+    var _this = this;
+    var repo = $(_this).data('github')
+
+    fetch('https://api.github.com/repos/' + repo).then(function (response) {
+        return response.json();
+    }).then(function (response) {
+        $(_this).find('[data-forks]').text(response.forks);
+        $(_this).find('[data-stars]').text(response.stargazers_count);
+    });
+    });
+    </script>
 </body>
 </html>
