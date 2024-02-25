@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In with GitHub | RepoMaster</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        .container {
+            text-align: center;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #24292e;
+            color: #fff;
+            text-decoration: none;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .button:hover {
+            background-color: #0366d6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sign In with GitHub</h1>
+        <a href="#" id="github-login" class="button">Sign In with GitHub</a>
+    </div>
+
+    <script>
+        function signInWithGitHub() {
+            var width = 600;
+            var height = 600;
+            var left = (window.innerWidth - width) / 2;
+            var top = (window.innerHeight - height) / 2;
+            var url = 'https://github.com/login/oauth/authorize?client_id=your_client_id&scope=user:email';
+            var options = 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width=' + width + ', height=' + height + ', top=' + top + ', left=' + left;
+            window.open(url, 'GitHub Sign-in', options);
+        }
+
+        document.getElementById('github-login').addEventListener('click', function(event) {
+            event.preventDefault();
+            signInWithGitHub();
+        });
+    </script>
+</body>
+</html>
