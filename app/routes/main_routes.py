@@ -16,6 +16,11 @@ def home():
     message = get_home_message()
     return render_template('index.html', message=message)
 
+@main_routes.route('/login')
+def login():
+    """Renders the login Page"""
+    return render_template('login.html')
+
 @main_routes.route('/github/repositories')
 def show_github_repositories():
     """Renders andd returns github repositories
