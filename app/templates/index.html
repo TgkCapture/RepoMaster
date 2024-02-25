@@ -382,15 +382,15 @@
     <header>
         <h2><a href="#">RepoMaster</a></h2>
         <nav>
-        <li><a href="#">Home</a></li>
-        <li><a href="#">Services</a></li>
-        <li><a href="#">Projects</a></li>
-        <li><a href="#">About Us</a></li>
-        <li><a href="#">Contact</a></li>
+        <li><a href="#hero">Home</a></li>
+        <li><a href="#services">Services</a></li>
+        <li><a href="#our-projects">Projects</a></li>
+        <li><a href="#about-us">About Us</a></li>
+        <li><a href="#contact">Contact</a></li>
         </nav>
     </header>
     
-    <section class="hero">
+    <section class="hero" id="hero">
         <div class="background-image"></div>
         <div class="hero-content-area">
         <h1>RepoMaster!</h1>
@@ -399,7 +399,7 @@
         </div>
     </section>
         
-    <section class="services">
+    <section class="services" id="services">
         <h3 class="title">What Our Service Offers</h3>
         <p>RepoMaster offers a comprehensive suite of services designed to streamline your GitHub repository management experience. From effortlessly deleting multiple repositories to gaining insights into all issues across your projects, our platform empowers you to take control of your GitHub workflow. Explore our range of services below to discover how RepoMaster can simplify your repository management tasks and enhance your productivity.</p>
         <hr>
@@ -428,7 +428,7 @@
         </ul>
     </section>
 
-    <section class="our-projects">
+    <section class="our-projects" id="our-projects">
         <h3 class="title">Some of our Projects:</h3>
         <p>
             "Explore a selection of our standout projects that showcase the versatility and innovation of Grant Corp. From open-source contributions to client collaborations, these projects highlight our commitment to excellence and drive for continuous improvement. Discover how Grant Corp is making a difference in the world of GitHub repository management, one project at a time."
@@ -443,13 +443,13 @@
         </ul>
     </section>
     
-    <section class="about-us">
+    <section class="about-us" id="about-us">
         <h3 class="title">Meet the Team</h3>
         <hr>
         
     </section>
     
-    <section class="contact">
+    <section class="contact" id="contact">
         <h3 class="title">Learn more</h3>
         <p>Ready to unlock the full potential of your GitHub repositories? Dive deeper into RepoMaster to discover how our innovative tools and features can revolutionize your repository management experience. Whether you're a seasoned developer or just getting started, our platform offers intuitive solutions to simplify complex tasks and accelerate your workflow. Explore the possibilities with RepoMaster and take your GitHub projects to new heights.</p>
         <hr>
@@ -468,5 +468,22 @@
         <li><a href="#"><i class="fa fa-snapchat-square fa-2x"></i></a></li>
         </ul>
     </footer>
+
+    <script>
+        // smooth scrolling functionality
+        document.querySelectorAll('nav a').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                const targetId = this.getAttribute('href').substring(1);
+                const targetSection = document.getElementById(targetId);
+
+                window.scrollTo({
+                    top: targetSection.offsetTop,
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
 </body>
 </html>
