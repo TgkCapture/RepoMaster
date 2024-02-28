@@ -110,8 +110,152 @@
           }
         }
       }
+    },
+    "/repositories/{repo_name}/issues": {
+      "get": {
+        "summary": "Get GitHub Repository Issues",
+        "description": "Retrieves a list of issues for a specific GitHub repository",
+        "parameters": [
+          {
+            "name": "repo_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The name of the GitHub repository"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Issue"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error response"
+          }
+        }
+      }
+    },
+    "/repositories/{repo_name}/pulls": {
+      "get": {
+        "summary": "Get GitHub Repository Pull Requests",
+        "description": "Retrieves a list of pull requests for a specific GitHub repository",
+        "parameters": [
+          {
+            "name": "repo_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The name of the GitHub repository"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PullRequest"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error response"
+          }
+        }
+      }
+    },
+    "/repositories/{repo_name}": {
+      "delete": {
+        "summary": "Delete GitHub Repository",
+        "description": "Deletes a GitHub repository",
+        "parameters": [
+          {
+            "name": "repo_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The name of the GitHub repository"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Repository deleted successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error response"
+          }
+        }
+      }
     }
   },
-  "components": {}
+  "components": {
+    "schemas": {
+      "Repository": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "Issue": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          }
+        }
+      },
+      "PullRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
 }
 
