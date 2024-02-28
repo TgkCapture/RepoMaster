@@ -21,6 +21,7 @@
         "summary": "Retrieve repositories",
         "description": "Retrieves a list of repositories.",
         "operationId": "getRepositories",
+        "security": [],
         "responses": {
           "200": {
             "description": "A list of repositories",
@@ -58,6 +59,7 @@
       "post": {
         "summary": "Create a new repository",
         "description": "Creates a new repository.",
+        "security": [],
         "requestBody": {
           "required": true,
           "content": {
