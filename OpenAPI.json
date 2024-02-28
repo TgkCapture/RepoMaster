@@ -59,6 +59,7 @@
       "post": {
         "summary": "Create a new repository",
         "description": "Creates a new repository.",
+        "operationId": "createRepository",
         "security": [],
         "requestBody": {
           "required": true,
