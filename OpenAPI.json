@@ -115,6 +115,8 @@
       "get": {
         "summary": "Get GitHub Repository Issues",
         "description": "Retrieves a list of issues for a specific GitHub repository",
+        "operationId": "getRepositoriesIssues",
+        "security": [],
         "parameters": [
           {
             "name": "repo_name",
@@ -150,6 +152,8 @@
       "get": {
         "summary": "Get GitHub Repository Pull Requests",
         "description": "Retrieves a list of pull requests for a specific GitHub repository",
+        "operationId": "getPullRequests",
+        "security": [],
         "parameters": [
           {
             "name": "repo_name",
@@ -185,6 +189,8 @@
       "delete": {
         "summary": "Delete GitHub Repository",
         "description": "Deletes a GitHub repository",
+        "operationId": "delRepositories",
+        "security": [],
         "parameters": [
           {
             "name": "repo_name",
