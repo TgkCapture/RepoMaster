@@ -20,6 +20,7 @@
       "get": {
         "summary": "Retrieve repositories",
         "description": "Retrieves a list of repositories.",
+        "operationId": "getRepositories",
         "responses": {
           "200": {
             "description": "A list of repositories",
