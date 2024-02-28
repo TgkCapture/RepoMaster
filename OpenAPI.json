@@ -11,7 +11,7 @@
   },
   "servers": [
     {
-      "url": "https://api.example.com/v1",
+      "url": "https://tgkcapture.online",
       "description": "Production Server"
     }
   ],
