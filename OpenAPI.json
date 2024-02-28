@@ -1,1 +1,113 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "RepoMaster API",
+    "version": "1.0.0",
+    "description": "The RepoMaster API allows users to manage repositories.",
+    "contact": {
+      "name": "Tawonga Grant Kanyenda",
+      "email": "tawongakanyenda5@gmail.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.example.com/v1",
+      "description": "Production Server"
+    }
+  ],
+  "paths": {
+    "/repositories": {
+      "get": {
+        "summary": "Retrieve repositories",
+        "description": "Retrieves a list of repositories.",
+        "responses": {
+          "200": {
+            "description": "A list of repositories",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "The unique identifier of the repository."
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "The name of the repository."
+                      },
+                      "url": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "The URL of the repository."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Repositories not found"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new repository",
+        "description": "Creates a new repository.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "The name of the repository."
+                  },
+                  "url": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "The URL of the repository."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Repository created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "The unique identifier of the created repository."
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "The name of the created repository."
+                    },
+                    "url": {
+                      "type": "string",
+                      "format": "uri",
+                      "description": "The URL of the created repository."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {}
+}
 
