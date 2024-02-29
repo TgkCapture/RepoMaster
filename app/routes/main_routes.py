@@ -6,6 +6,7 @@ from app.controllers.repo_controller import delete_repository
 from app.controllers.pull_requests_controller import view_pull_request, create_pull_request, get_pull_requests
 from app.controllers.main_controller import get_home_message
 from app.controllers.issues_controller import get_github_issues
+from app.controllers.auth_controller import auth_controller
 
 main_routes = Blueprint('main', __name__)
 
@@ -17,9 +18,14 @@ def home():
     return render_template('index.html', message=message)
 
 @main_routes.route('/login')
-def login():
+def login_route():
     """Renders the login Page"""
-    return render_template('login.html')
+    return auth_controller.login()
+
+@main_routes.route('/logout')
+def logout():
+    """Logs out the user """
+    return auth_controller.logout()
 
 @main_routes.route('/github/repositories')
 def show_github_repositories():
