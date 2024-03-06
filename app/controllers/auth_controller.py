@@ -3,7 +3,9 @@
 import os
 import requests
 from flask import Blueprint, render_template, redirect, url_for, session, flash, request
+from flask_dance.contrib.github import github
 from app.config.oauth_config import oauth
+
 
 auth_controller = Blueprint('authorize', __name__)
 
@@ -13,22 +15,15 @@ def login():
 
 def github_authorization():
     """Redirects to GitHub for authorization"""
-    redirect_uri = url_for('.login_success', _external=True) 
-    return oauth.github.authorize_redirect(redirect_uri=redirect_uri)
-
-# @github.tokengetter
-def get_github_oauth_token():
-    """Gets the GitHub access token stored in the session"""
-    return session.get('github_token')
+    return render_template('')
 
 def login_success():
-    """successful GitHub authorization"""
-    resp = oauth.github.authorized_response()
-    if resp is None or 'access_token' not in resp:
+    """Successful GitHub authorization"""
+    resp = github.get('/user')
+    if not resp.ok:
         flash('Authorization failed. Please try again.', 'danger')
         return redirect(url_for('main.index')) #TODO: Handle the redirect
-    
-    session['github_token'] = (resp['access_token'], '')
+
     flash('authorized in successfully!', 'success')
     return redirect(url_for('main.home'))
 
