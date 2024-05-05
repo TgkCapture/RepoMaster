@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pull Requests</title>
+</head>
+<body>
+    <h1>Pull Requests</h1>
+    <ul>
+        {% for pr in pull_requests %}
+            <li>
+                <strong>Title:</strong> {{ pr.title }}<br>
+                <strong>Number:</strong> {{ pr.number }}<br>
+                
+            </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create New Pull Request</title>
+</head>
+<body>
+    <h1>Create New Pull Request</h1>
+    <form action="/repositories/<owner>/<repo_name>/pulls" method="POST">
+        <label for="title">Title:</label><br>
+        <input type="text" id="title" name="title"><br>
+        
+        <label for="base">Base Branch:</label><br>
+        <input type="text" id="base" name="base"><br>
+        
+        <label for="head">Compare Branch:</label><br>
+        <input type="text" id="head" name="head"><br>
+        
+        <input type="submit" value="Create Pull Request">
+    </form>
+</body>
+</html>
