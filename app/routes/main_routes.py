@@ -7,7 +7,7 @@ from app.controllers.pull_requests_controller import view_pull_request, create_p
 from app.controllers.main_controller import get_home_message
 from app.controllers.issues_controller import get_github_issues
 
-main_routes = Blueprint('main', __name__)
+main_routes = Blueprint('main_routes', __name__)
 
 @main_routes.route('/')
 def home():
