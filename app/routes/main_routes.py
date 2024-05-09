@@ -7,7 +7,7 @@ from app.controllers.pull_requests_controller import view_pull_request, create_p
 from app.controllers.main_controller import get_home_message
 from app.controllers.issues_controller import get_github_issues
 
-main_routes = Blueprint('main_routes', __name__)
+main_routes = Blueprint('main', __name__)
 
 @main_routes.route('/')
 def home():
@@ -16,15 +16,21 @@ def home():
     message = get_home_message()
     return render_template('index.html', message=message)
 
+@main_routes.route('/login')
+def login():
+    """Renders the login Page"""
+    return render_template('login.html')
+
 @main_routes.route('/github/repositories')
 def show_github_repositories():
     """Renders andd returns github repositories
     """
     repositories = github_repositories()
-    if repositories:
-        return render_template('repositories.html', repositories=repositories)
-    else:
-        return "Failed to Fetch repo from Github"
+    # if repositories:
+    #     return render_template('repositories.html', repositories=repositories)
+    # else:
+    #     return "Failed to Fetch repo from Github"
+    return render_template('repositories.html')
 
 @main_routes.route('/repositories/<repo_name>/issues')
 def show_issues(repo_name):
