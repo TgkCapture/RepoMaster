@@ -88,7 +88,7 @@ Open a web browser and visit http://127.0.0.1:5000/ to access the application.
 
 5. **Run the Flask Application:**
     ```bash
-    python app.py
+    python run.py
 
 6. **Access the Application:**
 Open a web browser and visit http://127.0.0.1:5000/ to access the application.
