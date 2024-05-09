@@ -94,6 +94,13 @@ Open a web browser and visit http://127.0.0.1:5000/ to access the application.
 Open a web browser and visit http://127.0.0.1:5000/ to access the application.
 
 
+### Production Version
+
+As we continue development, you can find the latest production version of the app [here](https://repomaster.tgkcapture.online/).
+
+Feel free to explore and provide feedback!
+
+
 ## Contributors
 
 - [@Tawonga Grant Kanyenda](https://github.com/TgkCapture)
