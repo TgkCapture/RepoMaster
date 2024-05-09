@@ -14,7 +14,7 @@ def home():
     """Renders the home page.
     """
     message = get_home_message()
-    return render_template('under_construction.html', message=message)
+    return render_template('index.html', message=message)
 
 @main_routes.route('/github/repositories')
 def show_github_repositories():

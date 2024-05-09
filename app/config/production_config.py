@@ -1,4 +1,4 @@
 # production_config.py
 """Production Server Configuration """
 class ProductionConfig:
-    DEBUG = False
+    DEBUG = True
