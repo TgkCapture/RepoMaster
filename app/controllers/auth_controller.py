@@ -12,8 +12,8 @@ auth_controller.secret_key = '123456'
 oauth = OAuth(auth_controller)
 github = oauth.remote_app(
     'github',
-    consumer_key='your_consumer_key',  
-    consumer_secret='your_consumer_secret',  
+    consumer_key='',  
+    consumer_secret='',  
     request_token_params={'scope': 'user:email'},
     base_url='https://api.github.com/',
     request_token_url=None,
@@ -38,11 +38,15 @@ def logout():
     return redirect(url_for('index'))
 
 def authorized():
+    error_reason = request.args.get('error_reason')
+    if error_reason:
+        return f"Access denied: reason={error_reason}"
+    
     resp = github.authorized_response()
     if resp is None or resp.get('access_token') is None:
         return 'Access denied: reason={}, error={}'.format(
-            request.args['error_reason'],
-            request.args['error_description']
+            request.args.get('error_reason', ''),
+            request.args.get('error_description', '')
         )
     session['github_token'] = (resp['access_token'], '')
     return redirect(url_for('index'))
