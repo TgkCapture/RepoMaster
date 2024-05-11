@@ -40,14 +40,15 @@ def logout():
 def authorized():
     error_reason = request.args.get('error_reason')
     if error_reason:
-        return f"Access denied: reason={error_reason}"
+        error_message = f"Access denied: reason={error_reason}"
+        return render_template('error.html', error_message=error_message)
     
     resp = github.authorized_response()
     if resp is None or resp.get('access_token') is None:
-        return 'Access denied: reason={}, error={}'.format(
-            request.args.get('error_reason', ''),
-            request.args.get('error_description', '')
-        )
+        error_description = request.args.get('error_description', '')
+        error_message = f"Access denied: reason={error_description}"
+        return render_template('error.html', error_message=error_message)
+    
     session['github_token'] = (resp['access_token'], '')
     return redirect(url_for('index'))
 
