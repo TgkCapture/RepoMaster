@@ -6,7 +6,7 @@ from app.controllers.repo_controller import delete_repository
 from app.controllers.pull_requests_controller import view_pull_request, create_pull_request, get_pull_requests
 from app.controllers.main_controller import get_home_message
 from app.controllers.issues_controller import get_github_issues
-from app.controllers.auth_controller import login, logout, authorized, github, get_github_oauth_token
+from app.controllers.auth_controller import login, logout, authorized, github, get_github_oauth_token, is_user_logged_in, get_user_info
 
 main_routes = Blueprint('main', __name__)
 
@@ -14,8 +14,8 @@ main_routes = Blueprint('main', __name__)
 def home():
     """Renders the home page.
     """
-    message = get_home_message()
-    return render_template('index.html', message=message)
+    
+    return render_template('index.html', get_github_oauth_token=get_github_oauth_token)
 
 @main_routes.route('/login')
 def login_route():
@@ -36,14 +36,24 @@ def get_github_oauth_token_route():
 
 @main_routes.route('/github/repositories')
 def show_github_repositories():
-    """Renders andd returns github repositories
+    """Renders and returns github repositories
     """
-    repositories = github_repositories()
-    # if repositories:
-    #     return render_template('repositories.html', repositories=repositories)
-    # else:
-    #     return "Failed to Fetch repo from Github"
-    return render_template('repositories.html')
+
+    username = None
+    access_token = None
+
+    if is_user_logged_in():
+        username, _ = get_user_info() 
+        access_token = get_github_oauth_token()
+
+    repositories = github_repositories(username, access_token)
+
+    if repositories:
+        
+        return render_template('repositories.html', repositories=repositories)
+    else:
+        return "Failed to Fetch repo from Github"
+    # return render_template('repositories.html')
 
 @main_routes.route('/repositories/<repo_name>/issues')
 def show_issues(repo_name):
