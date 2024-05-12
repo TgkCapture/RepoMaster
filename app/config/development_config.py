@@ -1,7 +1,7 @@
 # development_config.py
 
-from dotenv import load_dotenv
 import os
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -9,5 +9,5 @@ class DevelopmentConfig:
     DEBUG = True
     SECRET_KEY = 'your_secret_key'
 
-    CLIENT_ID = os.getenv('consumer_key')
-    CLIENT_KEY = os.getenv('consumer_secret')
+    CLIENT_ID = os.getenv('GITHUB_CONSUMER_KEY'),
+    CLIENT_KEY = os.getenv('GITHUB_CONSUMER_SECRET')
