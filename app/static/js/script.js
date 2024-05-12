@@ -1,17 +1,20 @@
 // smooth scrolling functionality
 document.querySelectorAll('nav a').forEach(anchor => {
     anchor.addEventListener('click', function(e) {
+      const targetId = this.getAttribute('href').substring(1);
+  
+      if (targetId.startsWith('#')) { // Internal link (smooth scroll)
         e.preventDefault();
-
-        const targetId = this.getAttribute('href').substring(1);
         const targetSection = document.getElementById(targetId);
-
         window.scrollTo({
-            top: targetSection.offsetTop,
-            behavior: 'smooth'
+          top: targetSection.offsetTop,
+          behavior: 'smooth'
         });
+      } else { 
+      }
     });
-});
+  });
+  
 
 function signInWithGitHub() {
     // Opens a GitHub OAuth login popup window

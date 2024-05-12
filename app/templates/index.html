@@ -19,8 +19,13 @@
         <li><a href="#our-projects">Projects</a></li>
         <li><a href="#about-us">About Us</a></li>
         <li><a href="#contact">Contact</a></li>
-        <li><a href="#">Log In</a></li>
-        </nav>
+
+        {% if get_github_oauth_token() %}  
+            <li><a href="{{ url_for('main.logout_route') }}">Log Out</a></li>
+        {% else %}
+            <li><a href="{{ url_for('main.login_route') }}">Log In</a></li>
+        {% endif %}
+            </nav>
     </header>
     
     <section class="hero" id="hero">
@@ -28,7 +33,7 @@
         <div class="hero-content-area">
         <h1>RepoMaster!</h1>
         <h3>Master Your Repositories with RepoMaster</h3>
-        <a href="{{ url_for('main.login_route') }}" class="btn">Get Started</a>
+        <a href="" class="btn">Get Started</a>
         </div>
     </section>
         
