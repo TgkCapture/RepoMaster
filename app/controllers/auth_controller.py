@@ -1,12 +1,12 @@
 """auth_controller.py
 """
 
+import requests
 from flask import Blueprint, render_template, url_for, session, request
 from app.config.oauth_config import github
 
 auth_controller = Blueprint('authorize', __name__)
 auth_controller.secret_key = '123456'
-
 
 def index():
     return render_template('index.html')
@@ -43,3 +43,24 @@ def authorized():
 
 def get_github_oauth_token():
     return session.get('github_token')
+
+def get_user_info():
+    github_token = get_github_oauth_token()
+    if not github_token:
+        return None
+
+    headers = {'Authorization': f'token {github_token[0]}'}
+    response = requests.get('https://api.github.com/user', headers=headers)
+
+    if response.status_code == 200:
+        user_data = response.json()
+        return user_data.get('login'), user_data.get('id')
+    else:
+        print(f"Error retrieving user info: {response.status_code}")
+        return None
+
+def is_user_logged_in():
+    """
+    Checks if a user is logged in.
+    """
+    return 'github_token' in session and session.get('github_token') is not None
