@@ -1,0 +1,86 @@
+body {
+    /* font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; */
+    font-family: "Raleway", sans-serif;
+}
+
+.page-description {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.github-cards {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0;
+    list-style: none;
+}
+
+.github-card {
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    /* margin: 10px; */
+    padding: 20px;
+    color: #555;
+    text-decoration: none;
+    font-size: 13px;
+    min-width: 250px;
+    flex: 1 1 calc(20% - 20px); 
+}
+
+.github-card > h3 {
+    margin-top: 0;
+    color: #4078c0;
+    font-size: 15px;
+}
+
+.github-card__meta {
+    margin-top: 10px;
+}
+
+.github-card__meta > i {
+    font-size: 16px;
+    margin-right: 5px;
+}
+
+footer {
+display: flex;
+align-items: center;
+justify-content: space-around;
+background-color: #555;
+color: #fff;
+padding: 20px 0;
+}
+
+footer ul {
+display: flex;
+}
+
+footer ul li {
+margin-left: 16px;
+}
+
+footer p {
+text-transform: uppercase;
+font-size: 14px;
+opacity: 0.6;
+align-self: center;
+}
+
+@media (max-width: 1100px) {
+footer {
+    flex-direction: column;
+}
+
+footer p {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+footer ul li {
+    margin: 0 8px;
+}
+}
