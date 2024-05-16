@@ -1,5 +1,6 @@
 """main_routes.py
 """
+import logging
 from flask import Blueprint, render_template, request
 from app.controllers.github_controller import get_github_repositories as github_repositories
 from app.controllers.repo_controller import delete_repository
@@ -45,11 +46,13 @@ def show_github_repositories():
     if is_user_logged_in():
         username, _ = get_user_info() 
         access_token = get_github_oauth_token()
+    else:
+        return f'You are not logged in'
 
     repositories = github_repositories(username, access_token)
 
     if repositories:
-        
+        logging.info(f"Fetched repositories for user: {username}, count: {len(repositories)}")
         return render_template('repositories.html', repositories=repositories)
     else:
         return "Failed to Fetch repo from Github"
