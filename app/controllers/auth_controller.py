@@ -51,7 +51,10 @@ def authorized():
     return render_template('dashboard.html', get_github_oauth_token=get_github_oauth_token)
 
 def get_github_oauth_token():
-    return session.get('github_token')
+    token = session.get('github_token')
+    logging.debug(f"Retrieved GitHub token from session: {token}")
+    return token
+
 
 def get_user_info():
     github_token = get_github_oauth_token()
