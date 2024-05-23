@@ -42,6 +42,11 @@ def authorized():
         return render_template('error.html', error_message=error_message)
     
     session['github_token'] = (resp['access_token'], '')
+
+    # Retrieve user info and store in session
+    user_info = get_user_info()
+    if user_info:
+        session['user_login'], session['user_id'] = user_info
     
     return render_template('dashboard.html', get_github_oauth_token=get_github_oauth_token)
 
