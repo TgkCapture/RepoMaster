@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | RepoMaster</title>
+    <link href="https://fonts.googleapis.com/css?family=Amatic+SC|Raleway" rel="stylesheet">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+<body>
+
+<header>
+    <h2><a href="#">RepoMaster</a></h2>
+    <nav>
+        <ul>
+            <li><a href="#dashboard">Home</a></li>
+            <li><a href="#pull-requests">Pull Requests</a></li>
+            <li><a href="#issues">Issues</a></li>
+            <li><a href="#settings">Settings</a></li>
+            {% if get_github_oauth_token() %}  
+                <li><a href="{{ url_for('main.logout_route') }}">Log Out</a></li>
+            {% else %}
+                <li><a href="{{ url_for('main.login_route') }}">Log In</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+</header>
+
+<section class="dashboard" id="dashboard">
+    <h3 class="title">Repository Dashboard</h3>
+    <p>Welcome to your repository dashboard. From here, you can manage various aspects of your repositories.</p>
+    <div class="dashboard-options">
+        <a href="#pull-requests" class="dashboard-option">
+            <i class="fa fa-code-branch"></i>
+            <span>Pull Requests</span>
+        </a>
+        <a href="#issues" class="dashboard-option">
+            <i class="fa fa-exclamation-circle"></i>
+            <span>Issues</span>
+        </a>
+        <a href="#settings" class="dashboard-option">
+            <i class="fa fa-cog"></i>
+            <span>Settings</span>
+        </a>
+    </div>
+</section>
+
+<section class="pull-requests" id="pull-requests">
+    <h3 class="title">Pull Requests</h3>
+    
+</section>
+
+<section class="issues" id="issues">
+    <h3 class="title">Issues</h3>
+    
+</section>
+
+<section class="settings" id="settings">
+    <h3 class="title">Settings</h3>
+
+</section>
+
+<footer>
+    <p>RepoMaster</p>
+    <p>Made With ❤️ by Grant Corp</p>
+    <ul>
+        <li><a href="#"><i class="fa fa-twitter-square fa-2x"></i></a></li>
+        <li><a href="#"><i class="fa fa-facebook-square fa-2x"></i></a></li>
+        <li><a href="#"><i class="fa fa-snapchat-square fa-2x"></i></a></li>
+    </ul>
+</footer>
+
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+
+</body>
+</html>
