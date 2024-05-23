@@ -3,7 +3,7 @@
 
 import requests
 import logging
-from flask import Blueprint, render_template, url_for, session, request
+from flask import Blueprint, render_template, url_for, session, request, redirect
 from app.config.oauth_config import github
 
 auth_controller = Blueprint('authorize', __name__)
@@ -14,17 +14,18 @@ def index():
 
 def login():
     if 'github_token' in session:
-        # If user is already logged in, redirect to index
-        # return redirect(url_for('main.home'))
-        return f"You are now signed in"
+    
+        return render_template('dashboard.html', get_github_oauth_token=get_github_oauth_token)
     
     # Redirect user to GitHub authorization page
     return github.authorize(callback=url_for('main.authorized_route', _external=True))
 
 def logout():
-    session.pop('github_token', None)
-    # return redirect(url_for('main.home'))
-    return f"You have now logged out"
+    if 'github_token' in session:
+        session.pop('github_token')
+        return redirect(url_for('main.home'))
+    else:
+        return "You are already logged out."
 
 def authorized():
     error_reason = request.args.get('error_reason')
@@ -41,8 +42,8 @@ def authorized():
         return render_template('error.html', error_message=error_message)
     
     session['github_token'] = (resp['access_token'], '')
-    # return redirect(url_for('main.home'))
-    return f"You are now signed in"
+    
+    return render_template('dashboard.html', get_github_oauth_token=get_github_oauth_token)
 
 def get_github_oauth_token():
     return session.get('github_token')
