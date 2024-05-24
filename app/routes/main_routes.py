@@ -80,7 +80,8 @@ def list_pull_requests(owner, repo_name):
     if pull_requests:
         return render_template('pull_requests.html', pull_requests=pull_requests)
     else:
-        return f"Failed to fetch pull requests for {owner}/{repo_name} from GitHub"
+        logging.error(f"Failed to fetch pull requests for {owner}/{repo_name} from GitHub.")
+        return render_template('error.html', error_message=f"Failed to fetch pull requests for {owner}/{repo_name} from GitHub.")
 
 @main_routes.route('/delete_repo', methods=['GET', 'POST'])
 @login_required
@@ -109,7 +110,8 @@ def view_pull_request_route(owner, repo_name, pull_number):
     if pull_request:
         return render_template('pull_request_details.html', pull_request=pull_request)
     else:
-        return f"Failed to fetch pull request details"
+        logging.error(f"Failed to fetch pull request details for {owner}/{repo_name}#{pull_number}.")
+        return render_template('error.html', error_message=f"Failed to fetch pull request details for {owner}/{repo_name}#{pull_number}.")
 
 @main_routes.route('/repositories/<owner>/<repo_name>/pulls', methods=['POST'])
 @login_required
@@ -121,4 +123,9 @@ def create_pull_request_route(owner, repo_name):
     head = request.form.get('head')
     
     message = create_pull_request(owner, repo_name, title, base, head, access_token)
-    return message
+    
+    if "successfully" in message.lower():
+        return render_template('success.html', message=message)
+    else:
+        logging.error(f"Failed to create pull request for {owner}/{repo_name}")
+        return render_template('error.html', error_message=message)
