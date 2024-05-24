@@ -55,7 +55,6 @@ def get_github_oauth_token():
     logging.debug(f"Retrieved GitHub token from session: {token}")
     return token
 
-
 def get_user_info():
     github_token = get_github_oauth_token()
     if not github_token:
