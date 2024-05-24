@@ -56,7 +56,7 @@ def show_github_repositories():
         logging.info(f"Fetched repositories for user: {username}, count: {len(repositories)}")
         return render_template('repositories.html', repositories=repositories)
     else:
-        return "Failed to fetch repositories from GitHub."
+        return render_template('errors/401.html', error_code=401 ,error_message="Failed to fetch repositories from GitHub.")
 
 @main_routes.route('/repositories/<repo_name>/issues')
 @login_required
@@ -81,7 +81,7 @@ def list_pull_requests(owner, repo_name):
         return render_template('pull_requests.html', pull_requests=pull_requests)
     else:
         logging.error(f"Failed to fetch pull requests for {owner}/{repo_name} from GitHub.")
-        return render_template('error.html', error_message=f"Failed to fetch pull requests for {owner}/{repo_name} from GitHub.")
+        return render_template('errors/401.html',error_code=401, error_message=f"Failed to fetch pull requests for {owner}/{repo_name} from GitHub.")
 
 @main_routes.route('/delete_repo', methods=['GET', 'POST'])
 @login_required
@@ -111,7 +111,7 @@ def view_pull_request_route(owner, repo_name, pull_number):
         return render_template('pull_request_details.html', pull_request=pull_request)
     else:
         logging.error(f"Failed to fetch pull request details for {owner}/{repo_name}#{pull_number}.")
-        return render_template('error.html', error_message=f"Failed to fetch pull request details for {owner}/{repo_name}#{pull_number}.")
+        return render_template('errors/401.html',error_code=401, error_message=f"Failed to fetch pull request details for {owner}/{repo_name}#{pull_number}.")
 
 @main_routes.route('/repositories/<owner>/<repo_name>/pulls', methods=['POST'])
 @login_required
@@ -128,4 +128,4 @@ def create_pull_request_route(owner, repo_name):
         return render_template('success.html', message=message)
     else:
         logging.error(f"Failed to create pull request for {owner}/{repo_name}")
-        return render_template('error.html', error_message=message)
+        return render_template('errors/401.html', error_code=401, error_message=message)
