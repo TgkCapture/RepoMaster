@@ -18,3 +18,5 @@ instance/
 *.exe
 *.o
 *.so
+
+.history/
