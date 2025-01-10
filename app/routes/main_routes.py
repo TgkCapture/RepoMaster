@@ -55,7 +55,7 @@ def show_github_repositories():
 
     repositories = github_repositories(username, access_token)
 
-    repositories = response.json()
+    # repositories = response.json()
     if repositories:
         logging.info(f"Fetched repositories for user: {username}, count: {len(repositories)}")
         return render_template('repositories.html', repositories=repositories)
