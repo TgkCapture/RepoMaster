@@ -44,12 +44,6 @@ def authorized():
 
     logging.info(f"GitHub token set in session: {resp['access_token'][:4]}******")
 
-    # Log the retrieved access token (only partially for security purposes)
-    # logging.info(f"GitHub access token retrieved: {resp['access_token'][:4]}******")
-
-    # Optionally, log full token in development only (remove in production!)
-    logging.debug(f"Full GitHub access token: {resp['access_token']}")
-
     # return redirect(url_for('main.home'))
     return f"You are now signed in"
 
