@@ -27,7 +27,7 @@ def login_route():
 def logout_route():
     return logout()
 
-@main_routes.route('/github/callback')
+@main_routes.route('/github_login/github/authorized')
 def authorized_route():
     return authorized()
 
