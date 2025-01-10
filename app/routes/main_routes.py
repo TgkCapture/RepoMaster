@@ -37,26 +37,33 @@ def get_github_oauth_token_route():
 
 @main_routes.route('/github/repositories')
 def show_github_repositories():
-    """Renders and returns github repositories
-    """
-
     username = None
     access_token = None
 
     if is_user_logged_in():
-        username, _ = get_user_info() 
-        access_token = get_github_oauth_token()
+        username, _ = get_user_info()  # Get username using the token
+        access_token = get_github_oauth_token()  # Retrieve the stored token
+
+        # Log the username and partially masked token
+        if username:
+            logging.info(f"Logged in as GitHub user: {username}")
+        if access_token:
+            logging.info(f"GitHub access token: {access_token[0][:6]}******")
     else:
-        return f'You are not logged in'
+        logging.warning("User attempted to access repositories without being logged in.")
+        return "You are not logged in"
 
     repositories = github_repositories(username, access_token)
 
+    repositories = response.json()
     if repositories:
         logging.info(f"Fetched repositories for user: {username}, count: {len(repositories)}")
         return render_template('repositories.html', repositories=repositories)
     else:
-        return "Failed to Fetch repo from Github"
-    # return render_template('repositories.html')
+        logging.error(f"Failed to fetch repositories for user: {username}")
+        return "Failed to fetch repositories from GitHub"
+
+
 
 @main_routes.route('/repositories/<repo_name>/issues')
 def show_issues(repo_name):
