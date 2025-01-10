@@ -3,25 +3,23 @@ github_controller.py
 """
 import os
 import requests
-from flask import Blueprint, render_template
+from flask import Blueprint, session, render_template
 
 github_controller = Blueprint('github', __name__)
 
-github_username = os.environ.get('GITHUB_USERNAME')
-github_token = os.environ.get('GITHUB_TOKEN')
+GITHUB_API_URL = "https://api.github.com"
 
 def get_github_repositories():
-    url = f'https://api.github.com/users/{github_username}/repos'
-    response = requests.get(url, timeout=60)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        return None
+    """Fetches repositories from GitHub API using access token"""
+    token = session.get("github_token")
 
-@github_controller.route('/repositories')
-def show_repositories():
-    repositories = get_github_repositories()
-    if repositories:
-        return render_template('repositories.html', repositories=repositories)
+    if not token:
+        return None, "Access token not found. Please log in first."
+
+    headers = {"Authorization": f"token {token}"}
+    response = requests.get(f"{GITHUB_API_URL}/user/repos", headers=headers)
+
+    if response.status_code == 200:
+        return response.json(), None
     else:
-        return "Failed to Fetch repo from Github"
+        return None, f"Failed to fetch repositories: {response.json().get('message', 'Unknown error')}"
