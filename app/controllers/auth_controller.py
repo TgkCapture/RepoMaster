@@ -41,11 +41,31 @@ def authorized():
         return render_template('error.html', error_message=error_message)
     
     session['github_token'] = (resp['access_token'], '')
+
+    logging.info(f"GitHub token set in session: {resp['access_token'][:4]}******")
+
+    # Log the retrieved access token (only partially for security purposes)
+    # logging.info(f"GitHub access token retrieved: {resp['access_token'][:4]}******")
+
+    # Optionally, log full token in development only (remove in production!)
+    logging.debug(f"Full GitHub access token: {resp['access_token']}")
+
     # return redirect(url_for('main.home'))
     return f"You are now signed in"
 
 def get_github_oauth_token():
-    return session.get('github_token')
+    """
+    Retrieves the GitHub OAuth token from the session.
+    """
+    token = session.get('github_token')
+
+    if token:
+        # Log the retrieved token (only partially, for security)
+        logging.info(f"GitHub token retrieved from Sessionxxx: {token[0][:4]}******")
+    else:
+        logging.warning("GitHub token is missing or not set in the session.")
+
+    return token
 
 def get_user_info():
     github_token = get_github_oauth_token()
