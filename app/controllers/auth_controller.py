@@ -60,7 +60,6 @@ def get_github_oauth_token():
     token = session.get('github_token')
 
     if token:
-        # Log the retrieved token (only partially, for security)
         logging.info(f"GitHub token retrieved from Sessionxxx: {token[0][:4]}******")
     else:
         logging.warning("GitHub token is missing or not set in the session.")
