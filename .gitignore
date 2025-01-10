@@ -1,8 +1,9 @@
 *.pyc
 __pycache__/
+.history/
 
 venv/ 
-env/
+.env
 instance/  
 *.pyc
 
