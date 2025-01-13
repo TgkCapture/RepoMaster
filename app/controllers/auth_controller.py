@@ -4,7 +4,6 @@
 import requests
 import logging
 from flask import Blueprint, session, request
-from app.config.oauth_config import github
 from app.config.github_app_config import GITHUB_APP_ID, GITHUB_PRIVATE_KEY
 from jose import jwt
 import time

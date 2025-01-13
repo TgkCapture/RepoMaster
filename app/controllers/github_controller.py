@@ -5,8 +5,7 @@ import os
 import requests
 import logging
 from flask import Blueprint, render_template, request, redirect, url_for, session
-from app.controllers.auth_controller import get_github_oauth_token, get_user_info, is_user_logged_in
-from requests.exceptions import RequestException 
+
 
 github_controller = Blueprint('github', __name__)
 
