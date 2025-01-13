@@ -1,13 +1,15 @@
 """main_routes.py
 """
 import logging
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, redirect, url_for, session
 from app.controllers.github_controller import get_github_repositories as github_repositories
 from app.controllers.repo_controller import delete_repository
 from app.controllers.pull_requests_controller import view_pull_request, create_pull_request, get_pull_requests
 from app.controllers.main_controller import get_home_message
 from app.controllers.issues_controller import get_github_issues
-from app.controllers.auth_controller import get_installation_access_token
+from app.controllers.auth_controller import get_installation_access_token, is_user_logged_in
+from jose import jwt
+# from app.config.oauth_config import github
 
 main_routes = Blueprint('main', __name__)
 
@@ -15,7 +17,7 @@ main_routes = Blueprint('main', __name__)
 def home():
     """Renders the home page.
     """
-    return render_template('index.html')
+    return render_template('index.html', is_user_logged_in=is_user_logged_in)
 
 @main_routes.route('/github/repositories')
 def show_github_repositories():
@@ -42,6 +44,37 @@ def show_github_repositories():
     else:
         logging.error(f"Failed to fetch repositories for user: {username}")
         return "Failed to fetch repositories from GitHub"
+
+@main_routes.route('/github/callback', methods=['GET'])
+def github_callback():
+    """Handles the GitHub App callback after authentication or app setup."""  
+
+    # Retrieve the code and state from the GitHub callback URL
+    code = request.args.get('code')
+    state = request.args.get('state')
+
+    if not code:
+        logging.error("GitHub callback missing 'code' parameter.")
+        return "GitHub authentication failed. 'code' not provided.", 400
+
+    try:
+        # Exchange the code for an access token (GitHub App installation flow)
+        token_response = github.authorized_response()
+
+        if not token_response or 'access_token' not in token_response:
+            logging.error("GitHub token exchange failed.")
+            return "GitHub token exchange failed.", 400
+
+        # Save the access token in the session (or database for production)
+        session['github_token'] = token_response['access_token']
+        logging.info(f"GitHub access token: {token_response['access_token'][:6]}******")
+
+        # Redirect to the homepage or another appropriate route
+        return redirect(url_for('main.home'))
+
+    except Exception as e:
+        logging.error(f"Error during GitHub callback handling: {str(e)}")
+        return f"GitHub callback handling failed: {str(e)}", 500
 
         
 
