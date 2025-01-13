@@ -3,14 +3,13 @@
 
 import requests
 import logging
-from flask import Blueprint, session, request
+import time
+from flask import Blueprint, session, request, redirect, url_for
 from app.config.github_app_config import GITHUB_APP_ID, GITHUB_PRIVATE_KEY
 from jose import jwt
-import time
 
 auth_controller = Blueprint('authorize', __name__)
 auth_controller.secret_key = '123456'
-
 
 def get_jwt():
     """
@@ -39,13 +38,14 @@ def get_installation_access_token():
     url = f'https://api.github.com/app/installations/{installation_id}/access_tokens'
     headers = {
         'Authorization': f'Bearer {jwt_token}',
-        'Accept': 'application/vnd.github.v3+json',
+        'Accept': 'application/vnd.github+json',
     }
 
     response = requests.post(url, headers=headers)
     if response.status_code == 201:
         access_token = response.json().get('token')
         logging.info("Fetched GitHub App installation access token.")
+        session['github_installation_token'] = access_token  # Store in session
         return access_token
     else:
         logging.error(f"Failed to get installation token: {response.status_code}")
@@ -63,3 +63,36 @@ def is_user_logged_in():
     else:
         logging.warning("User is not authenticated. No installation access token found in the session.")
         return False
+
+@auth_controller.route('/github/authorize', methods=['GET'])
+def authorize_github_app():
+    """
+    Handle the GitHub App installation callback.
+    """
+    # Extract installation_id from the query parameters
+    installation_id = request.args.get('installation_id')
+
+    if not installation_id:
+        logging.error("No installation ID provided in the request.")
+        return "Installation ID is missing. Please install the GitHub App.", 400
+
+    # Store the installation ID in the session
+    session['installation_id'] = installation_id
+    logging.info(f"Received installation ID: {installation_id}")
+
+    # Generate the installation access token
+    access_token = get_installation_access_token()
+    if access_token:
+        logging.info("Installation access token successfully generated.")
+        return redirect(url_for('main.home'))  # Redirect to the home page or a relevant route
+    else:
+        logging.error("Failed to generate installation access token.")
+        return "Failed to complete installation process. Please try again.", 500
+
+@auth_controller.route('/github/install', methods=['GET'])
+def install_github_app():
+    """
+    Redirect the user to the GitHub App installation page.
+    """
+    installation_url = f"https://github.com/apps/{GITHUB_APP_ID}/installations/new"
+    return redirect(installation_url)
