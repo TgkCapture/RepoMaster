@@ -1,3 +1,4 @@
+# oauth_config.py
 from flask import Flask
 from flask_oauthlib.client import OAuth
 import os
