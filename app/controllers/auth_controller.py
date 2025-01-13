@@ -50,3 +50,16 @@ def get_installation_access_token():
     else:
         logging.error(f"Failed to get installation token: {response.status_code}")
         return None
+
+def is_user_logged_in():
+    """
+    Checks if the user is authenticated by verifying the presence of a valid installation access token.
+    """
+    access_token = session.get('github_installation_token')
+
+    if access_token:
+        logging.info("User is authenticated with a valid installation access token.")
+        return True
+    else:
+        logging.warning("User is not authenticated. No installation access token found in the session.")
+        return False
