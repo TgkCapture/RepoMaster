@@ -1,5 +1,6 @@
 # github_app_config.py
 
+from flask import Flask
 import os
 from dotenv import load_dotenv
 
