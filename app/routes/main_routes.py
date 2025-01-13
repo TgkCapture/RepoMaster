@@ -7,7 +7,7 @@ from app.controllers.repo_controller import delete_repository
 from app.controllers.pull_requests_controller import view_pull_request, create_pull_request, get_pull_requests
 from app.controllers.main_controller import get_home_message
 from app.controllers.issues_controller import get_github_issues
-from app.controllers.auth_controller import login, logout, authorized, github, get_github_oauth_token, is_user_logged_in, get_user_info
+from app.controllers.auth_controller import get_installation_access_token, is_user_logged_in, get_user_info
 
 main_routes = Blueprint('main', __name__)
 
@@ -15,25 +15,7 @@ main_routes = Blueprint('main', __name__)
 def home():
     """Renders the home page.
     """
-    
-    return render_template('index.html', get_github_oauth_token=get_github_oauth_token)
-
-@main_routes.route('/login')
-def login_route():
-    """Renders the login Page"""
-    return login()
-
-@main_routes.route('/logout')
-def logout_route():
-    return logout()
-
-@main_routes.route('/github_login/github/authorized')
-def authorized_route():
-    return authorized()
-
-@github.tokengetter
-def get_github_oauth_token_route():
-    return get_github_oauth_token()
+    return render_template('index.html')
 
 @main_routes.route('/github/repositories')
 def show_github_repositories():
@@ -41,21 +23,19 @@ def show_github_repositories():
     access_token = None
 
     if is_user_logged_in():
-        username, _ = get_user_info()  # Get username using the token
-        access_token = get_github_oauth_token()  # Retrieve the stored token
+        username, _ = get_user_info()  # Fetch username
+        access_token = get_installation_access_token()  # Get GitHub App installation token
 
-        # Log the username and partially masked token
         if username:
             logging.info(f"Logged in as GitHub user: {username}")
         if access_token:
-            logging.info(f"GitHub access token: {access_token[0][:6]}******")
+            logging.info("Fetched GitHub App installation token successfully.")
     else:
         logging.warning("User attempted to access repositories without being logged in.")
         return "You are not logged in"
 
-    repositories = github_repositories(username, access_token)
+    repositories = get_github_repositories(username, access_token)
 
-    # repositories = response.json()
     if repositories:
         logging.info(f"Fetched repositories for user: {username}, count: {len(repositories)}")
         return render_template('repositories.html', repositories=repositories)
@@ -63,6 +43,7 @@ def show_github_repositories():
         logging.error(f"Failed to fetch repositories for user: {username}")
         return "Failed to fetch repositories from GitHub"
 
+        
 
 
 @main_routes.route('/repositories/<repo_name>/issues')
