@@ -1,6 +1,7 @@
 """main_routes.py
 """
 import logging
+import os
 from flask import Blueprint, render_template, request, redirect, url_for, session
 from app.controllers.auth_controller import get_installation_access_token, is_user_logged_in, get_jwt
 from app.controllers.github_controller import get_github_repositories
@@ -66,5 +67,10 @@ def install_github_app():
     """
     Redirect the user to the GitHub App installation page.
     """
-    installation_url = f"https://github.com/apps/{GITHUB_APP_ID}/installations/new"
+    github_app_id = os.getenv("GITHUB_APP_ID")  
+    if not github_app_id:
+        logging.error("GITHUB_APP_ID is not set in the environment.")
+        return "Configuration error: GITHUB_APP_ID is not defined.", 500
+
+    installation_url = f"https://github.com/apps/{github_app_id}/installations/new"
     return redirect(installation_url)
