@@ -1,13 +1,82 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Issues - {{ repo_name }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            background-color: #f9f9f9;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        li a {
+            font-weight: bold;
+            color: #0073e6;
+            text-decoration: none;
+        }
+        li a:hover {
+            text-decoration: underline;
+        }
+        form {
+            margin: 20px 0;
+        }
+        input, textarea, button {
+            padding: 10px;
+            margin: 5px;
+            font-size: 1rem;
+        }
+        input, textarea {
+            width: 100%;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+    </style>
 </head>
 <body>
     <h1>Issues for {{ repo_name }}</h1>
+
+    <!-- Form to create a new issue -->
+    <h3>Create New Issue</h3>
+    <form method="POST" action="{{ url_for('main.manage_issues', repo_name=repo_name) }}">
+        <input type="text" name="title" placeholder="Issue Title" required>
+        <textarea name="body" placeholder="Issue Body" required></textarea>
+        <button type="submit">Create Issue</button>
+    </form>
+
+    <!-- List of existing issues -->
+    <h3>Existing Issues</h3>
     <ul>
         {% for issue in issues %}
-            <li><a href="{{ issue.html_url }}">{{ issue.title }}</a> - {{ issue.body }}</li>
+            <li>
+                <a href="{{ issue.html_url }}" target="_blank">{{ issue.title }}</a> 
+                <p>{{ issue.body }}</p>
+
+                <!-- Form to close an issue -->
+                <form method="POST" action="{{ url_for('main.manage_issues', repo_name=repo_name) }}">
+                    <input type="hidden" name="issue_number" value="{{ issue.number }}">
+                    <button type="submit" formaction="{{ url_for('main.manage_issues', repo_name=repo_name) }}" method="PATCH">Close Issue</button>
+                </form>
+            </li>
         {% endfor %}
     </ul>
 </body>

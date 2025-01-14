@@ -60,7 +60,7 @@ def show_github_repositories():
         logging.warning("User attempted to access repositories without being logged in.")
         return "You are not logged in", 403
 
-    username = "TgkCapture"  # TODO: Replace with a function to fetch the username if necessary
+    username = "TgkCapture"  # TODO: Replace with a function to fetch the username 
     access_token = get_installation_access_token()
 
     if access_token:
