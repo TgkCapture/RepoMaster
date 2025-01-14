@@ -12,7 +12,7 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
   - Displays fetched repositories in a user-friendly format on a webpage.
   - Requires the GitHub App to be installed on the user’s account or organization.
 
-### 2. Manage Issues (Under Development)
+### 2. Manage Issues (Available)
 - **Route:** `/repositories/<repo_name>/issues`
 - **Functionality:** Enables viewing, creation, closure, or management of issues for a specific repository.
 - **Planned Features:**
