@@ -5,7 +5,7 @@ import os
 from flask import Blueprint, render_template, request, redirect, url_for, session
 from app.controllers.auth_controller import get_installation_access_token, is_user_logged_in, get_jwt
 from app.controllers.github_controller import get_github_repositories
-from app.controllers.issues_controller import get_github_issues, create_github_issue
+from app.controllers.issues_controller import get_github_issues, create_github_issue, close_github_issue
 
 main_routes = Blueprint('main', __name__)
 
@@ -78,7 +78,7 @@ def show_github_repositories():
 @main_routes.route('/repositories/<repo_name>/issues', methods=['GET', 'POST'])
 def manage_issues(repo_name):
     """
-    Displays and manages issues for a specific repository. Allows viewing and creating
+    Displays and manages issues for a specific repository. Allows viewing and creating or closing issues
     """
     if not is_user_logged_in():
         logging.warning("User attempted to access issues without being logged in.")
@@ -104,3 +104,15 @@ def manage_issues(repo_name):
         if new_issue:
             logging.info(f"Issue created successfully in repository {repo_name}.")
             return redirect(url_for('main.manage_issues', repo_name=repo_name))
+
+    elif request.method == 'PATCH':
+        # Close an existing issue
+        issue_number = request.form.get('issue_number')
+        if not issue_number:
+            return "Issue number is required", 400
+        closed_issue = close_github_issue(repo_name, issue_number)
+        if closed_issue:
+            logging.info(f"Issue #{issue_number} successfully closed in repository {repo_name}.")
+            return redirect(url_for('main.manage_issues', repo_name=repo_name))
+        else:
+            return "Failed to close the issue", 500
