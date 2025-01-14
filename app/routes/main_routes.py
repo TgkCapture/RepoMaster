@@ -74,3 +74,19 @@ def show_github_repositories():
         logging.error("Failed to get access token for GitHub repositories.")
         return "Failed to authenticate with GitHub", 500
 
+@main_routes.route('/repositories/<repo_name>/issues', methods=['GET'])
+def manage_issues(repo_name):
+    """
+    Displays and manages issues for a specific repository.
+    """
+    if not is_user_logged_in():
+        logging.warning("User attempted to access issues without being logged in.")
+        return "You are not logged in", 403
+
+    issues = get_github_issues(repo_name)
+    if issues is not None:
+        logging.info(f"Fetched {len(issues)} issues for repository: {repo_name}")
+        return render_template('issues.html', repo_name=repo_name, issues=issues)
+    else:
+        logging.error(f"Failed to fetch issues for repository: {repo_name}")
+        return "Failed to fetch issues from GitHub", 500
