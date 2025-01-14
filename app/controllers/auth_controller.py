@@ -1,82 +1,62 @@
-"""auth_controller.py
-"""
-
 import requests
 import logging
-from flask import Blueprint, render_template, url_for, session, request
-from app.config.oauth_config import github
+import time
+from flask import session
+from app.config.github_app_config import GITHUB_APP_ID, GITHUB_PRIVATE_KEY
+from jose import jwt
 
-auth_controller = Blueprint('authorize', __name__)
-auth_controller.secret_key = '123456'
-
-def index():
-    return render_template('index.html')
-
-def login():
-    if 'github_token' in session:
-        # If user is already logged in, redirect to index
-        # return redirect(url_for('main.home'))
-        return f"You are now signed in"
-    
-    # Redirect user to GitHub authorization page
-    return github.authorize(callback=url_for('main.authorized_route', _external=True))
-
-def logout():
-    session.pop('github_token', None)
-    # return redirect(url_for('main.home'))
-    return f"You have now logged out"
-
-def authorized():
-    error_reason = request.args.get('error_reason')
-    if error_reason:
-        error_message = f"Access denied: reason={error_reason}"
-        logging.error(error_message)
-        return render_template('error.html', error_message=error_message)
-    
-    resp = github.authorized_response()
-    if resp is None or resp.get('access_token') is None:
-        error_description = request.args.get('error_description', '')
-        error_message = f"Access denied: reason={error_description}"
-        logging.error(error_message)
-        return render_template('error.html', error_message=error_message)
-    
-    session['github_token'] = (resp['access_token'], '')
-
-    logging.info(f"GitHub token set in session: {resp['access_token'][:4]}******")
-
-    # return redirect(url_for('main.home'))
-    return f"You are now signed in"
-
-def get_github_oauth_token():
+def get_jwt():
     """
-    Retrieves the GitHub OAuth token from the session.
+    Generate a JWT for GitHub App authentication.
     """
-    token = session.get('github_token')
-
-    if token:
-        logging.info(f"GitHub token retrieved from Sessionxxx: {token[0][:4]}******")
-    else:
-        logging.warning("GitHub token is missing or not set in the session.")
-
+    app_id = int(GITHUB_APP_ID)
+    payload = {
+        'iat': int(time.time()),
+        'exp': int(time.time()) + 600,  # Token valid for 10 minutes
+        'iss': app_id,
+    }
+    token = jwt.encode(payload, GITHUB_PRIVATE_KEY, algorithm='RS256')
+    logging.info("Generated JWT for GitHub App.")
     return token
 
-def get_user_info():
-    github_token = get_github_oauth_token()
-    if not github_token:
+def get_installation_access_token():
+    """
+    Exchange the JWT for an installation access token.
+    """
+    jwt_token = get_jwt()
+    installation_id = session.get('installation_id') 
+
+    logging.info(f"Making POST request to GitHub API with installation ID: {installation_id}")
+
+    if not installation_id:
+        logging.error("Missing installation ID in session.")
         return None
 
-    headers = {'Authorization': f'token {github_token[0]}'}
-    response = requests.get('https://api.github.com/user', headers=headers)
+    url = f'https://api.github.com/app/installations/{installation_id}/access_tokens'
+    headers = {
+        'Authorization': f'Bearer {jwt_token}',
+        'Accept': 'application/vnd.github+json',
+    }
 
-    if response.status_code == 200:
-        user_data = response.json()
-        return user_data.get('login'), user_data.get('id')
+    response = requests.post(url, headers=headers)
+    if response.status_code == 201:
+        access_token = response.json().get('token')
+        logging.info("Fetched GitHub App installation access token.")
+        session['github_installation_token'] = access_token 
+        return access_token
     else:
-        logging.error(f"Error retrieving user info: {response.status_code}")
+        logging.error(f"Failed to get installation token: {response.status_code}, {response.text}")
         return None
 
 def is_user_logged_in():
     """
-    Checks if a user is logged in.
+    Checks if the user is authenticated by verifying the presence of a valid installation access token.
     """
-    return 'github_token' in session and session.get('github_token') is not None
+    access_token = session.get('github_installation_token')
+
+    if access_token:
+        logging.info("User is authenticated with a valid installation access token.")
+        return True
+    else:
+        logging.warning("User is not authenticated. No installation access token found in the session.")
+        return False

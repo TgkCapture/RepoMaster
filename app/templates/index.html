@@ -20,11 +20,12 @@
         <li><a href="#about-us">About Us</a></li>
         <li><a href="#contact">Contact</a></li>
 
-        {% if get_github_oauth_token() %}  
-            <li><a href="{{ url_for('main.logout_route') }}">Log Out</a></li>
-        {% else %}
-            <li><a href="{{ url_for('main.login_route') }}">Log In</a></li>
-        {% endif %}
+            {% if is_user_logged_in() %}
+                <li><a href="">Log Out</a></li>
+                <li><a href="{{ url_for('main.show_github_repositories') }}">View Repositories</a></li>
+            {% else %}
+                <li><a href="{{ url_for('main.install_github_app') }}">Install GitHub App</a></li>
+            {% endif %}
             </nav>
     </header>
     
