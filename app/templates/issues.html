@@ -74,8 +74,9 @@
                 <!-- Form to close an issue -->
                 <form method="POST" action="{{ url_for('main.manage_issues', repo_name=repo_name) }}">
                     <input type="hidden" name="issue_number" value="{{ issue.number }}">
-                    <button type="submit" formaction="{{ url_for('main.manage_issues', repo_name=repo_name) }}" method="PATCH">Close Issue</button>
+                    <button type="submit" name="action" value="close">Close Issue</button>
                 </form>
+
             </li>
         {% endfor %}
     </ul>

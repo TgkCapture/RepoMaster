@@ -95,24 +95,25 @@ def manage_issues(repo_name):
             return "Failed to fetch issues from GitHub", 500
 
     elif request.method == 'POST':
-        # Create a new issue
-        title = request.form.get('title')
-        body = request.form.get('body')
-        if not title:
-            return "Issue title is required", 400
-        new_issue = create_github_issue(repo_name, title, body)
-        if new_issue:
-            logging.info(f"Issue created successfully in repository {repo_name}.")
-            return redirect(url_for('main.manage_issues', repo_name=repo_name))
+        if request.form.get('action') == 'close':
+            # Close an existing issue
+            issue_number = request.form.get('issue_number')
+            if not issue_number:
+                return "Issue number is required", 400
+            closed_issue = close_github_issue(repo_name, issue_number)
+            if closed_issue:
+                logging.info(f"Issue #{issue_number} successfully closed in repository {repo_name}.")
+                return redirect(url_for('main.manage_issues', repo_name=repo_name))
+            else:
+                return "Failed to close the issue", 500
 
-    elif request.method == 'PATCH':
-        # Close an existing issue
-        issue_number = request.form.get('issue_number')
-        if not issue_number:
-            return "Issue number is required", 400
-        closed_issue = close_github_issue(repo_name, issue_number)
-        if closed_issue:
-            logging.info(f"Issue #{issue_number} successfully closed in repository {repo_name}.")
-            return redirect(url_for('main.manage_issues', repo_name=repo_name))
         else:
-            return "Failed to close the issue", 500
+            # Create a new issue
+            title = request.form.get('title')
+            body = request.form.get('body')
+            if not title:
+                return "Issue title is required", 400
+            new_issue = create_github_issue(repo_name, title, body)
+            if new_issue:
+                logging.info(f"Issue created successfully in repository {repo_name}.")
+                return redirect(url_for('main.manage_issues', repo_name=repo_name))
