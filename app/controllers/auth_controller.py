@@ -9,10 +9,11 @@ def get_jwt():
     """
     Generate a JWT for GitHub App authentication.
     """
+    app_id = int(GITHUB_APP_ID)
     payload = {
         'iat': int(time.time()),
         'exp': int(time.time()) + 600,  # Token valid for 10 minutes
-        'iss': GITHUB_APP_ID,
+        'iss': app_id,
     }
     token = jwt.encode(payload, GITHUB_PRIVATE_KEY, algorithm='RS256')
     logging.info("Generated JWT for GitHub App.")
@@ -24,6 +25,9 @@ def get_installation_access_token():
     """
     jwt_token = get_jwt()
     installation_id = session.get('installation_id')  # Store the installation ID in the session
+
+    logging.info(f"Making POST request to GitHub API with installation ID: {installation_id}")
+
 
     if not installation_id:
         logging.error("Missing installation ID in session.")
@@ -42,7 +46,7 @@ def get_installation_access_token():
         session['github_installation_token'] = access_token  # Store in session
         return access_token
     else:
-        logging.error(f"Failed to get installation token: {response.status_code}")
+        logging.error(f"Failed to get installation token: {response.status_code}, {response.text}")
         return None
 
 def is_user_logged_in():
