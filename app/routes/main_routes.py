@@ -15,30 +15,6 @@ def home():
     """
     return render_template('index.html', is_user_logged_in=is_user_logged_in)
 
-@main_routes.route('/github/repositories')
-def show_github_repositories():
-    """
-    Display user's GitHub repositories.
-    """
-    if not is_user_logged_in():
-        logging.warning("User attempted to access repositories without being logged in.")
-        return "You are not logged in", 403
-
-    username = "TgkCapture"  # TODO: Replace with a function to fetch the username if necessary
-    access_token = get_installation_access_token()
-
-    if access_token:
-        repositories = get_github_repositories(username, access_token)
-        if repositories:
-            logging.info(f"Fetched repositories for user: {username}, count: {len(repositories)}")
-            return render_template('repositories.html', repositories=repositories)
-        else:
-            logging.error(f"Failed to fetch repositories for user: {username}")
-            return "Failed to fetch repositories from GitHub", 500
-    else:
-        logging.error("Failed to get access token for GitHub repositories.")
-        return "Failed to authenticate with GitHub", 500
-
 @main_routes.route('/github/authorize', methods=['GET'])
 def github_authorize():
     """
@@ -73,3 +49,28 @@ def install_github_app():
 
     installation_url = f"https://github.com/apps/{github_app_name}/installations/new"
     return redirect(installation_url)
+
+@main_routes.route('/github/repositories')
+def show_github_repositories():
+    """
+    Display user's GitHub repositories.
+    """
+    if not is_user_logged_in():
+        logging.warning("User attempted to access repositories without being logged in.")
+        return "You are not logged in", 403
+
+    username = "TgkCapture"  # TODO: Replace with a function to fetch the username if necessary
+    access_token = get_installation_access_token()
+
+    if access_token:
+        repositories = get_github_repositories(username, access_token)
+        if repositories:
+            logging.info(f"Fetched repositories for user: {username}, count: {len(repositories)}")
+            return render_template('repositories.html', repositories=repositories)
+        else:
+            logging.error(f"Failed to fetch repositories for user: {username}")
+            return "Failed to fetch repositories from GitHub", 500
+    else:
+        logging.error("Failed to get access token for GitHub repositories.")
+        return "Failed to authenticate with GitHub", 500
+
