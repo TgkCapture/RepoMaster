@@ -29,3 +29,26 @@ def get_github_issues(repo_name):
     except RequestException as e:
         logging.error(f"Failed to fetch issues for repository {repo_name}: {e}")
         return None
+
+def create_github_issue(repo_name, title, body=None):
+    """Creates a new GitHub issue."""
+    username = session.get("username", "TgkCapture")  #TODO: Replace with dynamic fetching 
+    access_token = get_installation_access_token()
+
+    if not access_token:
+        logging.error("Access token is missing. Cannot create GitHub issues.")
+        return None
+
+    url = f'https://api.github.com/repos/{username}/{repo_name}/issues'
+    headers = {'Authorization': f'Bearer {access_token}'}
+    data = {"title": title, "body": body}
+
+    try:
+        response = requests.post(url, json=data, headers=headers, timeout=60)
+        response.raise_for_status()
+        issue = response.json()
+        logging.info(f"Issue created successfully in repository {repo_name}.")
+        return issue
+    except RequestException as e:
+        logging.error(f"Failed to create issue in repository {repo_name}: {e}")
+        return None
