@@ -5,7 +5,7 @@ import os
 from flask import Blueprint, render_template, request, redirect, url_for, session
 from app.controllers.auth_controller import get_installation_access_token, is_user_logged_in, get_jwt
 from app.controllers.github_controller import get_github_repositories
-from app.controllers.issues_controller import get_github_issues
+from app.controllers.issues_controller import get_github_issues, create_github_issue
 
 main_routes = Blueprint('main', __name__)
 
@@ -75,19 +75,32 @@ def show_github_repositories():
         logging.error("Failed to get access token for GitHub repositories.")
         return "Failed to authenticate with GitHub", 500
 
-@main_routes.route('/repositories/<repo_name>/issues', methods=['GET'])
+@main_routes.route('/repositories/<repo_name>/issues', methods=['GET', 'POST'])
 def manage_issues(repo_name):
     """
-    Displays and manages issues for a specific repository.
+    Displays and manages issues for a specific repository. Allows viewing and creating
     """
     if not is_user_logged_in():
         logging.warning("User attempted to access issues without being logged in.")
         return "You are not logged in", 403
 
-    issues = get_github_issues(repo_name)
-    if issues is not None:
-        logging.info(f"Fetched {len(issues)} issues for repository: {repo_name}")
-        return render_template('issues.html', repo_name=repo_name, issues=issues)
-    else:
-        logging.error(f"Failed to fetch issues for repository: {repo_name}")
-        return "Failed to fetch issues from GitHub", 500
+    if request.method == 'GET':
+        # Fetch and display issues
+        issues = get_github_issues(repo_name)
+        if issues is not None:
+            logging.info(f"Fetched {len(issues)} issues for repository: {repo_name}")
+            return render_template('issues.html', repo_name=repo_name, issues=issues)
+        else:
+            logging.error(f"Failed to fetch issues for repository: {repo_name}")
+            return "Failed to fetch issues from GitHub", 500
+
+    elif request.method == 'POST':
+        # Create a new issue
+        title = request.form.get('title')
+        body = request.form.get('body')
+        if not title:
+            return "Issue title is required", 400
+        new_issue = create_github_issue(repo_name, title, body)
+        if new_issue:
+            logging.info(f"Issue created successfully in repository {repo_name}.")
+            return redirect(url_for('main.manage_issues', repo_name=repo_name))
