@@ -5,13 +5,13 @@ import os
 import requests
 import logging
 from flask import Blueprint, render_template, request, redirect, url_for, session
-
+from requests.exceptions import RequestException
 
 github_controller = Blueprint('github', __name__)
 
 
 def get_github_repositories(username, access_token):
-    url = f'https://api.github.com/user/repos'
+    url = f'https://api.github.com/users/{username}/repos'
     headers = {'Authorization': f'Bearer {access_token}'}
 
     try:
