@@ -48,8 +48,9 @@ def github_authorize():
 
     if not installation_id:
         logging.error("No installation ID provided in the request.")
-        return "Installation ID is missing. Please install the GitHub App.", 400
+        return "Installation ID is missing. Please install the GitHub App again.", 400
 
+    # Store the installation ID in the session
     session['installation_id'] = installation_id
     logging.info(f"Received installation ID: {installation_id}")
 
@@ -67,10 +68,10 @@ def install_github_app():
     """
     Redirect the user to the GitHub App installation page.
     """
-    github_app_id = os.getenv("GITHUB_APP_ID")  
-    if not github_app_id:
+    github_app_name = os.getenv("GITHUB_APP_NAME")  
+    if not github_app_name:
         logging.error("GITHUB_APP_ID is not set in the environment.")
         return "Configuration error: GITHUB_APP_ID is not defined.", 500
 
-    installation_url = f"https://github.com/apps/{github_app_id}/installations/new"
+    installation_url = f"https://github.com/apps/{github_app_name}/installations/new"
     return redirect(installation_url)
