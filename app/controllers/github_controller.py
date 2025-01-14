@@ -9,7 +9,6 @@ from requests.exceptions import RequestException
 
 github_controller = Blueprint('github', __name__)
 
-
 def get_github_repositories(username, access_token):
     url = f'https://api.github.com/users/{username}/repos'
     headers = {'Authorization': f'Bearer {access_token}'}

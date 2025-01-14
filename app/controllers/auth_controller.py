@@ -24,10 +24,9 @@ def get_installation_access_token():
     Exchange the JWT for an installation access token.
     """
     jwt_token = get_jwt()
-    installation_id = session.get('installation_id')  # Store the installation ID in the session
+    installation_id = session.get('installation_id') 
 
     logging.info(f"Making POST request to GitHub API with installation ID: {installation_id}")
-
 
     if not installation_id:
         logging.error("Missing installation ID in session.")
@@ -43,7 +42,7 @@ def get_installation_access_token():
     if response.status_code == 201:
         access_token = response.json().get('token')
         logging.info("Fetched GitHub App installation access token.")
-        session['github_installation_token'] = access_token  # Store in session
+        session['github_installation_token'] = access_token 
         return access_token
     else:
         logging.error(f"Failed to get installation token: {response.status_code}, {response.text}")

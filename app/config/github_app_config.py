@@ -23,5 +23,4 @@ def load_private_key():
     else:
         raise FileNotFoundError(f"Private key file not found at {private_key_path}")
 
-# Load the private key
 GITHUB_PRIVATE_KEY = load_private_key()

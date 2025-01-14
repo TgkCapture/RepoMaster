@@ -50,11 +50,9 @@ def github_authorize():
         logging.error("No installation ID provided in the request.")
         return "Installation ID is missing. Please install the GitHub App again.", 400
 
-    # Store the installation ID in the session
     session['installation_id'] = installation_id
     logging.info(f"Received installation ID: {installation_id}")
 
-    # Generate and store the installation token
     access_token = get_installation_access_token()
     if access_token:
         logging.info("Installation access token successfully generated.")
