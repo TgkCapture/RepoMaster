@@ -19,8 +19,14 @@
         <li><a href="#our-projects">Projects</a></li>
         <li><a href="#about-us">About Us</a></li>
         <li><a href="#contact">Contact</a></li>
-        <li><a href="#">Log In</a></li>
-        </nav>
+
+            {% if is_user_logged_in() %}
+                <li><a href="">Log Out</a></li>
+                <li><a href="{{ url_for('main.show_github_repositories') }}">View Repositories</a></li>
+            {% else %}
+                <li><a href="{{ url_for('main.install_github_app') }}">Install GitHub App</a></li>
+            {% endif %}
+            </nav>
     </header>
     
     <section class="hero" id="hero">
@@ -28,7 +34,7 @@
         <div class="hero-content-area">
         <h1>RepoMaster!</h1>
         <h3>Master Your Repositories with RepoMaster</h3>
-        <a href="{{ url_for('main.login') }}" class="btn">Get Started</a>
+        <a href="" class="btn">Get Started</a>
         </div>
     </section>
         

@@ -5,96 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Repositories | RepoMaster</title>
     <link href="https://fonts.googleapis.com/css?family=Amatic+SC|Raleway" rel="stylesheet">
-
-    <style>
-        body {
-            /* font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; */
-            font-family: "Raleway", sans-serif;
-        }
-
-        .page-description {
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .github-cards {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0;
-            list-style: none;
-        }
-
-        .github-card {
-            box-sizing: border-box;
-            border: 1px solid #ccc;
-            /* margin: 10px; */
-            padding: 20px;
-            color: #555;
-            text-decoration: none;
-            font-size: 13px;
-            min-width: 250px;
-            flex: 1 1 calc(20% - 20px); 
-        }
-
-        .github-card > h3 {
-            margin-top: 0;
-            color: #4078c0;
-            font-size: 15px;
-        }
-
-        .github-card__meta {
-            margin-top: 10px;
-        }
-
-        .github-card__meta > i {
-            font-size: 16px;
-            margin-right: 5px;
-        }
-
-        footer {
-        display: flex;
-        align-items: center;
-        justify-content: space-around;
-        background-color: #555;
-        color: #fff;
-        padding: 20px 0;
-    }
-
-    footer ul {
-        display: flex;
-    }
-
-    footer ul li {
-        margin-left: 16px;
-    }
-
-    footer p {
-        text-transform: uppercase;
-        font-size: 14px;
-        opacity: 0.6;
-        align-self: center;
-    }
-
-    @media (max-width: 1100px) {
-        footer {
-            flex-direction: column;
-        }
-
-        footer p {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        footer ul li {
-            margin: 0 8px;
-        }
-    }
-
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/repositories.css') }}">
+    
 </head>
 <body>
 
@@ -116,67 +28,22 @@
     </div>
 
     <div class="github-cards">
-    <a href="https://github.com/TgkCapture" class="github-card" data-github=" ">
-        <h3>Name</h3>
-        <p>Decription</p>
-        <span class="github-card__meta">
-        <span class="github-card__language-icon" style="color: #7A0410;">●</span> Ruby
-        </span>
-        <span class="github-card__meta">
-        <i class="fa fa-star" aria-hidden="true"></i>
-        <span data-stars>
-            <i class="fa fa-spinner" aria-hidden="true"></i>
-        </span>
-        </span>
-        <span class="github-card__meta">
-        <i class="fa fa-code-fork" aria-hidden="true"></i>
-        <span data-forks>
-            <i class="fa fa-spinner" aria-hidden="true"></i>
-        </span>
-        </span>
-    </a>
-
-    <a href="https://github.com/TgkCapture" class="github-card" data-github=" ">
-        <h3>Name</h3>
-        <p>Description</p>
-        <span class="github-card__meta">
-        <span class="github-card__language-icon" style="color: #4C5E99;">●</span> PHP
-        </span>
-        <span class="github-card__meta">
-        <i class="fa fa-star" aria-hidden="true"></i>
-        <span data-stars>
-            <i class="fa fa-spinner" aria-hidden="true"></i>
-        </span>
-        </span>
-        <span class="github-card__meta">
-        <i class="fa fa-code-fork" aria-hidden="true"></i>
-        <span data-forks>
-            <i class="fa fa-spinner" aria-hidden="true"></i>
-        </span>
-        </span>
-    </a>
-
-    <a href="https://github.com/TgkCapture" class="github-card" data-github=" ">
-        <h3>Name</h3>
-        <p>Description</p>
-        <span class="github-card__meta">
-        <span class="github-card__language-icon" style="color: #3572A5;">●</span> Python
-        </span>
-        <span class="github-card__meta">
-        <i class="fa fa-star" aria-hidden="true"></i>
-        <span data-stars>
-            <i class="fa fa-spinner" aria-hidden="true"></i>
-        </span>
-        </span>
-        <span class="github-card__meta">
-        <i class="fa fa-code-fork" aria-hidden="true"></i>
-        <span data-forks>
-            <i class="fa fa-spinner" aria-hidden="true"></i>
-        </span>
-        </span>
-    </a>
-
- 
+    {% for repository in repositories %}
+        <a href="{{ repository.url }}" class="github-card" data-github=" ">  <h3>{{ repository.name }}</h3>  <p>{{ repository.description }}</p>  <span class="github-card__meta">
+            <span class="github-card__language-icon" style="color: {{ repository.language_color }}">●</span> {{ repository.language }}
+            </span>
+            <span class="github-card__meta">
+            <i class="fa fa-star" aria-hidden="true"></i>
+            <span data-stars>
+                <i class="fa fa-spinner" aria-hidden="true"></i>  </span>
+            </span>
+            <span class="github-card__meta">
+            <i class="fa fa-code-fork" aria-hidden="true"></i>
+            <span data-forks>
+                <i class="fa fa-spinner" aria-hidden="true"></i>  </span>
+            </span>
+        </a>
+    {% endfor %}
     </div>
 
     <!-- <footer>
@@ -188,19 +55,6 @@
         <li><a href="#"><i class="fa fa-snapchat-square fa-2x"></i></a></li>
         </ul>
     </footer> -->
-
-    <script>
-    $('[data-github]').each(function () {
-    var _this = this;
-    var repo = $(_this).data('github')
-
-    fetch('https://api.github.com/repos/' + repo).then(function (response) {
-        return response.json();
-    }).then(function (response) {
-        $(_this).find('[data-forks]').text(response.forks);
-        $(_this).find('[data-stars]').text(response.stargazers_count);
-    });
-    });
-    </script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>

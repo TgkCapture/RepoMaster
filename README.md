@@ -1,43 +1,43 @@
 # RepoMaster
 
-RepoMaster is a Flask-based web application designed to interact with the GitHub API, providing essential repository management functionalities.
+RepoMaster is a Flask-based web application designed to interact with the GitHub API, providing essential repository management functionalities using a GitHub App for authentication.
 
-## Functionalities (Under Development)
+## Functionalities
 
-### 1. View Repositories
-
-- **Route:** `/repositories`
-- **Functionality:** Fetches a list of repositories from a GitHub user or organization.
-- **Implementation Steps:**
-  - Utilizes the GitHub API to retrieve repository data.
+### 1. View Repositories (Available)
+- **Route:** `/github/repositories`
+- **Functionality:** Fetches a list of repositories accessible by the authenticated GitHub App installation.
+- **Implementation Details:**
+  - Uses a GitHub App to authenticate and retrieve repositories.
   - Displays fetched repositories in a user-friendly format on a webpage.
+  - Requires the GitHub App to be installed on the user’s account or organization.
 
-### 2. Manage Issues
-
+### 2. Manage Issues (Under Development)
 - **Route:** `/repositories/<repo_name>/issues`
 - **Functionality:** Enables viewing, creation, closure, or management of issues for a specific repository.
-- **Implementation Steps:**
-  - Implements endpoints to retrieve issues for a selected repository.
-  - Allows users to create new issues, close existing ones, or perform other basic issue management tasks.
+- **Planned Features:**
+  - Endpoints to retrieve and display issues for a repository.
+  - Options to create new issues, close existing ones, or perform other basic issue management tasks.
 
-### 3. Delete Repositories
-
+### 3. Delete Repositories (Planned)
 - **Route:** `/delete_repo`
 - **Functionality:** Allows users to select and delete multiple repositories.
-- **Implementation Steps:**
-  - Creates a page where users can see a list of repositories and select those for deletion.
-  - Implements a confirmation mechanism before proceeding with the deletion.
+- **Planned Features:**
+  - A page where users can see a list of repositories and select those for deletion.
+  - Confirmation mechanism before proceeding with the deletion.
 
-## Future Development
+## Migration to GitHub App
+RepoMaster now uses a GitHub App for authentication and repository management, providing enhanced security and scalability:
+- **Authentication:** The app uses a GitHub App installation access token for API interactions.
+- **Benefits:** Fine-grained permissions, easier token management, and enhanced security.
 
-These functionalities represent only the initial set of features in RepoMaster. I encourage contributors to expand and enhance the application by implementing additional functionalities such as pull request management, user authentication, or any other GitHub-related features. Feel free to fork this repository and submit pull requests with your improvements!
-
-Your contributions are greatly appreciated! 🚀
+### Prerequisites
+- Install the GitHub App on your account or organization.
+- Set up the GitHub App’s private key and ID in the environment variables.
 
 ## Setting Up the Project Locally
 
 ### For Windows:
-
 1. **Clone the Repository:**
    ```bash
    git clone <repository_url>
@@ -54,8 +54,8 @@ Your contributions are greatly appreciated! 🚀
 
 4. **Set Environment Variables:**
     ```bash
-    set GITHUB_USERNAME=your_github_username
-    set GITHUB_TOKEN=your_github_token
+    set GITHUB_APP_ID=your_github_app_id
+    set GITHUB_PRIVATE_KEY_PATH=path_to_your_private_key.pem
 
 5. **Run the Flask Application:**
     ```bash
@@ -83,8 +83,8 @@ Open a web browser and visit http://127.0.0.1:5000/ to access the application.
 
 4. **Set Environment Variables:**
     ```bash
-    export GITHUB_USERNAME=your_github_username
-    export GITHUB_TOKEN=your_github_token
+  export GITHUB_APP_ID=your_github_app_id
+  export GITHUB_PRIVATE_KEY_PATH=path_to_your_private_key.pem
 
 5. **Run the Flask Application:**
     ```bash

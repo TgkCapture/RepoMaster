@@ -1,5 +1,6 @@
 *.pyc
 __pycache__/
+.history/
 
 venv/ 
 env/
@@ -18,5 +19,4 @@ instance/
 *.exe
 *.o
 *.so
-
-.history/
+*.env
