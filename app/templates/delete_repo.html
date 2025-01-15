@@ -1,16 +1,69 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Delete Repositories</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+        h1 {
+            color: #333;
+        }
+        form {
+            background: #ffffff;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            max-width: 600px;
+            margin: auto;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            background: #f9f9f9;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+        }
+        input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        input[type="submit"] {
+            background-color: #d9534f;
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background-color: #c9302c;
+        }
+        .repo-description {
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
 </head>
 <body>
     <h1>Delete Repositories</h1>
-    <form method="post" action="/delete_repo">
+    <form method="POST" action="{{ url_for('main.delete_repositories') }}">
         <ul>
             {% for repo in repositories %}
                 <li>
-                    <input type="checkbox" name="repo_to_delete[]" value="{{ repo.name }}">
-                    {{ repo.name }} - {{ repo.description }}
+                    <input type="checkbox" name="repos" value="{{ repo.name }}">
+                    <strong>{{ repo.name }}</strong> 
+                    <span class="repo-description">- {{ repo.description }}</span>
                 </li>
             {% endfor %}
         </ul>
