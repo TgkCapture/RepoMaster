@@ -8,29 +8,25 @@
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
-            padding: 0;
-            background-color: #f4f4f9;
         }
         h1 {
             color: #333;
         }
         form {
-            background: #ffffff;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            max-width: 600px;
-            margin: auto;
+            margin-top: 20px;
         }
         ul {
-            list-style-type: none;
+            list-style: none;
             padding: 0;
         }
         li {
-            background: #f9f9f9;
             margin: 10px 0;
             padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
             border-radius: 4px;
+        }
+        label {
             display: flex;
             align-items: center;
         }
@@ -38,36 +34,46 @@
             margin-right: 10px;
         }
         input[type="submit"] {
-            background-color: #d9534f;
-            color: #ffffff;
-            border: none;
+            margin-top: 20px;
             padding: 10px 20px;
             font-size: 16px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
             border-radius: 4px;
             cursor: pointer;
         }
         input[type="submit"]:hover {
-            background-color: #c9302c;
+            background-color: #c82333;
         }
-        .repo-description {
-            color: #666;
-            font-size: 14px;
+        .no-repos {
+            color: #888;
+            font-style: italic;
         }
     </style>
 </head>
 <body>
     <h1>Delete Repositories</h1>
-    <form method="POST" action="{{ url_for('main.delete_repositories') }}">
-        <ul>
-            {% for repo in repositories %}
-                <li>
-                    <input type="checkbox" name="repos" value="{{ repo.name }}">
-                    <strong>{{ repo.name }}</strong> 
-                    <span class="repo-description">- {{ repo.description }}</span>
-                </li>
-            {% endfor %}
-        </ul>
-        <input type="submit" value="Delete Selected Repositories">
-    </form>
+
+    <!-- Check if repositories exist -->
+    {% if repositories %}
+        <form method="POST" action="/delete_repo">
+            <ul>
+                {% for repo in repositories %}
+                    <li>
+                        <label>
+                            <input type="checkbox" name="repo_to_delete[]" value="{{ repo.name }}">
+                            <strong>{{ repo.name }}</strong>
+                            <br>
+                            <span>{{ repo.description or "No description available" }}</span>
+                        </label>
+                    </li>
+                {% endfor %}
+            </ul>
+            <input type="submit" value="Delete Selected Repositories">
+        </form>
+    {% else %}
+        <p class="no-repos">No repositories found to delete.</p>
+    {% endif %}
 </body>
 </html>
