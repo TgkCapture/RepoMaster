@@ -19,7 +19,7 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
   - Endpoints to retrieve and display issues for a repository.
   - Options to create new issues, close existing ones, or perform other basic issue management tasks.
 
-### 3. Delete Repositories (Planned)
+### 3. Delete Repositories (Available)
 - **Route:** `/delete_repo`
 - **Functionality:** Allows users to select and delete multiple repositories.
 - **Planned Features:**

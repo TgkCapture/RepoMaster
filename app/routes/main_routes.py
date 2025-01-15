@@ -130,7 +130,7 @@ def delete_repositories():
 
     if request.method == 'GET':
         # Fetch and display repositories
-        repositories = get_github_repositories("TgkCapture", get_installation_access_token())
+        repositories = get_github_repositories("TgkCapture", get_installation_access_token()) #TODO: retrieve username dynamically
         if repositories:
             return render_template('delete_repo.html', repositories=repositories)
         else:
