@@ -57,7 +57,7 @@
 
     <!-- Check if repositories exist -->
     {% if repositories %}
-        <form method="POST" action="/delete_repo">
+        <form method="POST" action="/delete_repo" id="deleteForm">
             <ul>
                 {% for repo in repositories %}
                     <li>
@@ -75,5 +75,27 @@
     {% else %}
         <p class="no-repos">No repositories found to delete.</p>
     {% endif %}
+
+    <script>
+        document.getElementById('deleteForm').addEventListener('submit', function(event) {
+            const selectedRepos = Array.from(
+                document.querySelectorAll('input[name="repo_to_delete[]"]:checked')
+            ).map(checkbox => checkbox.value);
+
+            if (selectedRepos.length === 0) {
+                alert("Please select at least one repository to delete.");
+                event.preventDefault();
+                return;
+            }
+
+            const confirmDeletion = confirm(
+                `Are you sure you want to delete the following repositories?\n\n${selectedRepos.join(', ')}`
+            );
+
+            if (!confirmDeletion) {
+                event.preventDefault();
+            }
+        });
+    </script>
 </body>
 </html>
