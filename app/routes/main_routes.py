@@ -2,7 +2,7 @@
 """
 import logging
 import os
-from flask import Blueprint, render_template, request, redirect, url_for, session
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from app.controllers.auth_controller import get_installation_access_token, is_user_logged_in, get_jwt
 from app.controllers.github_controller import get_github_repositories
 from app.controllers.issues_controller import get_github_issues, create_github_issue, close_github_issue
