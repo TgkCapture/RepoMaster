@@ -6,6 +6,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 from app.controllers.auth_controller import get_installation_access_token, is_user_logged_in, get_jwt
 from app.controllers.github_controller import get_github_repositories
 from app.controllers.issues_controller import get_github_issues, create_github_issue, close_github_issue
+from app.controllers.repo_controller import delete_repository
 
 main_routes = Blueprint('main', __name__)
 
@@ -117,3 +118,25 @@ def manage_issues(repo_name):
             if new_issue:
                 logging.info(f"Issue created successfully in repository {repo_name}.")
                 return redirect(url_for('main.manage_issues', repo_name=repo_name))
+
+@main_routes.route('/repositories/delete', methods=['POST'])
+def delete_repositories():
+    """
+    Endpoint to delete one or more repositories.
+    """
+    if not is_user_logged_in():
+        logging.warning("Unauthorized access attempt to delete repositories.")
+        return "You are not logged in.", 403
+
+    repos_to_delete = request.form.getlist('repos')  
+    if not repos_to_delete:
+        logging.warning("No repositories specified for deletion.")
+        return "No repositories specified for deletion.", 400
+
+    delete_result = delete_repository(repos_to_delete)
+    if "deleted successfully" in delete_result:
+        logging.info("Repositories deleted successfully.")
+        return delete_result, 200
+    else:
+        logging.error("Failed to delete specified repositories.")
+        return delete_result, 500
