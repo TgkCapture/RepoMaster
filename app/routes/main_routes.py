@@ -2,10 +2,11 @@
 """
 import logging
 import os
-from flask import Blueprint, render_template, request, redirect, url_for, session
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from app.controllers.auth_controller import get_installation_access_token, is_user_logged_in, get_jwt
 from app.controllers.github_controller import get_github_repositories
 from app.controllers.issues_controller import get_github_issues, create_github_issue, close_github_issue
+from app.controllers.repo_controller import delete_repository
 
 main_routes = Blueprint('main', __name__)
 
@@ -117,3 +118,32 @@ def manage_issues(repo_name):
             if new_issue:
                 logging.info(f"Issue created successfully in repository {repo_name}.")
                 return redirect(url_for('main.manage_issues', repo_name=repo_name))
+
+@main_routes.route('/delete_repo', methods=['GET', 'POST'])
+def delete_repositories():
+    """
+    Displays repositories and allows deletion of selected ones.
+    """
+    if not is_user_logged_in():
+        logging.warning("Unauthorized access to delete repositories.")
+        return "You are not logged in", 403
+
+    if request.method == 'GET':
+        # Fetch and display repositories
+        repositories = get_github_repositories("TgkCapture", get_installation_access_token()) #TODO: retrieve username dynamically
+        if repositories:
+            return render_template('delete_repo.html', repositories=repositories)
+        else:
+            return "Failed to fetch repositories", 500
+
+    elif request.method == 'POST':
+        # Delete selected repositories
+        repos_to_delete = request.form.getlist('repo_to_delete[]')
+        if not repos_to_delete:
+            return "No repositories selected for deletion", 400
+
+        result_message = delete_repository(repos_to_delete)
+        logging.info(result_message)
+        flash(result_message) 
+        return redirect(url_for('main.delete_repositories'))
+

@@ -1,20 +1,101 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Delete Repositories</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        form {
+            margin-top: 20px;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        label {
+            display: flex;
+            align-items: center;
+        }
+        input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        input[type="submit"] {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background-color: #c82333;
+        }
+        .no-repos {
+            color: #888;
+            font-style: italic;
+        }
+    </style>
 </head>
 <body>
     <h1>Delete Repositories</h1>
-    <form method="post" action="/delete_repo">
-        <ul>
-            {% for repo in repositories %}
-                <li>
-                    <input type="checkbox" name="repo_to_delete[]" value="{{ repo.name }}">
-                    {{ repo.name }} - {{ repo.description }}
-                </li>
-            {% endfor %}
-        </ul>
-        <input type="submit" value="Delete Selected Repositories">
-    </form>
+
+    <!-- Check if repositories exist -->
+    {% if repositories %}
+        <form method="POST" action="/delete_repo" id="deleteForm">
+            <ul>
+                {% for repo in repositories %}
+                    <li>
+                        <label>
+                            <input type="checkbox" name="repo_to_delete[]" value="{{ repo.name }}">
+                            <strong>{{ repo.name }}</strong>
+                            <br>
+                            <span>{{ repo.description or "No description available" }}</span>
+                        </label>
+                    </li>
+                {% endfor %}
+            </ul>
+            <input type="submit" value="Delete Selected Repositories">
+        </form>
+    {% else %}
+        <p class="no-repos">No repositories found to delete.</p>
+    {% endif %}
+
+    <script>
+        document.getElementById('deleteForm').addEventListener('submit', function(event) {
+            const selectedRepos = Array.from(
+                document.querySelectorAll('input[name="repo_to_delete[]"]:checked')
+            ).map(checkbox => checkbox.value);
+
+            if (selectedRepos.length === 0) {
+                alert("Please select at least one repository to delete.");
+                event.preventDefault();
+                return;
+            }
+
+            const confirmDeletion = confirm(
+                `Are you sure you want to delete the following repositories?\n\n${selectedRepos.join(', ')}`
+            );
+
+            if (!confirmDeletion) {
+                event.preventDefault();
+            }
+        });
+    </script>
 </body>
 </html>
