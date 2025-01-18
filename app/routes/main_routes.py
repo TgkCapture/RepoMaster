@@ -169,7 +169,7 @@ def manage_pull_requests(repo_name):
         pr_number = request.args.get('pr_number')
         if pr_number:
             # Fetch details of the specific pull request
-            pull_request = view_pull_request(owner="TgkCapture", repo_name=repo_name, pull_number=int(pr_number)) #TODO: retrieve username dynamically
+            pull_request = view_pull_request(owner="TgkCapture", repo_name=repo_name, pr_number=int(pr_number)) #TODO: retrieve username dynamically
             if pull_request:
                 logging.info(f"Fetched details for pull request #{pr_number} in repository: {repo_name}")
                 return render_template('pull_request_details.html', pull_request=pull_request, repo_name=repo_name)
@@ -209,7 +209,7 @@ def manage_pull_requests(repo_name):
             pr_number = request.form.get('pr_number')
             if not pr_number:
                 return "Pull request number is required to merge", 400
-            merged_pr = merge_pull_request(owner="TgkCapture", repo_name=repo_name, pull_number=int(pr_number), access_token=access_token)
+            merged_pr = merge_pull_request(owner="TgkCapture", repo_name=repo_name, pr_number=int(pr_number))
             if merged_pr:
                 logging.info(f"Pull request #{pr_number} successfully merged in repository {repo_name}.")
                 return redirect(url_for('main.manage_pull_requests', repo_name=repo_name))
