@@ -4,7 +4,7 @@ import logging
 import os
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from app.controllers.auth_controller import get_installation_access_token, is_user_logged_in, get_jwt
-from app.controllers.github_controller import get_github_repositories
+from app.controllers.github_controller import get_github_repositories, get_branches
 from app.controllers.issues_controller import get_github_issues, create_github_issue, close_github_issue
 from app.controllers.repo_controller import delete_repository
 from app.controllers.pull_requests_controller import get_pull_requests, create_pull_request, merge_pull_request, view_pull_request
@@ -152,7 +152,7 @@ def delete_repositories():
 def manage_pull_requests(repo_name):
     """
     Handles pull requests for a repository:
-    - GET: Lists all pull requests or fetches details of a specific pull request if 'pr_number' is provided.
+    - GET: Lists all pull requests, fetches details of a specific pull request, or renders the create form if `create` is requested.
     - POST: Allows creating or merging pull requests.
     """
     if not is_user_logged_in():
@@ -167,15 +167,28 @@ def manage_pull_requests(repo_name):
     if request.method == 'GET':
         # Check if a specific pull request is requested
         pr_number = request.args.get('pr_number')
+        create_form = request.args.get('create')
+
         if pr_number:
             # Fetch details of the specific pull request
-            pull_request = view_pull_request(owner="TgkCapture", repo_name=repo_name, pr_number=int(pr_number)) #TODO: retrieve username dynamically
+            pull_request = view_pull_request(owner="TgkCapture", repo_name=repo_name, pr_number=int(pr_number))  # TODO: retrieve username dynamically
             if pull_request:
                 logging.info(f"Fetched details for pull request #{pr_number} in repository: {repo_name}")
                 return render_template('pull_request_details.html', pull_request=pull_request, repo_name=repo_name)
             else:
                 logging.error(f"Failed to fetch details for pull request #{pr_number} in repository: {repo_name}")
                 return f"Failed to fetch details for pull request #{pr_number}", 500
+
+        elif create_form:
+            # Fetch branches and render the form for creating a pull request
+            branches = get_branches(owner="TgkCapture", repo_name=repo_name)  
+            if branches is None:
+                logging.error(f"Failed to fetch branches for repository {repo_name}.")
+                return "Failed to fetch branches from GitHub", 500
+
+            logging.info(f"Fetched {len(branches)} branches for repository: {repo_name}")
+            return render_template('create_pull_request.html', repo_name=repo_name, branches=branches)
+
         else:
             # Fetch and display all pull requests
             pull_requests = get_pull_requests(owner="TgkCapture", repo_name=repo_name)
