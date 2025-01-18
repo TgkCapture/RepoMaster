@@ -43,22 +43,6 @@
         .actions button:hover {
             opacity: 0.9;
         }
-        .create-form {
-            margin-top: 20px;
-            padding: 15px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        .create-form input, .create-form textarea {
-            width: 100%;
-            margin-bottom: 10px;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 3px;
-        }
-        .create-form button {
-            width: 100%;
-        }
     </style>
 </head>
 <body>
@@ -75,7 +59,7 @@
                     <strong>Author:</strong> {{ pr.user.login }}<br>
                     <div class="actions">
                         {% if pr.state == "open" %}
-                            <form method="POST" action="{{ url_for('main.manage_pull_requests', repo_name=repo_name) }}">
+                            <form method="POST" action="{{ url_for('main.manage_pull_requests', repo_name=repo_name, create=True) }}">
                                 <input type="hidden" name="action" value="merge">
                                 <input type="hidden" name="pr_number" value="{{ pr.number }}">
                                 <button class="merge" type="submit">Merge Pull Request</button>
@@ -88,28 +72,7 @@
             {% endfor %}
         </ul>
     {% else %}
-        <p>No pull requests found for this repository. <a href="{{ url_for('main.manage_pull_requests', repo_name=repo_name) }}">Create a new pull request</a>.</p>
+        <p>No pull requests found for this repository. <a href="{{ url_for('main.manage_pull_requests', repo_name=repo_name, create=True) }}">Create a new pull request</a>.</p>
     {% endif %}
-
-    <!-- Form to create a new pull request -->
-    <div class="create-form">
-        <h2>Create a New Pull Request</h2>
-        <form method="POST" action="{{ url_for('main.manage_pull_requests', repo_name=repo_name) }}">
-            <input type="hidden" name="action" value="create">
-            <label for="title">Title:</label>
-            <input type="text" id="title" name="title" required>
-            
-            <label for="body">Description:</label>
-            <textarea id="body" name="body" rows="4"></textarea>
-            
-            <label for="head">Head Branch (source):</label>
-            <input type="text" id="head" name="head" required>
-            
-            <label for="base">Base Branch (target):</label>
-            <input type="text" id="base" name="base" required>
-            
-            <button type="submit">Create Pull Request</button>
-        </form>
-    </div>
 </body>
 </html>
