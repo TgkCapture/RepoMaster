@@ -7,6 +7,7 @@ from app.controllers.auth_controller import get_installation_access_token, is_us
 from app.controllers.github_controller import get_github_repositories
 from app.controllers.issues_controller import get_github_issues, create_github_issue, close_github_issue
 from app.controllers.repo_controller import delete_repository
+from app.controllers.pull_requests_controller import get_pull_requests, create_pull_request, merge_pull_request, view_pull_request
 
 main_routes = Blueprint('main', __name__)
 
@@ -147,3 +148,70 @@ def delete_repositories():
         flash(result_message) 
         return redirect(url_for('main.delete_repositories'))
 
+@main_routes.route('/repositories/<repo_name>/pull_requests', methods=['GET', 'POST'])
+def manage_pull_requests(repo_name):
+    """
+    Handles pull requests for a repository:
+    - GET: Lists all pull requests or fetches details of a specific pull request if 'pr_number' is provided.
+    - POST: Allows creating or merging pull requests.
+    """
+    if not is_user_logged_in():
+        logging.warning("User attempted to access pull requests without being logged in.")
+        return "You are not logged in", 403
+
+    access_token = get_installation_access_token()
+    if not access_token:
+        logging.error("Failed to get access token for managing pull requests.")
+        return "Failed to authenticate with GitHub", 500
+
+    if request.method == 'GET':
+        # Check if a specific pull request is requested
+        pr_number = request.args.get('pr_number')
+        if pr_number:
+            # Fetch details of the specific pull request
+            pull_request = view_pull_request(owner="TgkCapture", repo_name=repo_name, pull_number=int(pr_number)) #TODO: retrieve username dynamically
+            if pull_request:
+                logging.info(f"Fetched details for pull request #{pr_number} in repository: {repo_name}")
+                return render_template('pull_request_details.html', pull_request=pull_request, repo_name=repo_name)
+            else:
+                logging.error(f"Failed to fetch details for pull request #{pr_number} in repository: {repo_name}")
+                return f"Failed to fetch details for pull request #{pr_number}", 500
+        else:
+            # Fetch and display all pull requests
+            pull_requests = get_pull_requests(owner="TgkCapture", repo_name=repo_name)
+            if pull_requests is not None:
+                logging.info(f"Fetched {len(pull_requests)} pull requests for repository: {repo_name}")
+                return render_template('pull_requests.html', repo_name=repo_name, pull_requests=pull_requests)
+            else:
+                logging.error(f"Failed to fetch pull requests for repository: {repo_name}")
+                return "Failed to fetch pull requests from GitHub", 500
+
+    elif request.method == 'POST':
+        action = request.form.get('action')
+
+        if action == 'create':
+            # Create a new pull request
+            title = request.form.get('title')
+            body = request.form.get('body')
+            head = request.form.get('head')
+            base = request.form.get('base')
+            if not title or not head or not base:
+                return "Title, head branch, and base branch are required to create a pull request", 400
+            new_pr = create_pull_request(owner="TgkCapture", repo_name=repo_name, title=title, body=body, head=head, base=base)
+            if new_pr:
+                logging.info(f"Pull request created successfully in repository {repo_name}.")
+                return redirect(url_for('main.manage_pull_requests', repo_name=repo_name))
+            else:
+                return "Failed to create pull request", 500
+
+        elif action == 'merge':
+            # Merge an existing pull request
+            pr_number = request.form.get('pr_number')
+            if not pr_number:
+                return "Pull request number is required to merge", 400
+            merged_pr = merge_pull_request(owner="TgkCapture", repo_name=repo_name, pull_number=int(pr_number), access_token=access_token)
+            if merged_pr:
+                logging.info(f"Pull request #{pr_number} successfully merged in repository {repo_name}.")
+                return redirect(url_for('main.manage_pull_requests', repo_name=repo_name))
+            else:
+                return "Failed to merge pull request", 500
