@@ -61,6 +61,8 @@ def create_pull_request(owner, repo_name, title, body, base, head):
     payload = {'title': title, 'body': body, 'base': base, 'head': head}
     api_url = f'https://api.github.com/repos/{owner}/{repo_name}/pulls'
 
+    logging.debug(f"Payload for creating PR: {payload}")
+
     try:
         response = requests.post(api_url, headers=headers, json=payload, timeout=60)
         response.raise_for_status()
@@ -68,8 +70,11 @@ def create_pull_request(owner, repo_name, title, body, base, head):
         pull = response.json()
         logging.info(f"Pull request created successfully in repository {repo_name}.")
         return pull
-    except RequestException as e:
-        logging.error(f"Failed to create pull request: {e}")
+    except requests.exceptions.RequestException as e:
+        if e.response:
+            logging.error(f"Failed to create pull request: {e.response.json()}")
+        else:
+            logging.error(f"Failed to create pull request: {e}")
         return None
 
 def merge_pull_request(owner, repo_name, pr_number):
