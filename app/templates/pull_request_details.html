@@ -1,12 +1,39 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pull Request Details</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        .details {
+            padding: 15px;
+            border: 1px solid #ccc;
+            margin-top: 20px;
+            border-radius: 5px;
+        }
+        .details strong {
+            color: #555;
+        }
+    </style>
 </head>
 <body>
     <h1>Pull Request Details</h1>
-    <h2>{{ pull_request.title }}</h2>
-    <p><strong>Number:</strong> {{ pull_request.number }}</p>
-
+    <div class="details">
+        <h2>{{ pull_request.title }}</h2>
+        <p><strong>Number:</strong> {{ pull_request.number }}</p>
+        <p><strong>Status:</strong> {{ pull_request.state }}</p>
+        <p><strong>Author:</strong> {{ pull_request.user.login }}</p>
+        <p><strong>Created at:</strong> {{ pull_request.created_at }}</p>
+        <p><strong>Description:</strong> {{ pull_request.body }}</p>
+        <a href="{{ pull_request.html_url }}" target="_blank">View on GitHub</a>
+    </div>
 </body>
 </html>
