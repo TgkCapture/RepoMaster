@@ -7,6 +7,7 @@ from app.controllers.auth_controller import get_installation_access_token, is_us
 from app.controllers.github_controller import get_github_repositories
 from app.controllers.issues_controller import get_github_issues, create_github_issue, close_github_issue
 from app.controllers.repo_controller import delete_repository
+from app.controllers.pull_requests_controller import get_pull_requests, create_pull_request, merge_pull_request
 
 main_routes = Blueprint('main', __name__)
 
