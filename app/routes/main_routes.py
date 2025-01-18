@@ -164,8 +164,7 @@ def manage_pull_requests(repo_name):
         return "Failed to authenticate with GitHub", 500
 
     if request.method == 'GET':
-        # Fetch and display pull requests
-        pull_requests = get_pull_requests(repo_name, access_token)
+        pull_requests = get_pull_requests(repo_name, repo_name)
         if pull_requests is not None:
             logging.info(f"Fetched {len(pull_requests)} pull requests for repository: {repo_name}")
             return render_template('pull_requests.html', repo_name=repo_name, pull_requests=pull_requests)
@@ -177,14 +176,13 @@ def manage_pull_requests(repo_name):
         action = request.form.get('action')
 
         if action == 'create':
-            # Create a new pull request
             title = request.form.get('title')
             body = request.form.get('body')
             head = request.form.get('head')
             base = request.form.get('base')
             if not title or not head or not base:
                 return "Title, head branch, and base branch are required to create a pull request", 400
-            new_pr = create_pull_request(repo_name, title, body, head, base, access_token)
+            new_pr = create_pull_request(repo_name, repo_name, title, body, base, head)
             if new_pr:
                 logging.info(f"Pull request created successfully in repository {repo_name}.")
                 return redirect(url_for('main.manage_pull_requests', repo_name=repo_name))
@@ -192,15 +190,14 @@ def manage_pull_requests(repo_name):
                 return "Failed to create pull request", 500
 
         elif action == 'merge':
-            # Merge an existing pull request
             pr_number = request.form.get('pr_number')
             if not pr_number:
                 return "Pull request number is required to merge", 400
-            merged_pr = merge_pull_request(repo_name, pr_number, access_token)
-            if merged_pr:
+            merged_pr = merge_pull_request(repo_name, repo_name, pr_number)
+            if merged_pr and not merged_pr.get("error"):
                 logging.info(f"Pull request #{pr_number} successfully merged in repository {repo_name}.")
                 return redirect(url_for('main.manage_pull_requests', repo_name=repo_name))
+            elif merged_pr and merged_pr.get("error") == "Merge conflict":
+                return "Merge conflict occurred. Please resolve manually.", 409
             else:
                 return "Failed to merge pull request", 500
-
-
