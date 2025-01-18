@@ -62,30 +62,34 @@
     </style>
 </head>
 <body>
-    <h1>Pull Requests for {{ repo_name }}</h1>
+    <h1>Pull Requests for Repository: {{ repo_name }}</h1>
 
     <!-- List of pull requests -->
-    <ul class="pull-requests">
-        {% for pr in pull_requests %}
-            <li class="pull-request">
-                <strong>Title:</strong> {{ pr.title }}<br>
-                <strong>Number:</strong> {{ pr.number }}<br>
-                <strong>Status:</strong> {{ pr.state }}<br>
-                <strong>Author:</strong> {{ pr.user.login }}<br>
-                <div class="actions">
-                    {% if pr.state == "open" %}
-                        <form method="POST" action="{{ url_for('main.manage_pull_requests', repo_name=repo_name) }}">
-                            <input type="hidden" name="action" value="merge">
-                            <input type="hidden" name="pr_number" value="{{ pr.number }}">
-                            <button class="merge" type="submit">Merge Pull Request</button>
-                        </form>
-                    {% else %}
-                        <span style="color: gray;">Pull request already merged/closed</span>
-                    {% endif %}
-                </div>
-            </li>
-        {% endfor %}
-    </ul>
+    {% if pull_requests %}
+        <ul class="pull-requests">
+            {% for pr in pull_requests %}
+                <li class="pull-request">
+                    <strong>Title:</strong> {{ pr.title }}<br>
+                    <strong>Number:</strong> {{ pr.number }}<br>
+                    <strong>Status:</strong> {{ pr.state }}<br>
+                    <strong>Author:</strong> {{ pr.user.login }}<br>
+                    <div class="actions">
+                        {% if pr.state == "open" %}
+                            <form method="POST" action="{{ url_for('main.manage_pull_requests', repo_name=repo_name) }}">
+                                <input type="hidden" name="action" value="merge">
+                                <input type="hidden" name="pr_number" value="{{ pr.number }}">
+                                <button class="merge" type="submit">Merge Pull Request</button>
+                            </form>
+                        {% else %}
+                            <span style="color: gray;">Pull request already merged/closed</span>
+                        {% endif %}
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No pull requests found for this repository. <a href="{{ url_for('main.manage_pull_requests', repo_name=repo_name) }}">Create a new pull request</a>.</p>
+    {% endif %}
 
     <!-- Form to create a new pull request -->
     <div class="create-form">
