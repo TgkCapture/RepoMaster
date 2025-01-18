@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create New Pull Request</title>
+</head>
+<body>
+    <h1>Create New Pull Request</h1>
+    <form method="POST" action="{{ url_for('main.manage_pull_requests', repo_name=repo_name) }}">
+        <input type="hidden" name="action" value="create">
+
+        <label for="title">Title:</label>
+        <input type="text" id="title" name="title" required>
+
+        <label for="body">Description:</label>
+        <textarea id="body" name="body"></textarea>
+
+        <label for="base">Base Branch (target):</label>
+        <select id="base" name="base" required>
+            <option value="">Select a branch</option>
+            {% for branch in branches %}
+                <option value="{{ branch }}">{{ branch }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="head">Head Branch (source):</label>
+        <select id="head" name="head" required>
+            <option value="">Select a branch</option>
+            {% for branch in branches %}
+                <option value="{{ branch }}">{{ branch }}</option>
+            {% endfor %}
+        </select>
+
+        <button type="submit">Create Pull Request</button>
+    </form>
+</body>
+</html>
