@@ -10,7 +10,7 @@ from app.controllers.auth_controller import get_installation_access_token
 def get_github_issues(repo_name):
     """Fetches GitHub issues within a repository."""
     
-    username = session.get("username", "TgkCapture")  #TODO: Replace with dynamic fetching
+    username = session.get('github_username') 
     access_token = get_installation_access_token()
 
     if not access_token:
@@ -32,7 +32,7 @@ def get_github_issues(repo_name):
 
 def create_github_issue(repo_name, title, body=None):
     """Creates a new GitHub issue."""
-    username = session.get("username", "TgkCapture")  #TODO: Replace with dynamic fetching 
+    username = session.get('github_username')  
     access_token = get_installation_access_token()
 
     if not access_token:
@@ -55,7 +55,7 @@ def create_github_issue(repo_name, title, body=None):
 
 def close_github_issue(repo_name, issue_number):
     """Closes an existing GitHub issue."""
-    username = session.get("username", "TgkCapture")  #TODO: Replace with dynamic fetching 
+    username = session.get('github_username')
     access_token = get_installation_access_token()
 
     if not access_token:

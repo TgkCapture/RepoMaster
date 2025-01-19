@@ -131,7 +131,7 @@ def delete_repositories():
 
     if request.method == 'GET':
         # Fetch and display repositories
-        repositories = get_github_repositories("TgkCapture", get_installation_access_token()) #TODO: retrieve username dynamically
+        repositories = get_github_repositories(session.get('github_username'), get_installation_access_token())
         if repositories:
             return render_template('delete_repo.html', repositories=repositories)
         else:
@@ -171,7 +171,7 @@ def manage_pull_requests(repo_name):
 
         if pr_number:
             # Fetch details of the specific pull request
-            pull_request = view_pull_request(owner="TgkCapture", repo_name=repo_name, pr_number=int(pr_number))  # TODO: retrieve username dynamically
+            pull_request = view_pull_request(session.get('github_username'), repo_name=repo_name, pr_number=int(pr_number))
             if pull_request:
                 logging.info(f"Fetched details for pull request #{pr_number} in repository: {repo_name}")
                 return render_template('pull_request_details.html', pull_request=pull_request, repo_name=repo_name)
@@ -181,7 +181,7 @@ def manage_pull_requests(repo_name):
 
         elif create_form:
             # Fetch branches and render the form for creating a pull request
-            branches = get_branches(owner="TgkCapture", repo_name=repo_name)  
+            branches = get_branches(session.get('github_username'), repo_name=repo_name)  
             if branches is None:
                 logging.error(f"Failed to fetch branches for repository {repo_name}.")
                 return "Failed to fetch branches from GitHub", 500
@@ -191,7 +191,7 @@ def manage_pull_requests(repo_name):
 
         else:
             # Fetch and display all pull requests
-            pull_requests = get_pull_requests(owner="TgkCapture", repo_name=repo_name)
+            pull_requests = get_pull_requests(session.get('github_username'), repo_name=repo_name)
             if pull_requests is not None:
                 logging.info(f"Fetched {len(pull_requests)} pull requests for repository: {repo_name}")
                 return render_template('pull_requests.html', repo_name=repo_name, pull_requests=pull_requests)
@@ -210,7 +210,7 @@ def manage_pull_requests(repo_name):
             base = request.form.get('base')
             if not title or not head or not base:
                 return "Title, head branch, and base branch are required to create a pull request", 400
-            new_pr = create_pull_request(owner="TgkCapture", repo_name=repo_name, title=title, body=body, head=head, base=base)
+            new_pr = create_pull_request(session.get('github_username'), repo_name=repo_name, title=title, body=body, head=head, base=base)
             if new_pr:
                 logging.info(f"Pull request created successfully in repository {repo_name}.")
                 return redirect(url_for('main.manage_pull_requests', repo_name=repo_name))
@@ -222,7 +222,7 @@ def manage_pull_requests(repo_name):
             pr_number = request.form.get('pr_number')
             if not pr_number:
                 return "Pull request number is required to merge", 400
-            merged_pr = merge_pull_request(owner="TgkCapture", repo_name=repo_name, pr_number=int(pr_number))
+            merged_pr = merge_pull_request(session.get('github_username'), repo_name=repo_name, pr_number=int(pr_number))
             if merged_pr:
                 logging.info(f"Pull request #{pr_number} successfully merged in repository {repo_name}.")
                 return redirect(url_for('main.manage_pull_requests', repo_name=repo_name))
