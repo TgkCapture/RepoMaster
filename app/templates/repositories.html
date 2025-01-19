@@ -6,55 +6,59 @@
     <title>Repositories | RepoMaster</title>
     <link href="https://fonts.googleapis.com/css?family=Amatic+SC|Raleway" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/repositories.css') }}">
-    
 </head>
 <body>
-
-    <!-- Add Menu Here -->
     <header>
-        <!-- <h2><a href="#">RepoMaster</a></h2>
-        <nav>
-        <li><a href="#hero">Home</a></li>
-        <li><a href="#services">Services</a></li>
-        <li><a href="#our-projects">Projects</a></li>
-        <li><a href="#about-us">About Us</a></li>
-        <li><a href="#contact">Contact</a></li>
-        </nav> -->
+        <div class="page-header">
+            <h1>Welcome to RepoMaster!</h1>
+            <p>Explore and manage your GitHub repositories with ease.</p>
+        </div>
     </header>
 
-    <div class="page-description">
-        <h1>Welcome to RepoMaster!</h1>
-        <p>View and explore your GitHub repositories in style.</p>
-    </div>
+    <main>
+        {% if repositories %}
+            <div class="github-cards">
+                {% for repository in repositories %}
+                <a 
+                    href="{{ repository.url }}" 
+                    class="github-card" 
+                    title="View repository {{ repository.name }}" 
+                    aria-label="View repository {{ repository.name }}" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                >
+                    <div class="github-card__content">
+                        <h3>{{ repository.name }}</h3>
+                        <p>{{ repository.description or "No description provided." }}</p>
+                        <div class="github-card__meta">
+                            <span class="github-card__language-icon" style="color: {{ repository.language_color }}">●</span> 
+                            <span class="github-card__language">{{ repository.language or "Unknown" }}</span>
+                        </div>
+                        <div class="github-card__stats">
+                            <span>
+                                <i class="fa fa-star" aria-hidden="true"></i> {{ repository.stars or 0 }}
+                            </span>
+                            <span>
+                                <i class="fa fa-code-fork" aria-hidden="true"></i> {{ repository.forks or 0 }}
+                            </span>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="no-repositories">
+                <p>No repositories found. Start by connecting your GitHub account!</p>
+            </div>
+        {% endif %}
+    </main>
 
-    <div class="github-cards">
-    {% for repository in repositories %}
-        <a href="{{ repository.url }}" class="github-card" data-github=" ">  <h3>{{ repository.name }}</h3>  <p>{{ repository.description }}</p>  <span class="github-card__meta">
-            <span class="github-card__language-icon" style="color: {{ repository.language_color }}">●</span> {{ repository.language }}
-            </span>
-            <span class="github-card__meta">
-            <i class="fa fa-star" aria-hidden="true"></i>
-            <span data-stars>
-                <i class="fa fa-spinner" aria-hidden="true"></i>  </span>
-            </span>
-            <span class="github-card__meta">
-            <i class="fa fa-code-fork" aria-hidden="true"></i>
-            <span data-forks>
-                <i class="fa fa-spinner" aria-hidden="true"></i>  </span>
-            </span>
-        </a>
-    {% endfor %}
-    </div>
+    <footer>
+        <div class="page-footer">
+            <p>&copy; 2025 RepoMaster. All rights reserved.</p>
+        </div>
+    </footer>
 
-    <!-- <footer>
-        <p>RepoMaster</p>
-        <p>Made With Love by Grant Corp</p>
-        <ul>
-        <li><a href="#"><i class="fa fa-twitter-square fa-2x"></i></a></li>
-        <li><a href="#"><i class="fa fa-facebook-square fa-2x"></i></a></li>
-        <li><a href="#"><i class="fa fa-snapchat-square fa-2x"></i></a></li>
-        </ul>
-    </footer> -->
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>
