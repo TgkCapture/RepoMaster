@@ -12,19 +12,80 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
   - Displays fetched repositories in a user-friendly format on a webpage.
   - Requires the GitHub App to be installed on the user’s account or organization.
 
-### 2. Manage Issues (Under Development)
+### 2. Manage Issues (Available)
 - **Route:** `/repositories/<repo_name>/issues`
 - **Functionality:** Enables viewing, creation, closure, or management of issues for a specific repository.
 - **Planned Features:**
   - Endpoints to retrieve and display issues for a repository.
   - Options to create new issues, close existing ones, or perform other basic issue management tasks.
 
-### 3. Delete Repositories (Planned)
+### 3. Delete Repositories (Available)
 - **Route:** `/delete_repo`
 - **Functionality:** Allows users to select and delete multiple repositories.
 - **Planned Features:**
   - A page where users can see a list of repositories and select those for deletion.
   - Confirmation mechanism before proceeding with the deletion.
+
+### 4. Manage Pull Requests (Available)
+- **Route:** /repositories/<repo_name>/pulls
+- **Functionality:** Enables viewing, creation, merging, or management of pull requests for a specific repository.  
+
+# Upcoming Features (Under Development)
+
+## Branch and Tag Management
+
+### Get Repository Contents
+**API Endpoint:** `GET /repos/{owner}/{repo}/contents/{path}`  
+Retrieve the content of a file or directory.
+
+---
+
+### Create a File
+**API Endpoint:** `PUT /repos/{owner}/{repo}/contents/{path}`  
+Add a new file to the repository.
+
+---
+
+### Update a File
+**API Endpoint:** `PUT /repos/{owner}/{repo}/contents/{path}`  
+Modify the content of an existing file.
+
+---
+
+### Delete a File
+**API Endpoint:** `DELETE /repos/{owner}/{repo}/contents/{path}`  
+Remove a file from the repository.
+
+---
+
+### Create a Branch
+**API Endpoint:** `POST /repos/{owner}/{repo}/git/refs`  
+Create a new branch from an existing reference.
+
+---
+
+### Delete a Branch
+**API Endpoint:** `DELETE /repos/{owner}/{repo}/git/refs/heads/{branch}`  
+Remove a branch permanently.
+
+---
+
+### Get Branch Details
+**API Endpoint:** `GET /repos/{owner}/{repo}/branches/{branch}`  
+Fetch details about a specific branch, including protection rules.
+
+---
+
+### List All Branches
+**API Endpoint:** `GET /repos/{owner}/{repo}/branches`  
+Retrieve a list of all branches in a repository.
+
+---
+
+### Rename a Branch
+**API Endpoint:** `POST /repos/{owner}/{repo}/branches/{branch}/rename`  
+Rename a branch.
+
 
 ## Migration to GitHub App
 RepoMaster now uses a GitHub App for authentication and repository management, providing enhanced security and scalability:

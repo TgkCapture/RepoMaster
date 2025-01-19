@@ -21,7 +21,7 @@ def get_jwt():
 
 def get_installation_access_token():
     """
-    Exchange the JWT for an installation access token.
+    Exchange the JWT for an installation access token and retrieve the username.
     """
     jwt_token = get_jwt()
     installation_id = session.get('installation_id') 
@@ -32,20 +32,31 @@ def get_installation_access_token():
         logging.error("Missing installation ID in session.")
         return None
 
-    url = f'https://api.github.com/app/installations/{installation_id}/access_tokens'
+    token_url = f'https://api.github.com/app/installations/{installation_id}/access_tokens'
     headers = {
         'Authorization': f'Bearer {jwt_token}',
         'Accept': 'application/vnd.github+json',
     }
 
-    response = requests.post(url, headers=headers)
-    if response.status_code == 201:
-        access_token = response.json().get('token')
+    token_response = requests.post(token_url, headers=headers)
+    if token_response.status_code == 201:
+        access_token = token_response.json().get('token')
         logging.info("Fetched GitHub App installation access token.")
         session['github_installation_token'] = access_token 
+
+        # Get the username associated with the installation
+        installation_url = f'https://api.github.com/app/installations/{installation_id}'
+        installation_response = requests.get(installation_url, headers=headers)
+        if installation_response.status_code == 200:
+            username = installation_response.json().get('account', {}).get('login')
+            logging.info(f"Fetched username associated with the installation: {username}")
+            session['github_username'] = username
+        else:
+            logging.error(f"Failed to retrieve installation details: {installation_response.status_code}, {installation_response.text}")
+
         return access_token
     else:
-        logging.error(f"Failed to get installation token: {response.status_code}, {response.text}")
+        logging.error(f"Failed to get installation token: {token_response.status_code}, {token_response.text}")
         return None
 
 def is_user_logged_in():
