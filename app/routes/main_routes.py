@@ -227,3 +227,31 @@ def manage_pull_requests(repo_name):
                 return redirect(url_for('main.manage_pull_requests', repo_name=repo_name))
             else:
                 return "Failed to merge pull request", 500
+
+@main_routes.route('/repos/<owner>/<repo>/git/refs', methods=['POST'])
+def main_create_branch(owner, repo):
+    """
+    Create a new branch in the repository.
+    """
+    if not is_user_logged_in():
+        logging.warning("Unauthorized access attempt to create a branch.")
+        return "You are not logged in", 403
+
+    access_token = get_installation_access_token()
+    if not access_token:
+        logging.error("Failed to get access token for creating a branch.")
+        return "Failed to authenticate with GitHub", 500
+
+    data = request.json
+    ref_name = data.get("ref") 
+    sha = data.get("sha") 
+
+    if not ref_name or not sha:
+        return "Both 'ref' and 'sha' are required", 400
+
+    branch = create_branch(owner, repo, access_token, ref_name, sha)
+    if branch:
+        logging.info(f"Successfully created branch '{ref_name}' in repository '{owner}/{repo}'.")
+        return branch, 201
+    else:
+        return "Failed to create branch in the repository", 500
