@@ -72,3 +72,23 @@ def get_branches(owner, repo_name):
     except RequestException as e:
         logging.error(f"Failed to fetch branches for repository {repo_name}: {e}")
         return None
+
+def create_branch(owner, repo, access_token, ref_name, sha):
+    """
+    Create a new branch in the specified repository.
+    """
+    url = f'https://api.github.com/repos/{owner}/{repo}/git/refs'
+    headers = {'Authorization': f'Bearer {access_token}', 'Content-Type': 'application/json'}
+    payload = {
+        "ref": ref_name, 
+        "sha": sha 
+    }
+
+    try:
+        response = requests.post(url, json=payload, headers=headers, timeout=60)
+        response.raise_for_status()
+        branch = response.json()
+        return branch
+    except RequestException as e:
+        logging.error(f"Failed to create branch '{ref_name}' in repository '{owner}/{repo}': {e}")
+        return None
