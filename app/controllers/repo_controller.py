@@ -52,3 +52,23 @@ def delete_repository(repos_to_delete):
         return f"Repositories '{', '.join(deleted_repos)}' deleted successfully"
     else:
         return "No repositories were deleted."
+
+def get_branches(owner, repo_name):
+    """Fetches all branches of a repository."""
+    access_token = get_installation_access_token()
+
+    if not access_token:
+        logging.error("Access token is missing. Cannot fetch branches.")
+        return None
+
+    headers = {'Authorization': f'Bearer {access_token}'}
+    api_url = f'https://api.github.com/repos/{owner}/{repo_name}/branches'
+
+    try:
+        response = requests.get(api_url, headers=headers, timeout=60)
+        response.raise_for_status()
+        branches = response.json()
+        return [branch['name'] for branch in branches]
+    except RequestException as e:
+        logging.error(f"Failed to fetch branches for repository {repo_name}: {e}")
+        return None
