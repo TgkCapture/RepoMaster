@@ -3,7 +3,21 @@
 import requests
 import logging
 from flask import session
+from requests.exceptions import RequestException
 from app.controllers.auth_controller import get_installation_access_token
+
+def get_github_repositories(username, access_token):
+    url = f'https://api.github.com/users/{username}/repos'
+    headers = {'Authorization': f'Bearer {access_token}'}
+
+    try:
+        response = requests.get(url, headers=headers, timeout=60)
+        response.raise_for_status()
+        repositories = response.json()
+        return repositories
+    except RequestException as e:
+        logging.error(f"Failed to fetch repositories: {e}")
+        return None
 
 def delete_repository(repos_to_delete):
     """Deletes GitHub repositories."""

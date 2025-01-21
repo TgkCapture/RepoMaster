@@ -4,9 +4,9 @@ import logging
 import os
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from app.controllers.auth_controller import get_installation_access_token, is_user_logged_in, get_jwt
-from app.controllers.github_controller import get_github_repositories, get_branches
+from app.controllers.github_controller import get_branches
 from app.controllers.issues_controller import get_github_issues, create_github_issue, close_github_issue
-from app.controllers.repo_controller import delete_repository
+from app.controllers.repo_controller import get_github_repositories, delete_repository
 from app.controllers.pull_requests_controller import get_pull_requests, create_pull_request, merge_pull_request, view_pull_request
 
 main_routes = Blueprint('main', __name__)
