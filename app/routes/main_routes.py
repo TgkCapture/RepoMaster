@@ -255,3 +255,24 @@ def main_create_branch(owner, repo):
         return branch, 201
     else:
         return "Failed to create branch in the repository", 500
+
+@main_routes.route('/repos/<owner>/<repo>/branches/<branch>', methods=['GET'])
+def main_get_branch_details(owner, repo, branch):
+    """
+    Get details about a specific branch.
+    """
+    if not is_user_logged_in():
+        logging.warning("Unauthorized access attempt to fetch branch details.")
+        return "You are not logged in", 403
+
+    access_token = get_installation_access_token()
+    if not access_token:
+        logging.error("Failed to get access token for fetching branch details.")
+        return "Failed to authenticate with GitHub", 500
+
+    branch_details = get_branch_details(owner, repo, branch, access_token)
+    if branch_details:
+        logging.info(f"Fetched details for branch '{branch}' in repository '{owner}/{repo}'.")
+        return branch_details, 200
+    else:
+        return "Failed to fetch branch details", 500
