@@ -92,3 +92,19 @@ def create_branch(owner, repo, access_token, ref_name, sha):
     except RequestException as e:
         logging.error(f"Failed to create branch '{ref_name}' in repository '{owner}/{repo}': {e}")
         return None
+
+def get_branch_details(owner, repo, branch, access_token):
+    """
+    Fetch details about a specific branch in the repository.
+    """
+    url = f'https://api.github.com/repos/{owner}/{repo}/branches/{branch}'
+    headers = {'Authorization': f'Bearer {access_token}'}
+
+    try:
+        response = requests.get(url, headers=headers, timeout=60)
+        response.raise_for_status()
+        branch_details = response.json()
+        return branch_details
+    except RequestException as e:
+        logging.error(f"Failed to fetch details for branch '{branch}' in repository '{owner}/{repo}': {e}")
+        return None
