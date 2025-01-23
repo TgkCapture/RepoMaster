@@ -87,9 +87,13 @@ def show_repo_details(owner, repo_name):
         return "Authentication failed", 500
 
     branches = get_branches(session.get('github_username'), repo_name=repo_name)
+    
     if branches is not None:
+        logging.info(f"Branches for repository '{repo_name}': {', '.join(branches)}")
+        
         return render_template('repo_details.html', branches=branches, repo_name=repo_name)
     else:
+        logging.error(f"Failed to fetch branches for repository '{repo_name}'.")
         return "Failed to fetch branches", 500
 
 @main_routes.route('/repositories/<repo_name>/issues', methods=['GET', 'POST'])
