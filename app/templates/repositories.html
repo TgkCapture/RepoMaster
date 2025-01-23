@@ -17,40 +17,51 @@
 
     <main>
         {% if repositories %}
-            <div class="github-cards">
-                {% for repository in repositories %}
-                <a 
-                    href="{{ repository.url }}" 
-                    class="github-card" 
-                    title="View repository {{ repository.name }}" 
-                    aria-label="View repository {{ repository.name }}" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                >
-                    <div class="github-card__content">
-                        <h3>{{ repository.name }}</h3>
-                        <p>{{ repository.description or "No description provided." }}</p>
-                        <div class="github-card__meta">
-                            <span class="github-card__language-icon" style="color: {{ repository.language_color }}">●</span> 
-                            <span class="github-card__language">{{ repository.language or "Unknown" }}</span>
-                        </div>
-                        <div class="github-card__stats">
-                            <span>
-                                <i class="fa fa-star" aria-hidden="true"></i> {{ repository.stars or 0 }}
-                            </span>
-                            <span>
-                                <i class="fa fa-code-fork" aria-hidden="true"></i> {{ repository.forks or 0 }}
-                            </span>
-                        </div>
-                    </div>
-                </a>
-                {% endfor %}
+    <div class="github-cards">
+        {% for repository in repositories %}
+        <a 
+            href="{{ repository.url }}" 
+            class="github-card" 
+            title="View repository {{ repository.name }}" 
+            aria-label="View repository {{ repository.name }}" 
+            target="_blank" 
+            rel="noopener noreferrer"
+        >
+            <div class="github-card__content">
+                <h3>{{ repository.name }}</h3>
+                <p>{{ repository.description or "No description provided." }}</p>
+                <div class="github-card__meta">
+                    <span class="github-card__language-icon" style="color: {{ repository.language_color }}">●</span> 
+                    <span class="github-card__language">{{ repository.language or "Unknown" }}</span>
+                </div>
+                <div class="github-card__stats">
+                    <span>
+                        <i class="fa fa-star" aria-hidden="true"></i> {{ repository.stars or 0 }}
+                    </span>
+                    <span>
+                        <i class="fa fa-code-fork" aria-hidden="true"></i> {{ repository.forks or 0 }}
+                    </span>
+                </div>
             </div>
-        {% else %}
-            <div class="no-repositories">
-                <p>No repositories found. Start by connecting your GitHub account!</p>
-            </div>
-        {% endif %}
+        </a>
+        <div class="view-branches">
+            <a 
+                href="{{ url_for('main.show_repo_details', owner=repository.owner.login, repo_name=repository.name) }}" 
+                class="view-branches-link" 
+                title="View branches for {{ repository.name }}" 
+                aria-label="View branches for {{ repository.name }}"
+            >
+                View Branches
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="no-repositories">
+        <p>No repositories found. Start by connecting your GitHub account!</p>
+    </div>
+{% endif %}
+
     </main>
 
     <footer>
