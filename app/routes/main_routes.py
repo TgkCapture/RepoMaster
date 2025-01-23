@@ -76,6 +76,22 @@ def show_github_repositories():
         logging.error("Failed to get access token for GitHub repositories.")
         return "Failed to authenticate with GitHub", 500
 
+@main_routes.route('/github/repository/<owner>/<repo_name>')
+def show_repo_details(owner, repo_name):
+    """
+    Display repository details, including branches.
+    """
+    access_token = get_installation_access_token()
+    if not access_token:
+        logging.error("Failed to authenticate with GitHub.")
+        return "Authentication failed", 500
+
+    branches = get_branches(session.get('github_username'), repo_name=repo_name)
+    if branches is not None:
+        return render_template('repo_details.html', branches=branches, repo_name=repo_name)
+    else:
+        return "Failed to fetch branches", 500
+
 @main_routes.route('/repositories/<repo_name>/issues', methods=['GET', 'POST'])
 def manage_issues(repo_name):
     """
@@ -286,3 +302,4 @@ def main_get_branch_details(owner, repo, branch):
     else:
         flash("Failed to fetch branch details.", "error")
         return "Failed to fetch branch details", 500
+
