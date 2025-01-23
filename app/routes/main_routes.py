@@ -276,11 +276,13 @@ def main_get_branch_details(owner, repo, branch):
     access_token = get_installation_access_token()
     if not access_token:
         logging.error("Failed to get access token for fetching branch details.")
+        flash("Failed to authenticate with GitHub", "error")
         return "Failed to authenticate with GitHub", 500
 
     branch_details = get_branch_details(owner, repo, branch, access_token)
     if branch_details:
         logging.info(f"Fetched details for branch '{branch}' in repository '{owner}/{repo}'.")
-        return branch_details, 200
+        return render_template('branch_details.html', owner=owner, repo=repo, branch=branch, branch_details=branch_details), 200
     else:
+        flash("Failed to fetch branch details.", "error")
         return "Failed to fetch branch details", 500
