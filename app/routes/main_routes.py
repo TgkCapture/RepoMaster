@@ -5,7 +5,7 @@ import os
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from app.controllers.auth_controller import get_installation_access_token, is_user_logged_in, get_jwt
 from app.controllers.issues_controller import get_github_issues, create_github_issue, close_github_issue
-from app.controllers.repo_controller import get_github_repositories, delete_repository, get_branches, get_branch_details
+from app.controllers.repo_controller import get_github_repositories, delete_repository, get_branches, get_branch_details, create_branch
 from app.controllers.pull_requests_controller import get_pull_requests, create_pull_request, merge_pull_request, view_pull_request
 
 main_routes = Blueprint('main', __name__)
@@ -248,8 +248,8 @@ def manage_pull_requests(repo_name):
             else:
                 return "Failed to merge pull request", 500
 
-@main_routes.route('/repos/<owner>/<repo>/git/refs', methods=['POST'])
-def main_create_branch(owner, repo):
+@main_routes.route('/repos/<owner>/<repo_name>/git/refs', methods=['POST', 'GET'])
+def main_create_branch(owner, repo_name):
     """
     Create a new branch in the repository.
     """
@@ -259,7 +259,7 @@ def main_create_branch(owner, repo):
 
     if request.method == 'GET':
         # Render the branch creation form
-        return render_template('create_branch.html', owner=owner, repo=repo)
+        return render_template('create_branch.html', owner=owner, repo_name=repo_name)
 
     if request.method == 'POST':
         access_token = get_installation_access_token()
@@ -275,9 +275,9 @@ def main_create_branch(owner, repo):
             flash("Both 'Branch Name' and 'Commit SHA' are required.", "error")
             return redirect(request.url), 400
 
-    branch = create_branch(owner, repo, access_token, ref_name, sha)
+    branch = create_branch(owner, repo_name, access_token, ref_name, sha)
     if branch:
-        logging.info(f"Successfully created branch '{ref_name}' in repository '{owner}/{repo}'.")
+        logging.info(f"Successfully created branch '{ref_name}' in repository '{owner}/{repo_name}'.")
         flash(f"Branch '{ref_name}' successfully created.", "success")
         return branch, 201
     else:
