@@ -77,7 +77,7 @@ def create_branch(owner, repo, access_token, ref_name, sha):
     """
     Create a new branch in the specified repository.
     """
-    url = f'https://api.github.com/repos/{owner}/{repo}/git/refs'
+    url = f'https://api.github.com/repos/{owner}/{repo_name}/git/refs'
     headers = {'Authorization': f'Bearer {access_token}', 'Content-Type': 'application/json'}
     payload = {
         "ref": ref_name, 
@@ -90,7 +90,7 @@ def create_branch(owner, repo, access_token, ref_name, sha):
         branch = response.json()
         return branch
     except RequestException as e:
-        logging.error(f"Failed to create branch '{ref_name}' in repository '{owner}/{repo}': {e}")
+        logging.error(f"Failed to create branch '{ref_name}' in repository '{owner}/{repo_name}': {e}")
         return None
 
 def get_branch_details(owner, repo_name, branch_name):
