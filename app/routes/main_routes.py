@@ -284,8 +284,8 @@ def main_create_branch(owner, repo):
         flash("Failed to create branch in the repository.", "error")
         return redirect(request.url), 500
 
-@main_routes.route('/repos/<owner>/<repo>/branches/<branch>', methods=['GET'])
-def main_get_branch_details(owner, repo, branch):
+@main_routes.route('/repos/<owner>/<repo_name>/branches/<branch>', methods=['GET'])
+def show_branch_details(owner, repo_name, branch):
     """
     Get details about a specific branch.
     """
@@ -299,10 +299,10 @@ def main_get_branch_details(owner, repo, branch):
         flash("Failed to authenticate with GitHub", "error")
         return "Failed to authenticate with GitHub", 500
 
-    branch_details = get_branch_details(owner, repo, branch, access_token)
+    branch_details = get_branch_details(owner, repo_name, branch, access_token)
     if branch_details:
         logging.info(f"Fetched details for branch '{branch}' in repository '{owner}/{repo}'.")
-        return render_template('branch_details.html', owner=owner, repo=repo, branch=branch, branch_details=branch_details), 200
+        return render_template('branch_details.html', owner=owner, repo_name=repo_name, branch=branch, branch_details=branch_details), 200
     else:
         flash("Failed to fetch branch details.", "error")
         return "Failed to fetch branch details", 500
