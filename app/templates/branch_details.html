@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Branch Details</title>
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Raleway', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        h1 {
+            text-align: center;
+            color: #444;
+            margin-top: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .flashes {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0;
+        }
+
+        .flashes li {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            color: #fff;
+        }
+
+        .flashes li.info {
+            background: #007bff;
+        }
+
+        .flashes li.success {
+            background: #28a745;
+        }
+
+        .flashes li.warning {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .flashes li.error {
+            background: #dc3545;
+        }
+
+        p {
+            margin: 10px 0;
+        }
+
+        strong {
+            color: #444;
+        }
+
+        h2 {
+            margin-top: 30px;
+            color: #555;
+        }
+
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 15px;
+            background: #007bff;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        a:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Branch Details</h1>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flashes">
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
+        <p><strong>Repository:</strong> {{ owner }}/{{ repo }}</p>
+        <p><strong>Branch:</strong> {{ branch }}</p>
+
+        {% if branch_details %}
+            <h2>Details</h2>
+            <p><strong>Name:</strong> {{ branch_details['name'] }}</p>
+            <p><strong>Commit SHA:</strong> {{ branch_details['commit']['sha'] }}</p>
+            {% if branch_details.get('protected') %}
+                <p><strong>Protected:</strong> Yes</p>
+            {% else %}
+                <p><strong>Protected:</strong> No</p>
+            {% endif %}
+        {% else %}
+            <p>No branch details available.</p>
+        {% endif %}
+
+        <a href="/">Go Back to Home</a>
+    </div>
+</body>
+</html>
