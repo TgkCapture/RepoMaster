@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create a Branch</title>
+</head>
+<body>
+    <h1>Create a New Branch</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul class="flashes">
+            {% for category, message in messages %}
+                <li class="{{ category }}">{{ message }}</li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
+    <form action="/repos/{{ owner }}/{{ repo }}/git/refs" method="POST">
+        <label for="ref">Branch Name (e.g., refs/heads/branch-name):</label><br>
+        <input type="text" id="ref" name="ref" required><br><br>
+
+        <label for="sha">Commit SHA:</label><br>
+        <input type="text" id="sha" name="sha" required><br><br>
+
+        <button type="submit">Create Branch</button>
+    </form>
+
+    <a href="/">Go Back to Home</a>
+</body>
+</html>
