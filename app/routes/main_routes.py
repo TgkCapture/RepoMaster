@@ -5,7 +5,7 @@ import os
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from app.controllers.auth_controller import get_installation_access_token, is_user_logged_in, get_jwt
 from app.controllers.issues_controller import get_github_issues, create_github_issue, close_github_issue
-from app.controllers.repo_controller import get_github_repositories, delete_repository, get_branches
+from app.controllers.repo_controller import get_github_repositories, delete_repository, get_branches, get_branch_details
 from app.controllers.pull_requests_controller import get_pull_requests, create_pull_request, merge_pull_request, view_pull_request
 
 main_routes = Blueprint('main', __name__)
@@ -284,10 +284,10 @@ def main_create_branch(owner, repo):
         flash("Failed to create branch in the repository.", "error")
         return redirect(request.url), 500
 
-@main_routes.route('/repos/<owner>/<repo_name>/branches/<branch>', methods=['GET'])
-def show_branch_details(owner, repo_name, branch):
+@main_routes.route('/github/repository/branch-details')
+def show_branch_details():
     """
-    Get details about a specific branch.
+    Display details of a specific branch.
     """
     if not is_user_logged_in():
         logging.warning("Unauthorized access attempt to fetch branch details.")
@@ -298,12 +298,19 @@ def show_branch_details(owner, repo_name, branch):
         logging.error("Failed to get access token for fetching branch details.")
         flash("Failed to authenticate with GitHub", "error")
         return "Failed to authenticate with GitHub", 500
+        
+    owner = session.get('github_username')  
+    repo_name = request.args.get('repo_name')
+    branch_name = request.args.get('branch_name')
 
-    branch_details = get_branch_details(owner, repo_name, branch, access_token)
-    if branch_details:
-        logging.info(f"Fetched details for branch '{branch}' in repository '{owner}/{repo}'.")
-        return render_template('branch_details.html', owner=owner, repo_name=repo_name, branch=branch, branch_details=branch_details), 200
-    else:
-        flash("Failed to fetch branch details.", "error")
-        return "Failed to fetch branch details", 500
+    if not owner or not repo_name or not branch_name:
+        logging.error("Missing required parameters.")
+        return "Missing required parameters", 400
+
+    branch_details, error = get_branch_details(owner, repo_name, branch_name)
+    if error:
+        return error, 500
+
+    return render_template('branch_details.html', branch_details=branch_details, owner=owner, repo=repo_name, branch=branch_name)
+
 
