@@ -51,33 +51,41 @@
 
         ul li a {
             text-decoration: none;
-            color: #007bff; /* Blue color for the branch name */
-            font-weight: 600;
+            color: #333; 
+            font-weight: 400; 
         }
 
         ul li a:hover {
-            color: #0056b3;
+            color: #555; 
             text-decoration: underline;
         }
 
-        a.back-home {
-            display: block;
-            text-align: center;
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-top: 20px;
+        }
+
+        a {
+            display: inline-block;
+            text-align: center;
             padding: 10px 15px;
             background: #007bff;
             color: #fff;
             text-decoration: none;
             border-radius: 4px;
             font-weight: 600;
-            max-width: 200px;
-            margin-left: auto;
-            margin-right: auto;
             transition: background 0.3s;
         }
 
-        a.back-home:hover {
+        a:hover {
             background: #0056b3;
+        }
+
+        a.back-home {
+            max-width: 200px;
+            margin: 0 auto;
         }
     </style>
 </head>
@@ -97,7 +105,10 @@
         {% else %}
             <p>No branches found for this repository.</p>
         {% endif %}
+        <div class="button-group">
+            <a href="{{ url_for('main.main_create_branch', owner=owner, repo_name=repo_name) }}">Create New Branch</a>
+            <a href="/" class="back-home">Go Back to Home</a>
+        </div>
     </div>
-    <a href="/" class="back-home">Go Back to Home</a>
 </body>
 </html>
