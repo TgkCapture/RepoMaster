@@ -88,7 +88,7 @@
             <ul>
                 {% for branch in branches %}
                     <li>
-                        <a href="{{ url_for('main.show_branch_details', owner=owner, repo_name=repo_name, branch=branch) }}">
+                        <a href="{{ url_for('main.show_branch_details', repo_name=repo_name, branch_name=branch) }}">
                             {{ branch }}
                         </a>
                     </li>
