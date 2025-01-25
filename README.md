@@ -27,12 +27,25 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
   - Confirmation mechanism before proceeding with the deletion.
 
 ### 4. Manage Pull Requests (Available)
-- **Route:** /repositories/<repo_name>/pulls
+- **Route:** `/repositories/<repo_name>/pulls`
 - **Functionality:** Enables viewing, creation, merging, or management of pull requests for a specific repository.  
 
-# Upcoming Features (Under Development)
+### 5. Branch and Tag Management (Available)
 
-## Branch and Tag Management
+#### Get Branch Details
+- **API Endpoint:** `GET /repos/{owner}/{repo}/branches/{branch}`  
+- **Functionality:** Fetch details about a specific branch, including protection rules.
+
+#### List All Branches
+- **API Endpoint:** `GET /repos/{owner}/{repo}/branches`  
+- **Functionality:** Retrieve a list of all branches in a repository.
+
+#### Create a Branch
+- **API Endpoint:** `POST /repos/{owner}/{repo}/git/refs`  
+- **Functionality:** Create a new branch from an existing reference.
+
+
+## Upcoming Features (Under Development)
 
 ### Get Repository Contents
 **API Endpoint:** `GET /repos/{owner}/{repo}/contents/{path}`  
@@ -58,27 +71,9 @@ Remove a file from the repository.
 
 ---
 
-### Create a Branch
-**API Endpoint:** `POST /repos/{owner}/{repo}/git/refs`  
-Create a new branch from an existing reference.
-
----
-
 ### Delete a Branch
 **API Endpoint:** `DELETE /repos/{owner}/{repo}/git/refs/heads/{branch}`  
 Remove a branch permanently.
-
----
-
-### Get Branch Details
-**API Endpoint:** `GET /repos/{owner}/{repo}/branches/{branch}`  
-Fetch details about a specific branch, including protection rules.
-
----
-
-### List All Branches
-**API Endpoint:** `GET /repos/{owner}/{repo}/branches`  
-Retrieve a list of all branches in a repository.
 
 ---
 
@@ -103,56 +98,66 @@ RepoMaster now uses a GitHub App for authentication and repository management, p
    ```bash
    git clone <repository_url>
    cd RepoMaster
+   ```
 
 2. **Set Up Python Virtual Environment:**
-    ```bash
-      python -m venv venv
-      venv\Scripts\activate
+   ```bash
+   python -m venv venv
+   venv\Scripts\activate
+   ```
 
 3. **Install Dependencies:**
-    ```bash
-    pip install -r requirements.txt
+   ```bash
+   pip install -r requirements.txt
+   ```
 
 4. **Set Environment Variables:**
-    ```bash
-    set GITHUB_APP_ID=your_github_app_id
-    set GITHUB_PRIVATE_KEY_PATH=path_to_your_private_key.pem
+   ```bash
+   set GITHUB_APP_ID=your_github_app_id
+   set GITHUB_PRIVATE_KEY_PATH=path_to_your_private_key.pem
+   ```
 
 5. **Run the Flask Application:**
-    ```bash
-    python run.py
+   ```bash
+   python app.py
+   ```
 
 6. **Access the Application:**
-Open a web browser and visit http://127.0.0.1:5000/ to access the application.
+   Open a web browser and visit http://127.0.0.1:5000/ to access the application.
 
 
-### For Linux 
+### For Linux
 
 1. **Clone the Repository:**
    ```bash
    git clone <repository_url>
    cd RepoMaster
+   ```
 
 2. **Set Up Python Virtual Environment:**
-    ```bash
-    python -m venv venv
-    source venv/bin/activate
+   ```bash
+   python -m venv venv
+   source venv/bin/activate
+   ```
 
 3. **Install Dependencies:**
-    ```bash 
-      pip install -r requirements.txt
+   ```bash
+   pip install -r requirements.txt
+   ```
 
 4. **Set Environment Variables:**
-    ```bash
-  export GITHUB_APP_ID=your_github_app_id
-  export GITHUB_PRIVATE_KEY_PATH=path_to_your_private_key.pem
+   ```bash
+   export GITHUB_APP_ID=your_github_app_id
+   export GITHUB_PRIVATE_KEY_PATH=path_to_your_private_key.pem
+   ```
 
 5. **Run the Flask Application:**
-    ```bash
-    python app.py
+   ```bash
+   python app.py
+   ```
 
 6. **Access the Application:**
-Open a web browser and visit http://127.0.0.1:5000/ to access the application.
+   Open a web browser and visit http://127.0.0.1:5000/ to access the application.
 
 
 ### Production Version
