@@ -5,7 +5,7 @@ import os
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from app.controllers.auth_controller import get_installation_access_token, is_user_logged_in, get_jwt
 from app.controllers.issues_controller import get_github_issues, create_github_issue, close_github_issue
-from app.controllers.repo_controller import get_github_repositories, delete_repository, get_branches, get_branch_details, create_branch
+from app.controllers.repo_controller import get_github_repositories, delete_repository, get_branches, get_branch_details, create_branch, get_default_branch_sha
 from app.controllers.pull_requests_controller import get_pull_requests, create_pull_request, merge_pull_request, view_pull_request
 
 main_routes = Blueprint('main', __name__)
@@ -272,9 +272,15 @@ def main_create_branch(owner, repo_name):
         ref_name = request.form.get("ref")  
         sha = request.form.get("sha") 
 
-        if not ref_name or not sha:
-            flash("Both 'Branch Name' and 'Commit SHA' are required.", "error")
+        if not ref_name:
+            flash("Branch name is required.", "error")
             return redirect(request.url), 400
+
+        if not sha:
+            sha = get_default_branch_sha(owner, repo_name, access_token)
+            if not sha:
+                flash("Failed to retrieve default branch information.", "error")
+                return redirect(request.url), 500
 
         branch = create_branch(owner, repo_name, access_token, ref_name, sha)
         if branch:
