@@ -83,16 +83,35 @@ def create_branch(owner, repo, access_token, ref_name, sha):
         'Content-Type': 'application/json'
     }
     payload = {
-        "ref": ref_name,
+        "ref": f"refs/heads/{ref_name}",  
         "sha": sha
     }
 
     try:
         response = requests.post(url, json=payload, headers=headers, timeout=60)
         response.raise_for_status()
-        return response.json()  # Return the branch data
+        return response.json()  
     except RequestException as e:
         logging.error(f"Failed to create branch '{ref_name}' in repository '{owner}/{repo}': {e}")
+        return None
+
+def get_default_branch_sha(owner, repo, access_token):
+    url = f'https://api.github.com/repos/{owner}/{repo}'
+    headers = {'Authorization': f'Bearer {access_token}'}
+    
+    try:
+        response = requests.get(url, headers=headers, timeout=60)
+        response.raise_for_status()
+        repo_data = response.json()
+        default_branch = repo_data['default_branch']
+
+        branch_url = f'https://api.github.com/repos/{owner}/{repo}/git/refs/heads/{default_branch}'
+        branch_response = requests.get(branch_url, headers=headers, timeout=60)
+        branch_response.raise_for_status()
+        branch_data = branch_response.json()
+        return branch_data['object']['sha']
+    except RequestException as e:
+        logging.error(f"Failed to get default branch SHA for repository '{owner}/{repo}': {e}")
         return None
 
 def get_branch_details(owner, repo_name, branch_name):
