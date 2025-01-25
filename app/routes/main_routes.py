@@ -86,12 +86,14 @@ def show_repo_details(owner, repo_name):
         logging.error("Failed to authenticate with GitHub.")
         return "Authentication failed", 500
 
-    branches = get_branches(session.get('github_username'), repo_name=repo_name)
+    owner = session.get('github_username')
+
+    branches = get_branches(owner=owner, repo_name=repo_name)
     
     if branches is not None:
         logging.info(f"Branches for repository '{repo_name}': {', '.join(branches)}")
         
-        return render_template('repo_details.html', branches=branches, repo_name=repo_name)
+        return render_template('repo_details.html',owner=owner, branches=branches, repo_name=repo_name)
     else:
         logging.error(f"Failed to fetch branches for repository '{repo_name}'.")
         return "Failed to fetch branches", 500
@@ -248,41 +250,41 @@ def manage_pull_requests(repo_name):
             else:
                 return "Failed to merge pull request", 500
 
-@main_routes.route('/repos/<owner>/<repo_name>/git/refs', methods=['POST', 'GET'])
+@main_routes.route('/repos/<owner>/<repo_name>/git/refs', methods=['GET', 'POST'])
 def main_create_branch(owner, repo_name):
     """
-    Create a new branch in the repository.
+    Render the branch creation form and handle branch creation in the repository.
     """
     if not is_user_logged_in():
         logging.warning("Unauthorized access attempt to create a branch.")
         return "You are not logged in", 403
 
     if request.method == 'GET':
-        # Render the branch creation form
         return render_template('create_branch.html', owner=owner, repo_name=repo_name)
 
     if request.method == 'POST':
         access_token = get_installation_access_token()
         if not access_token:
             logging.error("Failed to get access token for creating a branch.")
-            return "Failed to authenticate with GitHub", 500
+            flash("Failed to authenticate with GitHub.", "error")
+            return redirect(request.url), 500
 
-    data = request.json
-    ref_name = data.get("ref") 
-    sha = data.get("sha") 
+        ref_name = request.form.get("ref")  
+        sha = request.form.get("sha") 
 
-    if not ref_name or not sha:
+        if not ref_name or not sha:
             flash("Both 'Branch Name' and 'Commit SHA' are required.", "error")
             return redirect(request.url), 400
 
-    branch = create_branch(owner, repo_name, access_token, ref_name, sha)
-    if branch:
-        logging.info(f"Successfully created branch '{ref_name}' in repository '{owner}/{repo_name}'.")
-        flash(f"Branch '{ref_name}' successfully created.", "success")
-        return branch, 201
-    else:
-        flash("Failed to create branch in the repository.", "error")
-        return redirect(request.url), 500
+        branch = create_branch(owner, repo_name, access_token, ref_name, sha)
+        if branch:
+            logging.info(f"Successfully created branch '{ref_name}' in repository '{owner}/{repo_name}'.")
+            flash(f"Branch '{ref_name}' successfully created.", "success")
+            return redirect(url_for('main.show_branch_details', repo_name=repo_name, branch_name=ref_name))
+        else:
+            logging.error(f"Failed to create branch '{ref_name}' in repository '{owner}/{repo_name}'.")
+            flash("Failed to create branch in the repository.", "error")
+            return redirect(request.url), 500
 
 @main_routes.route('/github/repository/branch-details')
 def show_branch_details():
