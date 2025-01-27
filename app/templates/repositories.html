@@ -149,12 +149,10 @@
             <div class="github-cards">
                 {% for repository in repositories %}
                 <a 
-                    href="{{ repository.url }}" 
+                    href="{{ url_for('main.get_contents', owner=repository.owner.login, repo=repository.name) }}" 
                     class="github-card" 
-                    title="View repository {{ repository.name }}" 
-                    aria-label="View repository {{ repository.name }}" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
+                    title="View contents of repository {{ repository.name }}" 
+                    aria-label="View contents of repository {{ repository.name }}"
                 >
                     <div class="github-card__content">
                         <h3>{{ repository.name }}</h3>
