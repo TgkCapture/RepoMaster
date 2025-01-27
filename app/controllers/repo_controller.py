@@ -192,3 +192,23 @@ def update_file(owner, repo, path, content, sha, message):
     except requests.RequestException as e:
         logging.error(f"Failed to update file: {e}")
         return None
+
+def delete_file(owner, repo, path, sha, message):
+    """
+    Remove a file from the repository.
+    """
+    url = f"{BASE_URL}/repos/{owner}/{repo}/contents/{path}"
+    access_token = get_installation_access_token()
+    headers = {'Authorization': f'Bearer {access_token}'}
+    data = {
+        "message": message,
+        "sha": sha
+    }
+
+    try:
+        response = requests.delete(url, headers=headers, json=data, timeout=60)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        logging.error(f"Failed to delete file: {e}")
+        return None
