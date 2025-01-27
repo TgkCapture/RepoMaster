@@ -381,13 +381,13 @@ def create_new_file(owner, repo):
     """
     Create a new file in the repository.
     """
-    path = request.form.get('path')
-    content = request.form.get('content') 
-    message = request.form.get('message', 'Create new file')
-    
-    result = create_file(owner, repo, path, content, message)
+    file_name = request.form.get('path')
+    content = request.form.get('content')
+    message = request.form.get('message', 'Add new file')
+
+    result = create_file(owner, repo, file_name, content, message)
     if result:
-        flash(f"File '{path}' created successfully", "success")
+        flash(f"File '{file_name}' created successfully", "success")
         return redirect(url_for('main.get_contents', owner=owner, repo=repo))
     else:
         flash("Failed to create file", "danger")
