@@ -143,8 +143,9 @@
             <button type="submit" onclick="return confirm('Are you sure you want to delete this branch?')">Delete Branch</button>
         </form>
 
-        <form action="{{ url_for('main.rename_branch', owner=owner, repo_name=repo, branch_name=branch) }}" method="POST">
-            <input type="text" name="new_name" placeholder="New Branch Name" required>
+        <form action="{{ url_for('main.rename_branch', owner=owner, repo_name=repo, branch_name=branch_details['name']) }}" method="post">
+            <label for="new_name">New Branch Name:</label>
+            <input type="text" id="new_name" name="new_name" required>
             <button type="submit">Rename Branch</button>
         </form>
 
