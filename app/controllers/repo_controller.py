@@ -156,7 +156,7 @@ def create_file(owner, repo, path, content, message):
     """
     Add a new file to the repository.
     """
-    url = f"{BASE_URL}/repos/{owner}/{repo}/contents/{path}"
+    url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
     access_token = get_installation_access_token()
     headers = {'Authorization': f'Bearer {access_token}'}
     data = {
@@ -176,7 +176,7 @@ def update_file(owner, repo, path, content, sha, message):
     """
     Modify the content of an existing file.
     """
-    url = f"{BASE_URL}/repos/{owner}/{repo}/contents/{path}"
+    url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
     access_token = get_installation_access_token()
     headers = {'Authorization': f'Bearer {access_token}'}
     data = {
@@ -197,7 +197,7 @@ def delete_file(owner, repo, path, sha, message):
     """
     Remove a file from the repository.
     """
-    url = f"{BASE_URL}/repos/{owner}/{repo}/contents/{path}"
+    url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
     access_token = get_installation_access_token()
     headers = {'Authorization': f'Bearer {access_token}'}
     data = {
