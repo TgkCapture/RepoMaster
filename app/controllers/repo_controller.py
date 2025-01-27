@@ -152,16 +152,21 @@ def get_repository_contents(owner, repo, path=""):
         logging.error(f"Failed to fetch repository contents: {e}")
         return None
 
-def create_file(owner, repo, path, content, message):
+def create_file(owner, repo, file_name, content, message):
     """
     Add a new file to the repository.
     """
-    url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
+    if not file_name.startswith('/'):
+        file_path = file_name
+    else:
+        file_path = file_name.strip('/') 
+
+    url = f"https://api.github.com/repos/{owner}/{repo}/contents/{file_path}"
     access_token = get_installation_access_token()
     headers = {'Authorization': f'Bearer {access_token}'}
     data = {
         "message": message,
-        "content": content  
+        "content": content.encode('utf-8').decode('utf-8')  
     }
 
     try:
