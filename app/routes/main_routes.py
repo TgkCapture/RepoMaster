@@ -320,5 +320,18 @@ def show_branch_details():
         return error, 500
 
     return render_template('branch_details.html', branch_details=branch_details, owner=owner, repo=repo_name, branch=branch_name)
+    
+@main_routes.route('/repos/<owner>/<repo_name>/branches/<branch_name>/delete', methods=['POST'])
+def delete_branch(owner, repo_name, branch_name):
+    access_token = get_installation_access_token()
+    url = f'https://api.github.com/repos/{owner}/{repo_name}/git/refs/heads/{branch_name}'
+    headers = {'Authorization': f'Bearer {access_token}'}
+
+    response = requests.delete(url, headers=headers)
+    if response.status_code == 204:
+        flash(f"Branch '{branch_name}' successfully deleted.", "success")
+    else:
+        flash(f"Failed to delete branch '{branch_name}'.", "error")
+    return redirect(url_for('main.show_branch_details', owner=owner, repo_name=repo_name, branch=branch_name))
 
 
