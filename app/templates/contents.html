@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repository Contents</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Repository Contents</h1>
+        <h4 class="text-muted">{{ repo }}</h4>
+
+        <a href="{{ url_for('main.home') }}" class="btn btn-secondary mb-4">Back to Home</a>
+
+        {% if contents %}
+            <ul class="list-group">
+                {% for item in contents %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ item.name }}</strong> 
+                            {% if item.type == 'dir' %}
+                                <span class="badge bg-primary ms-2">Directory</span>
+                            {% else %}
+                                <span class="badge bg-success ms-2">File</span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            {% if item.type == 'dir' %}
+                                <a href="{{ url_for('main.get_contents', owner=owner, repo=repo, path=item.path) }}" class="btn btn-outline-info btn-sm">View</a>
+                            {% else %}
+                                <a href="{{ item.download_url }}" class="btn btn-outline-secondary btn-sm" target="_blank">Download</a>
+                                <a href="#" class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#updateFileModal" 
+                                   data-path="{{ item.path }}" data-sha="{{ item.sha }}">Edit</a>
+                                <form action="{{ url_for('main.delete_existing_file', owner=owner, repo=repo, path=item.path) }}" method="POST" class="d-inline">
+                                    <input type="hidden" name="sha" value="{{ item.sha }}">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-warning">No contents available for this repository.</p>
+        {% endif %}
+
+        <!-- Add File Modal -->
+        <button class="btn btn-primary mt-4" data-bs-toggle="modal" data-bs-target="#addFileModal">Add New File</button>
+        <div class="modal fade" id="addFileModal" tabindex="-1" aria-labelledby="addFileModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form action="{{ url_for('main.create_new_file', owner=owner, repo=repo) }}" method="POST">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="addFileModalLabel">Add New File</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="filePath" class="form-label">File Path</label>
+                                <input type="text" class="form-control" id="filePath" name="path" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="fileContent" class="form-label">File Content</label>
+                                <textarea class="form-control" id="fileContent" name="content" rows="5" required></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="commitMessage" class="form-label">Commit Message</label>
+                                <input type="text" class="form-control" id="commitMessage" name="message" placeholder="Add a meaningful message" required>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary">Create File</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Update File Modal -->
+        <div class="modal fade" id="updateFileModal" tabindex="-1" aria-labelledby="updateFileModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form action="{{ url_for('main.update_existing_file', owner=owner, repo=repo, path='') }}" method="POST">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="updateFileModalLabel">Update File</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" id="updateFilePath" name="path">
+                            <input type="hidden" id="updateFileSha" name="sha">
+                            <div class="mb-3">
+                                <label for="updateFileContent" class="form-label">File Content</label>
+                                <textarea class="form-control" id="updateFileContent" name="content" rows="5" required></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="updateCommitMessage" class="form-label">Commit Message</label>
+                                <input type="text" class="form-control" id="updateCommitMessage" name="message" placeholder="Add a meaningful message" required>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-warning">Update File</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Populate Update File Modal
+        const updateFileModal = document.getElementById('updateFileModal');
+        updateFileModal.addEventListener('show.bs.modal', (event) => {
+            const button = event.relatedTarget;
+            const path = button.getAttribute('data-path');
+            const sha = button.getAttribute('data-sha');
+
+            document.getElementById('updateFilePath').value = path;
+            document.getElementById('updateFileSha').value = sha;
+        });
+    </script>
+</body>
+</html>
