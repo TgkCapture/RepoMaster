@@ -44,6 +44,14 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
 - **API Endpoint:** `POST /repos/{owner}/{repo}/git/refs`  
 - **Functionality:** Create a new branch from an existing reference.
 
+### Delete a Branch
+- **API Endpoint:** `DELETE /repos/{owner}/{repo}/git/refs/heads/{branch}`  
+- **Functionality:** Remove a branch permanently.
+
+### Rename a Branch
+- **API Endpoint:** `POST /repos/{owner}/{repo}/branches/{branch}/rename`  
+- **Functionality:** Rename a branch.
+
 
 ## Upcoming Features (Under Development)
 
@@ -70,17 +78,6 @@ Modify the content of an existing file.
 Remove a file from the repository.
 
 ---
-
-### Delete a Branch
-**API Endpoint:** `DELETE /repos/{owner}/{repo}/git/refs/heads/{branch}`  
-Remove a branch permanently.
-
----
-
-### Rename a Branch
-**API Endpoint:** `POST /repos/{owner}/{repo}/branches/{branch}/rename`  
-Rename a branch.
-
 
 ## Migration to GitHub App
 RepoMaster now uses a GitHub App for authentication and repository management, providing enhanced security and scalability:
