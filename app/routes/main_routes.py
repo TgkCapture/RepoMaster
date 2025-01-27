@@ -6,7 +6,7 @@ import requests
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from app.controllers.auth_controller import get_installation_access_token, is_user_logged_in, get_jwt
 from app.controllers.issues_controller import get_github_issues, create_github_issue, close_github_issue
-from app.controllers.repo_controller import get_github_repositories, delete_repository, get_branches, get_branch_details, create_branch, get_default_branch_sha, get_repository_contents
+from app.controllers.repo_controller import get_github_repositories, delete_repository, get_branches, get_branch_details, create_branch, get_default_branch_sha, get_repository_contents, create_file, update_file
 from app.controllers.pull_requests_controller import get_pull_requests, create_pull_request, merge_pull_request, view_pull_request
 
 main_routes = Blueprint('main', __name__)
@@ -391,4 +391,21 @@ def create_new_file(owner, repo):
         return redirect(url_for('main.get_contents', owner=owner, repo=repo))
     else:
         flash("Failed to create file", "danger")
+        return redirect(url_for('main.get_contents', owner=owner, repo=repo))
+
+@main_routes.route('/github/repos/<owner>/<repo>/contents/<path:path>', methods=['PUT'])
+def update_existing_file(owner, repo, path):
+    """
+    Update an existing file in the repository.
+    """
+    content = request.form.get('content')  
+    sha = request.form.get('sha')
+    message = request.form.get('message', 'Update file')
+    
+    result = update_file(owner, repo, path, content, sha, message)
+    if result:
+        flash(f"File '{path}' updated successfully", "success")
+        return redirect(url_for('main.get_contents', owner=owner, repo=repo))
+    else:
+        flash("Failed to update file", "danger")
         return redirect(url_for('main.get_contents', owner=owner, repo=repo))
