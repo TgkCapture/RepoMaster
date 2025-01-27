@@ -171,3 +171,24 @@ def create_file(owner, repo, path, content, message):
     except requests.RequestException as e:
         logging.error(f"Failed to create file: {e}")
         return None
+
+def update_file(owner, repo, path, content, sha, message):
+    """
+    Modify the content of an existing file.
+    """
+    url = f"{BASE_URL}/repos/{owner}/{repo}/contents/{path}"
+    access_token = get_installation_access_token()
+    headers = {'Authorization': f'Bearer {access_token}'}
+    data = {
+        "message": message,
+        "content": content, 
+        "sha": sha
+    }
+
+    try:
+        response = requests.put(url, headers=headers, json=data, timeout=60)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        logging.error(f"Failed to update file: {e}")
+        return None
