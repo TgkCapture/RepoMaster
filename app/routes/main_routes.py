@@ -375,3 +375,20 @@ def get_contents(owner, repo):
     else:
         flash("Failed to fetch repository contents", "danger")
         return redirect(url_for('main.home'))
+
+@main_routes.route('/github/repos/<owner>/<repo>/contents', methods=['POST'])
+def create_new_file(owner, repo):
+    """
+    Create a new file in the repository.
+    """
+    path = request.form.get('path')
+    content = request.form.get('content') 
+    message = request.form.get('message', 'Create new file')
+    
+    result = create_file(owner, repo, path, content, message)
+    if result:
+        flash(f"File '{path}' created successfully", "success")
+        return redirect(url_for('main.get_contents', owner=owner, repo=repo))
+    else:
+        flash("Failed to create file", "danger")
+        return redirect(url_for('main.get_contents', owner=owner, repo=repo))
