@@ -335,4 +335,26 @@ def delete_branch(owner, repo_name, branch_name):
         flash(f"Failed to delete branch '{branch_name}'.", "error")
     return redirect(url_for('main.show_repo_details', owner=owner, repo_name=repo_name))
 
+@main_routes.route('/repos/<owner>/<repo_name>/branches/<branch_name>/rename', methods=['POST'])
+def rename_branch(owner, repo_name, branch_name):
+    access_token = get_installation_access_token()
+    new_name = request.form.get('new_name')
+    if not new_name:
+        flash("New branch name is required.", "error")
+        return redirect(url_for('main.show_branch_details', owner=owner, repo_name=repo_name, branch=branch_name))
+    
+    url = f'https://api.github.com/repos/{owner}/{repo_name}/branches/{branch_name}/rename'
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json'
+    }
+    payload = {'new_name': new_name}
+    
+    response = requests.post(url, json=payload, headers=headers)
+    if response.status_code == 201:
+        flash(f"Branch '{branch_name}' renamed to '{new_name}'.", "success")
+        return redirect(url_for('main.show_branch_details', owner=owner, repo_name=repo_name, branch=new_name))
+    else:
+        flash(f"Failed to rename branch '{branch_name}'.", "error")
+        return redirect(url_for('main.show_branch_details', owner=owner, repo_name=repo_name, branch=branch_name))
 
