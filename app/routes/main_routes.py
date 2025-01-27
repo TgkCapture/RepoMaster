@@ -1,7 +1,8 @@
 """main_routes.py
 """
-import logging
 import os
+import logging
+import requests
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from app.controllers.auth_controller import get_installation_access_token, is_user_logged_in, get_jwt
 from app.controllers.issues_controller import get_github_issues, create_github_issue, close_github_issue
@@ -332,6 +333,6 @@ def delete_branch(owner, repo_name, branch_name):
         flash(f"Branch '{branch_name}' successfully deleted.", "success")
     else:
         flash(f"Failed to delete branch '{branch_name}'.", "error")
-    return redirect(url_for('main.show_branch_details', owner=owner, repo_name=repo_name, branch=branch_name))
+    return redirect(url_for('main.show_repo_details', owner=owner, repo_name=repo_name))
 
 
