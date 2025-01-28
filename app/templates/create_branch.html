@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Branch</title>
+</head>
+<body>
+    <h1>Create a New Branch in {{ repo_name }}</h1>
+    <form action="{{ url_for('main.main_create_branch', owner=owner, repo_name=repo_name) }}" method="POST">
+        <label for="ref">Branch Name:</label><br>
+        <input type="text" id="ref" name="ref" required><br><br>
+        
+        
+        <button type="submit">Create Branch</button>
+    </form>
+    <a href="/">Back Home</a>
+</body>
+</html>

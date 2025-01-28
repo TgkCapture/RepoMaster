@@ -1,12 +1,12 @@
 """main_routes.py
 """
-import logging
 import os
+import logging
+import requests
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from app.controllers.auth_controller import get_installation_access_token, is_user_logged_in, get_jwt
-from app.controllers.github_controller import get_github_repositories, get_branches
 from app.controllers.issues_controller import get_github_issues, create_github_issue, close_github_issue
-from app.controllers.repo_controller import delete_repository
+from app.controllers.repo_controller import get_github_repositories, delete_repository, get_branches, get_branch_details, create_branch, get_default_branch_sha, get_repository_contents, create_file, update_file, delete_file
 from app.controllers.pull_requests_controller import get_pull_requests, create_pull_request, merge_pull_request, view_pull_request
 
 main_routes = Blueprint('main', __name__)
@@ -76,6 +76,28 @@ def show_github_repositories():
     else:
         logging.error("Failed to get access token for GitHub repositories.")
         return "Failed to authenticate with GitHub", 500
+
+@main_routes.route('/github/repository/<owner>/<repo_name>')
+def show_repo_details(owner, repo_name):
+    """
+    Display repository details, including branches.
+    """
+    access_token = get_installation_access_token()
+    if not access_token:
+        logging.error("Failed to authenticate with GitHub.")
+        return "Authentication failed", 500
+
+    owner = session.get('github_username')
+
+    branches = get_branches(owner=owner, repo_name=repo_name)
+    
+    if branches is not None:
+        logging.info(f"Branches for repository '{repo_name}': {', '.join(branches)}")
+        
+        return render_template('repo_details.html',owner=owner, branches=branches, repo_name=repo_name)
+    else:
+        logging.error(f"Failed to fetch branches for repository '{repo_name}'.")
+        return "Failed to fetch branches", 500
 
 @main_routes.route('/repositories/<repo_name>/issues', methods=['GET', 'POST'])
 def manage_issues(repo_name):
@@ -228,3 +250,186 @@ def manage_pull_requests(repo_name):
                 return redirect(url_for('main.manage_pull_requests', repo_name=repo_name))
             else:
                 return "Failed to merge pull request", 500
+
+@main_routes.route('/repos/<owner>/<repo_name>/git/refs', methods=['GET', 'POST'])
+def main_create_branch(owner, repo_name):
+    """
+    Render the branch creation form and handle branch creation in the repository.
+    """
+    if not is_user_logged_in():
+        logging.warning("Unauthorized access attempt to create a branch.")
+        return "You are not logged in", 403
+
+    if request.method == 'GET':
+        return render_template('create_branch.html', owner=owner, repo_name=repo_name)
+
+    if request.method == 'POST':
+        access_token = get_installation_access_token()
+        if not access_token:
+            logging.error("Failed to get access token for creating a branch.")
+            flash("Failed to authenticate with GitHub.", "error")
+            return redirect(request.url), 500
+
+        ref_name = request.form.get("ref")  
+        sha = request.form.get("sha") 
+
+        if not ref_name:
+            flash("Branch name is required.", "error")
+            return redirect(request.url), 400
+
+        if not sha:
+            sha = get_default_branch_sha(owner, repo_name, access_token)
+            if not sha:
+                flash("Failed to retrieve default branch information.", "error")
+                return redirect(request.url), 500
+
+        branch = create_branch(owner, repo_name, access_token, ref_name, sha)
+        if branch:
+            logging.info(f"Successfully created branch '{ref_name}' in repository '{owner}/{repo_name}'.")
+            flash(f"Branch '{ref_name}' successfully created.", "success")
+            return redirect(url_for('main.show_branch_details', repo_name=repo_name, branch_name=ref_name))
+        else:
+            logging.error(f"Failed to create branch '{ref_name}' in repository '{owner}/{repo_name}'.")
+            flash("Failed to create branch in the repository.", "error")
+            return redirect(request.url), 500
+
+@main_routes.route('/github/repository/branch-details')
+def show_branch_details():
+    """
+    Display details of a specific branch.
+    """
+    if not is_user_logged_in():
+        logging.warning("Unauthorized access attempt to fetch branch details.")
+        return "You are not logged in", 403
+
+    access_token = get_installation_access_token()
+    if not access_token:
+        logging.error("Failed to get access token for fetching branch details.")
+        flash("Failed to authenticate with GitHub", "error")
+        return "Failed to authenticate with GitHub", 500
+        
+    owner = session.get('github_username')  
+    repo_name = request.args.get('repo_name')
+    branch_name = request.args.get('branch_name')
+
+    if not owner or not repo_name or not branch_name:
+        logging.error("Missing required parameters.")
+        return "Missing required parameters", 400
+
+    branch_details, error = get_branch_details(owner, repo_name, branch_name)
+    if error:
+        return error, 500
+
+    return render_template('branch_details.html', branch_details=branch_details, owner=owner, repo=repo_name, branch=branch_name)
+    
+@main_routes.route('/repos/<owner>/<repo_name>/branches/<branch_name>/delete', methods=['POST'])
+def delete_branch(owner, repo_name, branch_name):
+    access_token = get_installation_access_token()
+    url = f'https://api.github.com/repos/{owner}/{repo_name}/git/refs/heads/{branch_name}'
+    headers = {'Authorization': f'Bearer {access_token}'}
+
+    response = requests.delete(url, headers=headers)
+    if response.status_code == 204:
+        flash(f"Branch '{branch_name}' successfully deleted.", "success")
+    else:
+        flash(f"Failed to delete branch '{branch_name}'.", "error")
+    return redirect(url_for('main.show_repo_details', owner=owner, repo_name=repo_name))
+
+@main_routes.route('/repos/<owner>/<repo_name>/branches/<branch_name>/rename', methods=['POST'])
+def rename_branch(owner, repo_name, branch_name):
+    access_token = get_installation_access_token()
+    if not access_token:
+        flash("Authentication failed.", "error")
+        return redirect(url_for('main.show_branch_details', owner=owner, repo_name=repo_name, branch=branch_name))
+
+    new_name = request.form.get('new_name')  
+    if not new_name:
+        flash("New branch name is required.", "error")
+        return redirect(url_for('main.show_branch_details', owner=owner, repo_name=repo_name, branch=branch_name))
+
+    url = f'https://api.github.com/repos/{owner}/{repo_name}/branches/{branch_name}/rename'
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json'
+    }
+    payload = {'new_name': new_name}
+
+    response = requests.post(url, json=payload, headers=headers)
+    if response.status_code == 201:
+        flash(f"Branch '{branch_name}' renamed to '{new_name}'.", "success")
+        return redirect(url_for('main.show_repo_details', owner=owner, repo_name=repo_name))
+    else:
+        error_message = response.json().get('message', 'An error occurred.')
+        flash(f"Failed to rename branch '{branch_name}': {error_message}", "error")
+        return redirect(url_for('main.show_branch_details', owner=owner, repo_name=repo_name, branch=branch_name))
+
+@main_routes.route('/github/repos/<owner>/<repo>/contents', methods=['GET'])
+def get_contents(owner, repo):
+    """
+    Get repository contents.
+    """
+    path = request.args.get('path', '')
+    contents = get_repository_contents(owner, repo, path)
+    if contents is not None:
+        return render_template('contents.html', contents=contents, owner=owner, repo=repo, path=path)
+    else:
+        flash("Failed to fetch repository contents", "danger")
+        return redirect(url_for('main.home'))
+
+@main_routes.route('/github/repos/<owner>/<repo>/contents', methods=['POST'])
+def create_new_file(owner, repo):
+    """
+    Create a new file in the repository.
+    """
+    file_name = request.form.get('path')
+    content = request.form.get('content')
+    message = request.form.get('message', 'Add new file')
+
+    result = create_file(owner, repo, file_name, content, message)
+    if result:
+        flash(f"File '{file_name}' created successfully", "success")
+        return redirect(url_for('main.get_contents', owner=owner, repo=repo))
+    else:
+        flash("Failed to create file", "danger")
+        return redirect(url_for('main.get_contents', owner=owner, repo=repo))
+
+@main_routes.route('/github/repos/<owner>/<repo>/contents/<path:path>', methods=['POST'])
+def update_existing_file(owner, repo, path): #TODO: Fix update file
+    logging.debug(f"Received request to update file: owner={owner}, repo={repo}, path={path}")
+    content = request.form.get('content')
+    sha = request.form.get('sha')
+    message = request.form.get('message', 'Update file')
+
+    if not path:
+        logging.error("Path parameter is missing")
+        flash("Failed to update file: Path is missing", "danger")
+        return redirect(url_for('main.get_contents', owner=owner, repo=repo))
+
+    result = update_file(owner, repo, path, content, sha, message)
+    if result:
+        flash(f"File '{path}' updated successfully", "success")
+        return redirect(url_for('main.get_contents', owner=owner, repo=repo))
+    else:
+        flash("Failed to update file", "danger")
+        return redirect(url_for('main.get_contents', owner=owner, repo=repo))
+
+@main_routes.route('/github/repos/<owner>/<repo>/contents/<path:path>', methods=['POST'])
+def delete_existing_file(owner, repo, path):
+    sha = request.form.get('sha')
+    message = request.form.get('message', 'Delete file')
+
+    if not sha:
+        logging.warning("SHA not provided. Attempting to fetch SHA dynamically.")
+        sha = fetch_file_sha(owner, repo, path)
+
+    if not sha:
+        flash("Failed to delete file: Unable to determine SHA", "danger")
+        return redirect(url_for('main.get_contents', owner=owner, repo=repo))
+
+    result = delete_file(owner, repo, path, sha, message)
+    if result:
+        flash(f"File '{path}' deleted successfully", "success")
+    else:
+        flash("Failed to delete file", "danger")
+    
+    return redirect(url_for('main.get_contents', owner=owner, repo=repo))
