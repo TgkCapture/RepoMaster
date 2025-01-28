@@ -30,7 +30,7 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
 - **Route:** `/repositories/<repo_name>/pulls`
 - **Functionality:** Enables viewing, creation, merging, or management of pull requests for a specific repository.  
 
-### 5. Branch and Tag Management (Available)
+### 5. Branch Management (Available)
 
 #### Get Branch Details
 - **API Endpoint:** `GET /repos/{owner}/{repo}/branches/{branch}`  
