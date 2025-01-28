@@ -393,15 +393,18 @@ def create_new_file(owner, repo):
         flash("Failed to create file", "danger")
         return redirect(url_for('main.get_contents', owner=owner, repo=repo))
 
-@main_routes.route('/github/repos/<owner>/<repo>/contents/<path:path>', methods=['PUT'])
-def update_existing_file(owner, repo, path):
-    """
-    Update an existing file in the repository.
-    """
-    content = request.form.get('content')  
+@main_routes.route('/github/repos/<owner>/<repo>/contents/<path:path>', methods=['POST'])
+def update_existing_file(owner, repo, path): #TODO: Fix update file
+    logging.debug(f"Received request to update file: owner={owner}, repo={repo}, path={path}")
+    content = request.form.get('content')
     sha = request.form.get('sha')
     message = request.form.get('message', 'Update file')
-    
+
+    if not path:
+        logging.error("Path parameter is missing")
+        flash("Failed to update file: Path is missing", "danger")
+        return redirect(url_for('main.get_contents', owner=owner, repo=repo))
+
     result = update_file(owner, repo, path, content, sha, message)
     if result:
         flash(f"File '{path}' updated successfully", "success")

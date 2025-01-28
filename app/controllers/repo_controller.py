@@ -2,6 +2,7 @@
 """
 import requests
 import logging
+import base64
 from flask import session
 from requests.exceptions import RequestException
 from app.controllers.auth_controller import get_installation_access_token
@@ -177,18 +178,23 @@ def create_file(owner, repo, file_name, content, message):
         logging.error(f"Failed to create file: {e}")
         return None
 
-def update_file(owner, repo, path, content, sha, message):
+def update_file(owner, repo, path, content, sha, message): #TODO: Fix update file
     """
     Modify the content of an existing file.
     """
     url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
     access_token = get_installation_access_token()
     headers = {'Authorization': f'Bearer {access_token}'}
+
+    encoded_content = base64.b64encode(content.encode('utf-8')).decode('utf-8')
+
     data = {
         "message": message,
-        "content": content, 
+        "content": encoded_content,
         "sha": sha
     }
+
+    logging.debug(f"Encoded content: {encoded_content[:50]}...")  # Log the first 50 characters for privacy
 
     try:
         response = requests.put(url, headers=headers, json=data, timeout=60)
@@ -196,6 +202,7 @@ def update_file(owner, repo, path, content, sha, message):
         return response.json()
     except requests.RequestException as e:
         logging.error(f"Failed to update file: {e}")
+        logging.error(f"Response: {response.text}")
         return None
 
 def fetch_file_sha(owner, repo, path):
