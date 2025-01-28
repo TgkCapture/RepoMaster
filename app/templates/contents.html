@@ -32,10 +32,10 @@
                                 <a href="{{ item.download_url }}" class="btn btn-outline-secondary btn-sm" target="_blank">Download</a>
                                 <a href="#" class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#updateFileModal" 
                                    data-path="{{ item.path }}" data-sha="{{ item.sha }}">Edit</a>
-                                <form action="{{ url_for('main.delete_existing_file', owner=owner, repo=repo, path=item.path) }}" method="POST" class="d-inline">
-                                    <input type="hidden" name="sha" value="{{ item.sha }}">
-                                    <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
-                                </form>
+                                   <form action="{{ url_for('main.delete_existing_file', owner=owner, repo=repo, path=item.path) }}" method="POST" class="d-inline">
+                                        <input type="hidden" name="sha" value="{{ item.sha }}">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                                    </form>
                             {% endif %}
                         </div>
                     </li>
@@ -123,5 +123,49 @@
             document.getElementById('updateFileSha').value = sha;
         });
     </script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const deleteButtons = document.querySelectorAll('.delete-file-button');
+    
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const path = button.dataset.path;
+                const sha = button.dataset.sha;
+                const owner = button.dataset.owner;
+                const repo = button.dataset.repo;
+    
+                const message = prompt('Enter a commit message for the deletion:');
+                if (!message) {
+                    alert('Commit message is required.');
+                    return;
+                }
+    
+                fetch(`/github/repos/${owner}/${repo}/contents/${path}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ sha: sha, message: message })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        alert('File deleted successfully!');
+                        location.reload();
+                    } else {
+                        response.json().then(err => console.error(err));
+                        alert('Failed to delete file.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred.');
+                });
+
+            });
+        });
+    });
+    </script>
+    
 </body>
 </html>
