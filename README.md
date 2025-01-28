@@ -52,32 +52,21 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
 - **API Endpoint:** `POST /repos/{owner}/{repo}/branches/{branch}/rename`  
 - **Functionality:** Rename a branch.
 
-
-## Upcoming Features (Under Development)
-
 ### Get Repository Contents
-**API Endpoint:** `GET /repos/{owner}/{repo}/contents/{path}`  
-Retrieve the content of a file or directory.
-
----
+- **API Endpoint:** `GET /repos/{owner}/{repo}/contents/{path}`  
+- **Functionality:** Retrieve the content of a file or directory.
 
 ### Create a File
-**API Endpoint:** `PUT /repos/{owner}/{repo}/contents/{path}`  
-Add a new file to the repository.
+- **API Endpoint:** `PUT /repos/{owner}/{repo}/contents/{path}`  
+- **Functionality:** Add a new file to the repository.
 
----
-
-### Update a File
-**API Endpoint:** `PUT /repos/{owner}/{repo}/contents/{path}`  
-Modify the content of an existing file.
-
----
+### Update a File(Buggy)
+- **API Endpoint:** `PUT /repos/{owner}/{repo}/contents/{path}`  
+- **Functionality:** Modify the content of an existing file.
 
 ### Delete a File
 **API Endpoint:** `DELETE /repos/{owner}/{repo}/contents/{path}`  
-Remove a file from the repository.
-
----
+- **Functionality:** Remove a file from the repository.
 
 ## Migration to GitHub App
 RepoMaster now uses a GitHub App for authentication and repository management, providing enhanced security and scalability:
