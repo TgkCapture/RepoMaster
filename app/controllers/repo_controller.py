@@ -198,6 +198,22 @@ def update_file(owner, repo, path, content, sha, message):
         logging.error(f"Failed to update file: {e}")
         return None
 
+def fetch_file_sha(owner, repo, path):
+    """
+    Fetch the SHA for the given file path in the repository.
+    """
+    url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
+    access_token = get_installation_access_token()
+    headers = {'Authorization': f'Bearer {access_token}'}
+
+    try:
+        response = requests.get(url, headers=headers, timeout=60)
+        response.raise_for_status()
+        return response.json().get('sha')
+    except requests.RequestException as e:
+        logging.error(f"Failed to fetch file SHA: {e}")
+        return None
+
 def delete_file(owner, repo, path, sha, message):
     """
     Remove a file from the repository.
