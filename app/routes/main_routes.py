@@ -410,18 +410,23 @@ def update_existing_file(owner, repo, path):
         flash("Failed to update file", "danger")
         return redirect(url_for('main.get_contents', owner=owner, repo=repo))
 
-@main_routes.route('/github/repos/<owner>/<repo>/contents/<path:path>', methods=['DELETE'])
+@main_routes.route('/github/repos/<owner>/<repo>/contents/<path:path>', methods=['POST'])
 def delete_existing_file(owner, repo, path):
-    """
-    Delete a file from the repository.
-    """
     sha = request.form.get('sha')
     message = request.form.get('message', 'Delete file')
+
+    if not sha:
+        logging.warning("SHA not provided. Attempting to fetch SHA dynamically.")
+        sha = fetch_file_sha(owner, repo, path)
+
+    if not sha:
+        flash("Failed to delete file: Unable to determine SHA", "danger")
+        return redirect(url_for('main.get_contents', owner=owner, repo=repo))
 
     result = delete_file(owner, repo, path, sha, message)
     if result:
         flash(f"File '{path}' deleted successfully", "success")
-        return redirect(url_for('main.get_contents', owner=owner, repo=repo))
     else:
         flash("Failed to delete file", "danger")
-        return redirect(url_for('main.get_contents', owner=owner, repo=repo))
+    
+    return redirect(url_for('main.get_contents', owner=owner, repo=repo))
