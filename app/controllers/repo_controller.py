@@ -202,13 +202,16 @@ def delete_file(owner, repo, path, sha, message):
     """
     Remove a file from the repository.
     """
+    if not sha:
+        sha = fetch_file_sha(owner, repo, path)
+        if not sha:
+            logging.error("Unable to fetch SHA for the file. Aborting deletion.")
+            return None
+
     url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
     access_token = get_installation_access_token()
     headers = {'Authorization': f'Bearer {access_token}'}
-    data = {
-        "message": message,
-        "sha": sha
-    }
+    data = {"message": message, "sha": sha}
 
     try:
         response = requests.delete(url, headers=headers, json=data, timeout=60)
@@ -216,4 +219,5 @@ def delete_file(owner, repo, path, sha, message):
         return response.json()
     except requests.RequestException as e:
         logging.error(f"Failed to delete file: {e}")
+        logging.error(f"Response: {response.text}")
         return None
