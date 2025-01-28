@@ -1,201 +1,435 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Repositories | RepoMaster</title>
-    <link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700|Raleway:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Raleway', sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f9f9f9;
-            color: #333;
-        }
+"""main_routes.py
+"""
+import os
+import logging
+import requests
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash
+from app.controllers.auth_controller import get_installation_access_token, is_user_logged_in, get_jwt
+from app.controllers.issues_controller import get_github_issues, create_github_issue, close_github_issue
+from app.controllers.repo_controller import get_github_repositories, delete_repository, get_branches, get_branch_details, create_branch, get_default_branch_sha, get_repository_contents, create_file, update_file, delete_file
+from app.controllers.pull_requests_controller import get_pull_requests, create_pull_request, merge_pull_request, view_pull_request
 
-        header {
-            background: #007bff;
-            color: #fff;
-            padding: 20px 0;
-            text-align: center;
-        }
+main_routes = Blueprint('main', __name__)
 
-        header h1 {
-            font-family: 'Amatic SC', cursive;
-            font-size: 3rem;
-            margin: 0;
-        }
+@main_routes.route('/')
+def home():
+    """
+    Renders the home page.
+    """
+    return render_template('index.html', is_user_logged_in=is_user_logged_in)
 
-        header p {
-            font-size: 1.2rem;
-            margin: 5px 0 0;
-        }
+@main_routes.route('/github/authorize', methods=['GET'])
+def github_authorize():
+    """
+    Handle the GitHub App installation callback.
+    """
+    installation_id = request.args.get('installation_id')
 
-        main {
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 20px;
-        }
+    if not installation_id:
+        logging.error("No installation ID provided in the request.")
+        return "Installation ID is missing. Please install the GitHub App again.", 400
 
-        .github-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-        }
+    session['installation_id'] = installation_id
+    logging.info(f"Received installation ID: {installation_id}")
 
-        .github-card {
-            display: block;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            text-decoration: none;
-            color: #333;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
+    access_token = get_installation_access_token()
+    if access_token:
+        logging.info("Installation access token successfully generated.")
+        return redirect(url_for('main.home'))
+    else:
+        logging.error("Failed to generate installation access token.")
+        return "Failed to complete installation process. Please try again.", 500
 
-        .github-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-        }
+@main_routes.route('/github/install', methods=['GET'])
+def install_github_app():
+    """
+    Redirect the user to the GitHub App installation page.
+    """
+    github_app_name = os.getenv("GITHUB_APP_NAME")  
+    if not github_app_name:
+        logging.error("GITHUB_APP_ID is not set in the environment.")
+        return "Configuration error: GITHUB_APP_ID is not defined.", 500
 
-        .github-card__content h3 {
-            font-size: 1.5rem;
-            margin: 0 0 10px;
-        }
+    installation_url = f"https://github.com/apps/{github_app_name}/installations/new"
+    return redirect(installation_url)
 
-        .github-card__content p {
-            margin: 0 0 15px;
-            color: #555;
-        }
+@main_routes.route('/github/repositories')
+def show_github_repositories():
+    """
+    Display user's GitHub repositories.
+    """
+    if not is_user_logged_in():
+        logging.warning("User attempted to access repositories without being logged in.")
+        return "You are not logged in", 403
 
-        .github-card__meta {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
+    username = session['github_username']  
+    access_token = get_installation_access_token()
 
-        .github-card__language-icon {
-            font-size: 1.2rem;
-        }
+    if access_token:
+        repositories = get_github_repositories(username, access_token)
+        if repositories:
+            logging.info(f"Fetched repositories for user: {username}, count: {len(repositories)}")
+            return render_template('repositories.html', repositories=repositories)
+        else:
+            logging.error(f"Failed to fetch repositories for user: {username}")
+            return "Failed to fetch repositories from GitHub", 500
+    else:
+        logging.error("Failed to get access token for GitHub repositories.")
+        return "Failed to authenticate with GitHub", 500
 
-        .github-card__stats {
-            display: flex;
-            gap: 15px;
-        }
+@main_routes.route('/github/repository/<owner>/<repo_name>')
+def show_repo_details(owner, repo_name):
+    """
+    Display repository details, including branches.
+    """
+    access_token = get_installation_access_token()
+    if not access_token:
+        logging.error("Failed to authenticate with GitHub.")
+        return "Authentication failed", 500
 
-        .github-card__stats span {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            color: #777;
-        }
+    owner = session.get('github_username')
 
-        .github-card__stats i {
-            color: #333;
-        }
+    branches = get_branches(owner=owner, repo_name=repo_name)
+    
+    if branches is not None:
+        logging.info(f"Branches for repository '{repo_name}': {', '.join(branches)}")
+        
+        return render_template('repo_details.html',owner=owner, branches=branches, repo_name=repo_name)
+    else:
+        logging.error(f"Failed to fetch branches for repository '{repo_name}'.")
+        return "Failed to fetch branches", 500
 
-        .view-branches {
-            margin-top: 10px;
-        }
+@main_routes.route('/repositories/<repo_name>/issues', methods=['GET', 'POST'])
+def manage_issues(repo_name):
+    """
+    Displays and manages issues for a specific repository. Allows viewing and creating or closing issues
+    """
+    if not is_user_logged_in():
+        logging.warning("User attempted to access issues without being logged in.")
+        return "You are not logged in", 403
 
-        .view-branches-link {
-            display: inline-block;
-            padding: 10px 15px;
-            background: #007bff;
-            color: #fff;
-            border-radius: 5px;
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 600;
-            transition: background 0.3s;
-        }
+    if request.method == 'GET':
+        # Fetch and display issues
+        issues = get_github_issues(repo_name)
+        if issues is not None:
+            logging.info(f"Fetched {len(issues)} issues for repository: {repo_name}")
+            return render_template('issues.html', repo_name=repo_name, issues=issues)
+        else:
+            logging.error(f"Failed to fetch issues for repository: {repo_name}")
+            return "Failed to fetch issues from GitHub", 500
 
-        .view-branches-link:hover {
-            background: #0056b3;
-        }
+    elif request.method == 'POST':
+        if request.form.get('action') == 'close':
+            # Close an existing issue
+            issue_number = request.form.get('issue_number')
+            if not issue_number:
+                return "Issue number is required", 400
+            closed_issue = close_github_issue(repo_name, issue_number)
+            if closed_issue:
+                logging.info(f"Issue #{issue_number} successfully closed in repository {repo_name}.")
+                return redirect(url_for('main.manage_issues', repo_name=repo_name))
+            else:
+                return "Failed to close the issue", 500
 
-        .no-repositories {
-            text-align: center;
-            margin: 50px 0;
-        }
+        else:
+            # Create a new issue
+            title = request.form.get('title')
+            body = request.form.get('body')
+            if not title:
+                return "Issue title is required", 400
+            new_issue = create_github_issue(repo_name, title, body)
+            if new_issue:
+                logging.info(f"Issue created successfully in repository {repo_name}.")
+                return redirect(url_for('main.manage_issues', repo_name=repo_name))
 
-        footer {
-            background: #333;
-            color: #fff;
-            text-align: center;
-            padding: 10px 0;
-            margin-top: 50px;
-        }
+@main_routes.route('/delete_repo', methods=['GET', 'POST'])
+def delete_repositories():
+    """
+    Displays repositories and allows deletion of selected ones.
+    """
+    if not is_user_logged_in():
+        logging.warning("Unauthorized access to delete repositories.")
+        return "You are not logged in", 403
 
-        footer p {
-            margin: 0;
-            font-size: 0.9rem;
-        }
-    </style>
-</head>
-<body>
-    <header>
-        <div class="page-header">
-            <h1>Welcome to RepoMaster!</h1>
-            <p>Explore and manage your GitHub repositories with ease.</p>
-        </div>
-    </header>
+    if request.method == 'GET':
+        # Fetch and display repositories
+        repositories = get_github_repositories(session.get('github_username'), get_installation_access_token())
+        if repositories:
+            return render_template('delete_repo.html', repositories=repositories)
+        else:
+            return "Failed to fetch repositories", 500
 
-    <main>
-        {% if repositories %}
-            <div class="github-cards">
-                {% for repository in repositories %}
-                <a 
-                    href="{{ url_for('main.get_contents', owner=repository.owner.login, repo=repository.name) }}" 
-                    class="github-card" 
-                    title="View contents of repository {{ repository.name }}" 
-                    aria-label="View contents of repository {{ repository.name }}"
-                >
-                    <div class="github-card__content">
-                        <h3>{{ repository.name }}</h3>
-                        <p>{{ repository.description or "No description provided." }}</p>
-                        <div class="github-card__meta">
-                            <span class="github-card__language-icon" style="color: {{ repository.language_color }}">●</span> 
-                            <span class="github-card__language">{{ repository.language or "Unknown" }}</span>
-                        </div>
-                        <div class="github-card__stats">
-                            <span>
-                                <i class="fa fa-star" aria-hidden="true"></i> {{ repository.stars or 0 }}
-                            </span>
-                            <span>
-                                <i class="fa fa-code-fork" aria-hidden="true"></i> {{ repository.forks or 0 }}
-                            </span>
-                        </div>
-                    </div>
-                </a>
-                <div class="view-branches">
-                    <a 
-                        href="{{ url_for('main.show_repo_details', owner=repository.owner.login, repo_name=repository.name) }}" 
-                        class="view-branches-link" 
-                        title="View branches for {{ repository.name }}" 
-                        aria-label="View branches for {{ repository.name }}"
-                    >
-                        View Branches
-                    </a>
-                </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <div class="no-repositories">
-                <p>No repositories found. Start by connecting your GitHub account!</p>
-            </div>
-        {% endif %}
-    </main>
+    elif request.method == 'POST':
+        # Delete selected repositories
+        repos_to_delete = request.form.getlist('repo_to_delete[]')
+        if not repos_to_delete:
+            return "No repositories selected for deletion", 400
 
-    <footer>
-        <div class="page-footer">
-            <p>&copy; 2025 RepoMaster. All rights reserved.</p>
-        </div>
-    </footer>
+        result_message = delete_repository(repos_to_delete)
+        logging.info(result_message)
+        flash(result_message) 
+        return redirect(url_for('main.delete_repositories'))
 
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-</body>
-</html>
+@main_routes.route('/repositories/<repo_name>/pull_requests', methods=['GET', 'POST'])
+def manage_pull_requests(repo_name):
+    """
+    Handles pull requests for a repository:
+    - GET: Lists all pull requests, fetches details of a specific pull request, or renders the create form if `create` is requested.
+    - POST: Allows creating or merging pull requests.
+    """
+    if not is_user_logged_in():
+        logging.warning("User attempted to access pull requests without being logged in.")
+        return "You are not logged in", 403
+
+    access_token = get_installation_access_token()
+    if not access_token:
+        logging.error("Failed to get access token for managing pull requests.")
+        return "Failed to authenticate with GitHub", 500
+
+    if request.method == 'GET':
+        # Check if a specific pull request is requested
+        pr_number = request.args.get('pr_number')
+        create_form = request.args.get('create')
+
+        if pr_number:
+            # Fetch details of the specific pull request
+            pull_request = view_pull_request(session.get('github_username'), repo_name=repo_name, pr_number=int(pr_number))
+            if pull_request:
+                logging.info(f"Fetched details for pull request #{pr_number} in repository: {repo_name}")
+                return render_template('pull_request_details.html', pull_request=pull_request, repo_name=repo_name)
+            else:
+                logging.error(f"Failed to fetch details for pull request #{pr_number} in repository: {repo_name}")
+                return f"Failed to fetch details for pull request #{pr_number}", 500
+
+        elif create_form:
+            # Fetch branches and render the form for creating a pull request
+            branches = get_branches(session.get('github_username'), repo_name=repo_name)  
+            if branches is None:
+                logging.error(f"Failed to fetch branches for repository {repo_name}.")
+                return "Failed to fetch branches from GitHub", 500
+
+            logging.info(f"Fetched {len(branches)} branches for repository: {repo_name}")
+            return render_template('create_pull_request.html', repo_name=repo_name, branches=branches)
+
+        else:
+            # Fetch and display all pull requests
+            pull_requests = get_pull_requests(session.get('github_username'), repo_name=repo_name)
+            if pull_requests is not None:
+                logging.info(f"Fetched {len(pull_requests)} pull requests for repository: {repo_name}")
+                return render_template('pull_requests.html', repo_name=repo_name, pull_requests=pull_requests)
+            else:
+                logging.error(f"Failed to fetch pull requests for repository: {repo_name}")
+                return "Failed to fetch pull requests from GitHub", 500
+
+    elif request.method == 'POST':
+        action = request.form.get('action')
+
+        if action == 'create':
+            # Create a new pull request
+            title = request.form.get('title')
+            body = request.form.get('body')
+            head = request.form.get('head')
+            base = request.form.get('base')
+            if not title or not head or not base:
+                return "Title, head branch, and base branch are required to create a pull request", 400
+            new_pr = create_pull_request(session.get('github_username'), repo_name=repo_name, title=title, body=body, head=head, base=base)
+            if new_pr:
+                logging.info(f"Pull request created successfully in repository {repo_name}.")
+                return redirect(url_for('main.manage_pull_requests', repo_name=repo_name))
+            else:
+                return "Failed to create pull request", 500
+
+        elif action == 'merge':
+            # Merge an existing pull request
+            pr_number = request.form.get('pr_number')
+            if not pr_number:
+                return "Pull request number is required to merge", 400
+            merged_pr = merge_pull_request(session.get('github_username'), repo_name=repo_name, pr_number=int(pr_number))
+            if merged_pr:
+                logging.info(f"Pull request #{pr_number} successfully merged in repository {repo_name}.")
+                return redirect(url_for('main.manage_pull_requests', repo_name=repo_name))
+            else:
+                return "Failed to merge pull request", 500
+
+@main_routes.route('/repos/<owner>/<repo_name>/git/refs', methods=['GET', 'POST'])
+def main_create_branch(owner, repo_name):
+    """
+    Render the branch creation form and handle branch creation in the repository.
+    """
+    if not is_user_logged_in():
+        logging.warning("Unauthorized access attempt to create a branch.")
+        return "You are not logged in", 403
+
+    if request.method == 'GET':
+        return render_template('create_branch.html', owner=owner, repo_name=repo_name)
+
+    if request.method == 'POST':
+        access_token = get_installation_access_token()
+        if not access_token:
+            logging.error("Failed to get access token for creating a branch.")
+            flash("Failed to authenticate with GitHub.", "error")
+            return redirect(request.url), 500
+
+        ref_name = request.form.get("ref")  
+        sha = request.form.get("sha") 
+
+        if not ref_name:
+            flash("Branch name is required.", "error")
+            return redirect(request.url), 400
+
+        if not sha:
+            sha = get_default_branch_sha(owner, repo_name, access_token)
+            if not sha:
+                flash("Failed to retrieve default branch information.", "error")
+                return redirect(request.url), 500
+
+        branch = create_branch(owner, repo_name, access_token, ref_name, sha)
+        if branch:
+            logging.info(f"Successfully created branch '{ref_name}' in repository '{owner}/{repo_name}'.")
+            flash(f"Branch '{ref_name}' successfully created.", "success")
+            return redirect(url_for('main.show_branch_details', repo_name=repo_name, branch_name=ref_name))
+        else:
+            logging.error(f"Failed to create branch '{ref_name}' in repository '{owner}/{repo_name}'.")
+            flash("Failed to create branch in the repository.", "error")
+            return redirect(request.url), 500
+
+@main_routes.route('/github/repository/branch-details')
+def show_branch_details():
+    """
+    Display details of a specific branch.
+    """
+    if not is_user_logged_in():
+        logging.warning("Unauthorized access attempt to fetch branch details.")
+        return "You are not logged in", 403
+
+    access_token = get_installation_access_token()
+    if not access_token:
+        logging.error("Failed to get access token for fetching branch details.")
+        flash("Failed to authenticate with GitHub", "error")
+        return "Failed to authenticate with GitHub", 500
+        
+    owner = session.get('github_username')  
+    repo_name = request.args.get('repo_name')
+    branch_name = request.args.get('branch_name')
+
+    if not owner or not repo_name or not branch_name:
+        logging.error("Missing required parameters.")
+        return "Missing required parameters", 400
+
+    branch_details, error = get_branch_details(owner, repo_name, branch_name)
+    if error:
+        return error, 500
+
+    return render_template('branch_details.html', branch_details=branch_details, owner=owner, repo=repo_name, branch=branch_name)
+    
+@main_routes.route('/repos/<owner>/<repo_name>/branches/<branch_name>/delete', methods=['POST'])
+def delete_branch(owner, repo_name, branch_name):
+    access_token = get_installation_access_token()
+    url = f'https://api.github.com/repos/{owner}/{repo_name}/git/refs/heads/{branch_name}'
+    headers = {'Authorization': f'Bearer {access_token}'}
+
+    response = requests.delete(url, headers=headers)
+    if response.status_code == 204:
+        flash(f"Branch '{branch_name}' successfully deleted.", "success")
+    else:
+        flash(f"Failed to delete branch '{branch_name}'.", "error")
+    return redirect(url_for('main.show_repo_details', owner=owner, repo_name=repo_name))
+
+@main_routes.route('/repos/<owner>/<repo_name>/branches/<branch_name>/rename', methods=['POST'])
+def rename_branch(owner, repo_name, branch_name):
+    access_token = get_installation_access_token()
+    if not access_token:
+        flash("Authentication failed.", "error")
+        return redirect(url_for('main.show_branch_details', owner=owner, repo_name=repo_name, branch=branch_name))
+
+    new_name = request.form.get('new_name')  
+    if not new_name:
+        flash("New branch name is required.", "error")
+        return redirect(url_for('main.show_branch_details', owner=owner, repo_name=repo_name, branch=branch_name))
+
+    url = f'https://api.github.com/repos/{owner}/{repo_name}/branches/{branch_name}/rename'
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json'
+    }
+    payload = {'new_name': new_name}
+
+    response = requests.post(url, json=payload, headers=headers)
+    if response.status_code == 201:
+        flash(f"Branch '{branch_name}' renamed to '{new_name}'.", "success")
+        return redirect(url_for('main.show_repo_details', owner=owner, repo_name=repo_name))
+    else:
+        error_message = response.json().get('message', 'An error occurred.')
+        flash(f"Failed to rename branch '{branch_name}': {error_message}", "error")
+        return redirect(url_for('main.show_branch_details', owner=owner, repo_name=repo_name, branch=branch_name))
+
+@main_routes.route('/github/repos/<owner>/<repo>/contents', methods=['GET'])
+def get_contents(owner, repo):
+    """
+    Get repository contents.
+    """
+    path = request.args.get('path', '')
+    contents = get_repository_contents(owner, repo, path)
+    if contents is not None:
+        return render_template('contents.html', contents=contents, owner=owner, repo=repo, path=path)
+    else:
+        flash("Failed to fetch repository contents", "danger")
+        return redirect(url_for('main.home'))
+
+@main_routes.route('/github/repos/<owner>/<repo>/contents', methods=['POST'])
+def create_new_file(owner, repo):
+    """
+    Create a new file in the repository.
+    """
+    file_name = request.form.get('path')
+    content = request.form.get('content')
+    message = request.form.get('message', 'Add new file')
+
+    result = create_file(owner, repo, file_name, content, message)
+    if result:
+        flash(f"File '{file_name}' created successfully", "success")
+        return redirect(url_for('main.get_contents', owner=owner, repo=repo))
+    else:
+        flash("Failed to create file", "danger")
+        return redirect(url_for('main.get_contents', owner=owner, repo=repo))
+
+@main_routes.route('/github/repos/<owner>/<repo>/contents/<path:path>', methods=['POST'])
+def update_existing_file(owner, repo, path): #TODO: Fix update file
+    logging.debug(f"Received request to update file: owner={owner}, repo={repo}, path={path}")
+    content = request.form.get('content')
+    sha = request.form.get('sha')
+    message = request.form.get('message', 'Update file')
+
+    if not path:
+        logging.error("Path parameter is missing")
+        flash("Failed to update file: Path is missing", "danger")
+        return redirect(url_for('main.get_contents', owner=owner, repo=repo))
+
+    result = update_file(owner, repo, path, content, sha, message)
+    if result:
+        flash(f"File '{path}' updated successfully", "success")
+        return redirect(url_for('main.get_contents', owner=owner, repo=repo))
+    else:
+        flash("Failed to update file", "danger")
+        return redirect(url_for('main.get_contents', owner=owner, repo=repo))
+
+@main_routes.route('/github/repos/<owner>/<repo>/contents/<path:path>', methods=['POST'])
+def delete_existing_file(owner, repo, path):
+    sha = request.form.get('sha')
+    message = request.form.get('message', 'Delete file')
+
+    if not sha:
+        logging.warning("SHA not provided. Attempting to fetch SHA dynamically.")
+        sha = fetch_file_sha(owner, repo, path)
+
+    if not sha:
+        flash("Failed to delete file: Unable to determine SHA", "danger")
+        return redirect(url_for('main.get_contents', owner=owner, repo=repo))
+
+    result = delete_file(owner, repo, path, sha, message)
+    if result:
+        flash(f"File '{path}' deleted successfully", "success")
+    else:
+        flash("Failed to delete file", "danger")
+    
+    return redirect(url_for('main.get_contents', owner=owner, repo=repo))
