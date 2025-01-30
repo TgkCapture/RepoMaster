@@ -2,200 +2,61 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Repositories | RepoMaster</title>
-    <link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700|Raleway:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Raleway', sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f9f9f9;
-            color: #333;
-        }
-
-        header {
-            background: #007bff;
-            color: #fff;
-            padding: 20px 0;
-            text-align: center;
-        }
-
-        header h1 {
-            font-family: 'Amatic SC', cursive;
-            font-size: 3rem;
-            margin: 0;
-        }
-
-        header p {
-            font-size: 1.2rem;
-            margin: 5px 0 0;
-        }
-
-        main {
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 20px;
-        }
-
-        .github-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-        }
-
-        .github-card {
-            display: block;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            text-decoration: none;
-            color: #333;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .github-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-        }
-
-        .github-card__content h3 {
-            font-size: 1.5rem;
-            margin: 0 0 10px;
-        }
-
-        .github-card__content p {
-            margin: 0 0 15px;
-            color: #555;
-        }
-
-        .github-card__meta {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .github-card__language-icon {
-            font-size: 1.2rem;
-        }
-
-        .github-card__stats {
-            display: flex;
-            gap: 15px;
-        }
-
-        .github-card__stats span {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            color: #777;
-        }
-
-        .github-card__stats i {
-            color: #333;
-        }
-
-        .view-branches {
-            margin-top: 10px;
-        }
-
-        .view-branches-link {
-            display: inline-block;
-            padding: 10px 15px;
-            background: #007bff;
-            color: #fff;
-            border-radius: 5px;
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 600;
-            transition: background 0.3s;
-        }
-
-        .view-branches-link:hover {
-            background: #0056b3;
-        }
-
-        .no-repositories {
-            text-align: center;
-            margin: 50px 0;
-        }
-
-        footer {
-            background: #333;
-            color: #fff;
-            text-align: center;
-            padding: 10px 0;
-            margin-top: 50px;
-        }
-
-        footer p {
-            margin: 0;
-            font-size: 0.9rem;
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 </head>
 <body>
-    <header>
-        <div class="page-header">
-            <h1>Welcome to RepoMaster!</h1>
-            <p>Explore and manage your GitHub repositories with ease.</p>
-        </div>
+    <header class="bg-primary text-white text-center py-4">
+        <h1 class="fw-bold">Welcome to RepoMaster!</h1>
+        <p>Explore and manage your GitHub repositories with ease.</p>
     </header>
 
-    <main>
+    <main class="container my-4">
         {% if repositories %}
-            <div class="github-cards">
+            <div class="row row-cols-1 row-cols-md-3 g-4">
                 {% for repository in repositories %}
-                <a 
-                    href="{{ url_for('main.get_contents', owner=repository.owner.login, repo=repository.name) }}" 
-                    class="github-card" 
-                    title="View contents of repository {{ repository.name }}" 
-                    aria-label="View contents of repository {{ repository.name }}"
-                >
-                    <div class="github-card__content">
-                        <h3>{{ repository.name }}</h3>
-                        <p>{{ repository.description or "No description provided." }}</p>
-                        <div class="github-card__meta">
-                            <span class="github-card__language-icon" style="color: {{ repository.language_color }}">●</span> 
-                            <span class="github-card__language">{{ repository.language or "Unknown" }}</span>
+                <div class="col">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ repository.name }}</h5>
+                            <p class="card-text">{{ repository.description or "No description provided." }}</p>
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="me-2" style="color: {{ repository.language_color }}; font-size: 1.2rem;">&#9679;</span>
+                                <span class="text-muted">{{ repository.language or "Unknown" }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between text-muted">
+                                <span><i class="fa fa-star"></i> {{ repository.stars or 0 }}</span>
+                                <span><i class="fa fa-code-fork"></i> {{ repository.forks or 0 }}</span>
+                            </div>
                         </div>
-                        <div class="github-card__stats">
-                            <span>
-                                <i class="fa fa-star" aria-hidden="true"></i> {{ repository.stars or 0 }}
-                            </span>
-                            <span>
-                                <i class="fa fa-code-fork" aria-hidden="true"></i> {{ repository.forks or 0 }}
-                            </span>
+                        <div class="card-footer text-center">
+                            <a href="{{ url_for('main.get_contents', owner=repository.owner.login, repo=repository.name) }}" 
+                               class="btn btn-primary btn-sm" title="View contents of repository {{ repository.name }}">
+                                View Contents
+                            </a>
+                            <a href="{{ url_for('main.show_repo_details', owner=repository.owner.login, repo_name=repository.name) }}" 
+                               class="btn btn-secondary btn-sm" title="View branches for {{ repository.name }}">
+                                View Branches
+                            </a>
                         </div>
                     </div>
-                </a>
-                <div class="view-branches">
-                    <a 
-                        href="{{ url_for('main.show_repo_details', owner=repository.owner.login, repo_name=repository.name) }}" 
-                        class="view-branches-link" 
-                        title="View branches for {{ repository.name }}" 
-                        aria-label="View branches for {{ repository.name }}"
-                    >
-                        View Branches
-                    </a>
                 </div>
                 {% endfor %}
             </div>
         {% else %}
-            <div class="no-repositories">
+            <div class="text-center text-muted py-5">
                 <p>No repositories found. Start by connecting your GitHub account!</p>
             </div>
         {% endif %}
     </main>
 
-    <footer>
-        <div class="page-footer">
-            <p>&copy; 2025 RepoMaster. All rights reserved.</p>
-        </div>
+    <footer class="bg-dark text-white text-center py-3 mt-4">
+        <p class="mb-0">&copy; 2025 RepoMaster. All rights reserved.</p>
     </footer>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>
