@@ -4,81 +4,42 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Issues - {{ repo_name }}</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-        }
-        h1 {
-            color: #333;
-        }
-        ul {
-            list-style-type: none;
-            padding: 0;
-        }
-        li {
-            background-color: #f9f9f9;
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 4px;
-        }
-        li a {
-            font-weight: bold;
-            color: #0073e6;
-            text-decoration: none;
-        }
-        li a:hover {
-            text-decoration: underline;
-        }
-        form {
-            margin: 20px 0;
-        }
-        input, textarea, button {
-            padding: 10px;
-            margin: 5px;
-            font-size: 1rem;
-        }
-        input, textarea {
-            width: 100%;
-        }
-        button {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #218838;
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 </head>
 <body>
-    <h1>Issues for {{ repo_name }}</h1>
+    <div class="container mt-5">
+        <h1 class="mb-4">Issues for {{ repo_name }}</h1>
 
-    <!-- Form to create a new issue -->
-    <h3>Create New Issue</h3>
-    <form method="POST" action="{{ url_for('main.manage_issues', repo_name=repo_name) }}">
-        <input type="text" name="title" placeholder="Issue Title" required>
-        <textarea name="body" placeholder="Issue Body" required></textarea>
-        <button type="submit">Create Issue</button>
-    </form>
+        <!-- Form to create a new issue -->
+        <h3>Create New Issue</h3>
+        <form method="POST" action="{{ url_for('main.manage_issues', repo_name=repo_name) }}" class="mb-4">
+            <div class="mb-3">
+                <input type="text" class="form-control" name="title" placeholder="Issue Title" required>
+            </div>
+            <div class="mb-3">
+                <textarea class="form-control" name="body" placeholder="Issue Body" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-success">Create Issue</button>
+        </form>
 
-    <!-- List of existing issues -->
-    <h3>Existing Issues</h3>
-    <ul>
-        {% for issue in issues %}
-            <li>
-                <a href="{{ issue.html_url }}" target="_blank">{{ issue.title }}</a> 
-                <p>{{ issue.body }}</p>
+        <!-- List of existing issues -->
+        <h3>Existing Issues</h3>
+        <ul class="list-group">
+            {% for issue in issues %}
+                <li class="list-group-item">
+                    <a href="{{ issue.html_url }}" target="_blank" class="fw-bold text-primary">{{ issue.title }}</a>
+                    <p class="mb-2">{{ issue.body }}</p>
 
-                <!-- Form to close an issue -->
-                <form method="POST" action="{{ url_for('main.manage_issues', repo_name=repo_name) }}">
-                    <input type="hidden" name="issue_number" value="{{ issue.number }}">
-                    <button type="submit" name="action" value="close">Close Issue</button>
-                </form>
+                    <!-- Form to close an issue -->
+                    <form method="POST" action="{{ url_for('main.manage_issues', repo_name=repo_name) }}">
+                        <input type="hidden" name="issue_number" value="{{ issue.number }}">
+                        <button type="submit" name="action" value="close" class="btn btn-danger btn-sm">Close Issue</button>
+                    </form>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
 
-            </li>
-        {% endfor %}
-    </ul>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
