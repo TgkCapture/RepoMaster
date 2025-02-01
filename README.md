@@ -27,7 +27,7 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
   - Confirmation mechanism before proceeding with the deletion.
 
 ### 4. Manage Pull Requests (Available)
-- **Route:** `/repositories/<repo_name>/pulls`
+- **Route:** `/repositories/<repo_name>/pull_requests`
 - **Functionality:** Enables viewing, creation, merging, or management of pull requests for a specific repository.  
 
 ### 5. Branch Management (Available)

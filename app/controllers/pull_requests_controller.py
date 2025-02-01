@@ -27,7 +27,7 @@ def get_pull_requests(owner, repo_name):
         logging.error(f"Failed to fetch pull requests for repository {repo_name}: {e}")
         return None
 
-def view_pull_request(owner, repo_name, pull_number):
+def view_pull_request(owner, repo_name, pr_number):
     """Fetches details for a GitHub pull request."""
     access_token = get_installation_access_token()
 
@@ -36,14 +36,14 @@ def view_pull_request(owner, repo_name, pull_number):
         return None
 
     headers = {'Authorization': f'Bearer {access_token}'}
-    api_url = f'https://api.github.com/repos/{owner}/{repo_name}/pulls/{pull_number}'
+    api_url = f'https://api.github.com/repos/{owner}/{repo_name}/pulls/{pr_number}'
 
     try:
         response = requests.get(api_url, headers=headers, timeout=60)
         response.raise_for_status()
 
         pull = response.json()
-        logging.info(f"Fetched pull request #{pull_number} for repository {repo_name}.")
+        logging.info(f"Fetched pull request #{pr_number} for repository {repo_name}.")
         return pull
     except RequestException as e:
         logging.error(f"Failed to fetch pull request details: {e}")

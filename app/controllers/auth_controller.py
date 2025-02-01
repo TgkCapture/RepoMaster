@@ -21,7 +21,7 @@ def get_jwt():
 
 def get_installation_access_token():
     """
-    Exchange the JWT for an installation access token and retrieve the username.
+    Exchange the JWT for an installation access token and retrieve the username and avatar URL.
     """
     jwt_token = get_jwt()
     installation_id = session.get('installation_id') 
@@ -48,9 +48,10 @@ def get_installation_access_token():
         installation_url = f'https://api.github.com/app/installations/{installation_id}'
         installation_response = requests.get(installation_url, headers=headers)
         if installation_response.status_code == 200:
-            username = installation_response.json().get('account', {}).get('login')
-            logging.info(f"Fetched username associated with the installation: {username}")
-            session['github_username'] = username
+            user_data = installation_response.json().get('account', {})
+            session['github_username'] = user_data.get('login')
+            session['github_avatar_url'] = user_data.get('avatar_url')
+
         else:
             logging.error(f"Failed to retrieve installation details: {installation_response.status_code}, {installation_response.text}")
 
@@ -71,3 +72,12 @@ def is_user_logged_in():
     else:
         logging.warning("User is not authenticated. No installation access token found in the session.")
         return False
+
+def clear_session():
+    """
+    Clears all GitHub authentication-related session data.
+    """
+    logging.info("Clearing session data for logout.")
+    session.pop('installation_id', None)
+    session.pop('github_installation_token', None)
+    session.pop('github_username', None)

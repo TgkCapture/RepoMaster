@@ -8,11 +8,31 @@
 </head>
 <body>
     <div class="container mt-5">
+        <!-- Repository and Branch Information -->
         <h1 class="mb-4">Repository Contents</h1>
         <h4 class="text-muted">{{ repo }}</h4>
+        <div class="d-flex align-items-center mb-4">
+            <span class="me-2">Current Branch:</span>
+            <div class="dropdown">
+                <button class="btn btn-secondary dropdown-toggle" type="button" id="branchDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    {{ current_branch }}
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="branchDropdown">
+                    {% for branch in branches %}
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('main.get_contents', owner=owner, repo=repo, branch=branch.name) }}">
+                                {{ branch.name }}
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
 
+        <!-- Back to Home Button -->
         <a href="{{ url_for('main.home') }}" class="btn btn-secondary mb-4">Back to Home</a>
 
+        <!-- Repository Contents -->
         {% if contents %}
             <ul class="list-group">
                 {% for item in contents %}
@@ -27,15 +47,15 @@
                         </div>
                         <div>
                             {% if item.type == 'dir' %}
-                                <a href="{{ url_for('main.get_contents', owner=owner, repo=repo, path=item.path) }}" class="btn btn-outline-info btn-sm">View</a>
+                                <a href="{{ url_for('main.get_contents', owner=owner, repo=repo, path=item.path, branch=current_branch) }}" class="btn btn-outline-info btn-sm">View</a>
                             {% else %}
                                 <a href="{{ item.download_url }}" class="btn btn-outline-secondary btn-sm" target="_blank">Download</a>
                                 <a href="#" class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#updateFileModal" 
                                    data-path="{{ item.path }}" data-sha="{{ item.sha }}">Edit</a>
-                                   <form action="{{ url_for('main.delete_existing_file', owner=owner, repo=repo, path=item.path) }}" method="POST" class="d-inline">
-                                        <input type="hidden" name="sha" value="{{ item.sha }}">
-                                        <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
-                                    </form>
+                                <form action="{{ url_for('main.delete_existing_file', owner=owner, repo=repo, path=item.path) }}" method="POST" class="d-inline">
+                                    <input type="hidden" name="sha" value="{{ item.sha }}">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                                </form>
                             {% endif %}
                         </div>
                     </li>
@@ -43,6 +63,48 @@
             </ul>
         {% else %}
             <p class="text-warning">No contents available for this repository.</p>
+        {% endif %}
+
+        <!-- Issues Section -->
+        <h3 class="mt-5">Issues</h3>
+        {% if issues %}
+            <ul class="list-group">
+                {% for issue in issues %}
+                    <li class="list-group-item">
+                        <strong>#{{ issue.number }}:</strong> {{ issue.title }}
+                        <span class="badge bg-{{ 'success' if issue.state == 'closed' else 'warning' }} ms-2">{{ issue.state }}</span>
+                        <div class="float-end">
+                            <!-- Button to view issue in your app -->
+                            <a href="{{ url_for('main.manage_issues', repo_name=repo, issue_number=issue.number) }}" class="btn btn-outline-info btn-sm me-2">View in App</a>
+                            <!-- Button to view issue on GitHub -->
+                            <a href="{{ issue.html_url }}" class="btn btn-outline-secondary btn-sm" target="_blank">View on GitHub</a>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-warning">No issues available for this repository.</p>
+        {% endif %}
+
+        <!-- Pull Requests Section -->
+        <h3 class="mt-5">Pull Requests</h3>
+        {% if pull_requests %}
+            <ul class="list-group">
+                {% for pr in pull_requests %}
+                    <li class="list-group-item">
+                        <strong>#{{ pr.number }}:</strong> {{ pr.title }}
+                        <span class="badge bg-{{ 'success' if pr.state == 'closed' else 'primary' }} ms-2">{{ pr.state }}</span>
+                        <div class="float-end">
+                            <!-- Button to view pull request in your app -->
+                            <a href="{{ url_for('main.manage_pull_requests', repo_name=repo, pr_number=pr.number) }}" class="btn btn-outline-info btn-sm me-2">View in App</a>
+                            <!-- Button to view pull request on GitHub -->
+                            <a href="{{ pr.html_url }}" class="btn btn-outline-secondary btn-sm" target="_blank">View on GitHub</a>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-warning">No pull requests available for this repository.</p>
         {% endif %}
 
         <!-- Add File Modal -->
@@ -74,7 +136,6 @@
                             <button type="submit" class="btn btn-primary">Create File</button>
                         </div>
                     </form>
-                    
                 </div>
             </div>
         </div>
@@ -84,10 +145,8 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <form action="{{ url_for('main.update_existing_file', owner=owner, repo=repo, path='') }}" 
-                        method="POST" #TODO: Fix update file
+                        method="POST"
                         onsubmit="this.action = this.action.replace('path=', 'path=' + encodeURIComponent(document.getElementById('updateFilePath').value))">
-
-
                         <div class="modal-header">
                             <h5 class="modal-title" id="updateFileModalLabel">Update File</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -118,63 +177,15 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const updateFileModal = document.getElementById('updateFileModal');
-
             updateFileModal.addEventListener('show.bs.modal', (event) => {
                 const button = event.relatedTarget;
                 const path = button.getAttribute('data-path');
                 const sha = button.getAttribute('data-sha');
-
                 document.getElementById('updateFilePath').value = path;
                 document.getElementById('updateFileSha').value = sha;
-
                 console.log(`Path set in modal: ${path}`);
             });
         });
-
     </script>
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const deleteButtons = document.querySelectorAll('.delete-file-button');
-    
-        deleteButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const path = button.dataset.path;
-                const sha = button.dataset.sha;
-                const owner = button.dataset.owner;
-                const repo = button.dataset.repo;
-    
-                const message = prompt('Enter a commit message for the deletion:');
-                if (!message) {
-                    alert('Commit message is required.');
-                    return;
-                }
-    
-                fetch(`/github/repos/${owner}/${repo}/contents/${path}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ sha: sha, message: message })
-                })
-                .then(response => {
-                    if (response.ok) {
-                        alert('File deleted successfully!');
-                        location.reload();
-                    } else {
-                        response.json().then(err => console.error(err));
-                        alert('Failed to delete file.');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred.');
-                });
-
-            });
-        });
-    });
-    </script>
-    
-    
 </body>
 </html>
