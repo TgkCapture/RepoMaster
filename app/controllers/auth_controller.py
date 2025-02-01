@@ -71,3 +71,12 @@ def is_user_logged_in():
     else:
         logging.warning("User is not authenticated. No installation access token found in the session.")
         return False
+
+def clear_session():
+    """
+    Clears all GitHub authentication-related session data.
+    """
+    logging.info("Clearing session data for logout.")
+    session.pop('installation_id', None)
+    session.pop('github_installation_token', None)
+    session.pop('github_username', None)
