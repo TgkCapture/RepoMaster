@@ -4,162 +4,54 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Branch Details</title>
-    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Raleway', sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f9;
-            color: #333;
-            line-height: 1.6;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 20px;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-
-        button, a {
-            padding: 10px 15px;
-            border: none;
-            border-radius: 4px;
-            background: #007bff;
-            color: white;
-            cursor: pointer;
-            font-weight: bold;
-            margin: 10px 5px;
-            text-decoration: none;
-            transition: background 0.3s;
-        }
-
-        button:hover, a:hover {
-            background: #0056b3;
-        }
-
-        /* Modal styles */
-        .modal {
-            display: none; /* Hidden by default */
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0, 0, 0, 0.5);
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-content {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            max-width: 500px;
-            width: 90%;
-            text-align: center;
-        }
-
-        .modal-header {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-
-        .modal-close {
-            position: absolute;
-            top: 10px;
-            right: 20px;
-            font-size: 20px;
-            font-weight: bold;
-            color: #333;
-            cursor: pointer;
-        }
-
-        .modal-close:hover {
-            color: #000;
-        }
-
-        input[type="text"] {
-            width: 80%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </head>
-<body>
-    <h1>Branch Details</h1>
-
-    <div class="container">
-        
-
-        <p><strong>Repository:</strong> {{ owner }}/{{ repo }}</p>
-        <p><strong>Branch:</strong> {{ branch }}</p>
-
-        {% if branch_details %}
-            <h2>Details</h2>
-            <p><strong>Name:</strong> {{ branch_details['name'] }}</p>
-            <p><strong>Commit SHA:</strong> {{ branch_details['commit']['sha'] }}</p>
-            {% if branch_details.get('protected') %}
-                <p><strong>Protected:</strong> Yes</p>
+<body class="bg-light">
+    <div class="container mt-5">
+        <div class="card shadow p-4">
+            <h1 class="text-center">Branch Details</h1>
+            <p><strong>Repository:</strong> {{ owner }}/{{ repo }}</p>
+            <p><strong>Branch:</strong> {{ branch }}</p>
+            
+            {% if branch_details %}
+                <h3>Details</h3>
+                <p><strong>Name:</strong> {{ branch_details['name'] }}</p>
+                <p><strong>Commit SHA:</strong> {{ branch_details['commit']['sha'] }}</p>
+                <p><strong>Protected:</strong> {{ 'Yes' if branch_details.get('protected') else 'No' }}</p>
             {% else %}
-                <p><strong>Protected:</strong> No</p>
+                <p class="text-danger">No branch details available.</p>
             {% endif %}
-        {% else %}
-            <p>No branch details available.</p>
-        {% endif %}
-
-        <form action="{{ url_for('main.delete_branch', owner=owner, repo_name=repo, branch_name=branch) }}" method="POST">
-            <button type="submit" onclick="return confirm('Are you sure you want to delete this branch?')">Delete Branch</button>
-        </form>
-
-        <button id="renameButton">Rename Branch</button>
-
-        <a href="/">Go Back to Home</a>
-    </div>
-
-    <!-- Rename Modal -->
-    <div id="renameModal" class="modal">
-        <div class="modal-content">
-            <span class="modal-close" id="modalClose">&times;</span>
-            <div class="modal-header">Rename Branch</div>
-            <form action="{{ url_for('main.rename_branch', owner=owner, repo_name=repo, branch_name=branch_details['name']) }}" method="POST">
-                <label for="new_name">New Branch Name:</label>
-                <input type="text" id="new_name" name="new_name" required>
-                <button type="submit">Rename</button>
+            
+            <form action="{{ url_for('main.delete_branch', owner=owner, repo_name=repo, branch_name=branch) }}" method="POST" class="mt-3">
+                <button type="submit" class="btn btn-danger w-100" onclick="return confirm('Are you sure you want to delete this branch?')">Delete Branch</button>
             </form>
+            
+            <button class="btn btn-primary w-100 mt-3" data-bs-toggle="modal" data-bs-target="#renameModal">Rename Branch</button>
+            
+            <a href="/" class="btn btn-outline-secondary w-100 mt-3">Go Back to Home</a>
         </div>
     </div>
-
-    <script>
-        // Modal logic
-        const renameButton = document.getElementById('renameButton');
-        const renameModal = document.getElementById('renameModal');
-        const modalClose = document.getElementById('modalClose');
-
-        renameButton.addEventListener('click', () => {
-            renameModal.style.display = 'flex';
-        });
-
-        modalClose.addEventListener('click', () => {
-            renameModal.style.display = 'none';
-        });
-
-        // Close the modal when clicking outside the content
-        window.addEventListener('click', (event) => {
-            if (event.target === renameModal) {
-                renameModal.style.display = 'none';
-            }
-        });
-    </script>
-
+    
+    <!-- Rename Modal -->
+    <div class="modal fade" id="renameModal" tabindex="-1" aria-labelledby="renameModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="renameModalLabel">Rename Branch</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form action="{{ url_for('main.rename_branch', owner=owner, repo_name=repo, branch_name=branch_details['name']) }}" method="POST">
+                        <div class="mb-3">
+                            <label for="new_name" class="form-label">New Branch Name:</label>
+                            <input type="text" id="new_name" name="new_name" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Rename</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

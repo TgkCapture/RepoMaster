@@ -4,36 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pull Request Details</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            margin: 20px;
-        }
-        h1 {
-            color: #333;
-        }
-        .details {
-            padding: 15px;
-            border: 1px solid #ccc;
-            margin-top: 20px;
-            border-radius: 5px;
-        }
-        .details strong {
-            color: #555;
-        }
-    </style>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
-    <h1>Pull Request Details</h1>
-    <div class="details">
-        <h2>{{ pull_request.title }}</h2>
-        <p><strong>Number:</strong> {{ pull_request.number }}</p>
-        <p><strong>Status:</strong> {{ pull_request.state }}</p>
-        <p><strong>Author:</strong> {{ pull_request.user.login }}</p>
-        <p><strong>Created at:</strong> {{ pull_request.created_at }}</p>
-        <p><strong>Description:</strong> {{ pull_request.body }}</p>
-        <a href="{{ pull_request.html_url }}" target="_blank">View on GitHub</a>
+<body class="container py-4">
+    <h1 class="mb-4 text-primary">Pull Request Details</h1>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">{{ pull_request.title }}</h2>
+            <p><strong>Number:</strong> {{ pull_request.number }}</p>
+            <p><strong>Status:</strong> <span class="badge bg-info">{{ pull_request.state }}</span></p>
+            <p><strong>Author:</strong> {{ pull_request.user.login }}</p>
+            <p><strong>Created at:</strong> {{ pull_request.created_at }}</p>
+            <p><strong>Description:</strong> {{ pull_request.body }}</p>
+            <a href="{{ pull_request.html_url }}" target="_blank" class="btn btn-primary">View on GitHub</a>
+        </div>
     </div>
 </body>
 </html>

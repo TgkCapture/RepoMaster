@@ -15,10 +15,38 @@ def get_github_repositories(username, access_token):
         response = requests.get(url, headers=headers, timeout=60)
         response.raise_for_status()
         repositories = response.json()
+
+        for repo in repositories:
+        #     repo['stars'] = repo.get('stargazers_count', 0)  
+        #     repo['forks'] = repo.get('forks_count', 0)  
+        #     repo['language'] = repo.get('language', 'Unknown')  
+            repo['language_color'] = get_language_color(repo['language'])  
+
         return repositories
     except RequestException as e:
         logging.error(f"Failed to fetch repositories: {e}")
         return None
+
+def get_language_color(language):
+    """
+    Get the color associated with a programming language.
+    """
+    language_colors = {
+        "Python": "#3572A5",
+        "JavaScript": "#f1e05a",
+        "Java": "#b07219",
+        "Go": "#00ADD8",
+        "C++": "#f34b7d",
+        "C": "#555555",
+        "Ruby": "#701516",
+        "PHP": "#4F5D95",
+        "Swift": "#ffac45",
+        "TypeScript": "#3178C6",
+        "Kotlin": "#A97BFF",
+        "HTML": "#e34c26",
+        "CSS": "#563d7c"
+    }
+    return language_colors.get(language, "#cccccc")
 
 def delete_repository(repos_to_delete):
     """Deletes GitHub repositories."""
@@ -137,7 +165,7 @@ def get_branch_details(owner, repo_name, branch_name):
         logging.error(f"Failed to fetch details for branch '{branch}' in repository '{owner}/{repo_name}': {e}")
         return None
 
-def get_repository_contents(owner, repo, path=""):
+def get_repository_contents(owner, repo, path, branch):
     """
     Retrieve the contents of a file or directory.
     """
@@ -145,8 +173,10 @@ def get_repository_contents(owner, repo, path=""):
     access_token = get_installation_access_token()
     headers = {'Authorization': f'Bearer {access_token}'}
 
+    params = {"ref": branch}
+
     try:
-        response = requests.get(url, headers=headers, timeout=60)
+        response = requests.get(url, headers=headers, params=params)
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:

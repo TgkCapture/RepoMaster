@@ -4,75 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pull Requests</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            margin: 20px;
-        }
-        h1 {
-            color: #333;
-        }
-        .pull-requests {
-            list-style: none;
-            padding: 0;
-        }
-        .pull-request {
-            border: 1px solid #ccc;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 5px;
-        }
-        .pull-request strong {
-            color: #555;
-        }
-        .actions {
-            margin-top: 10px;
-        }
-        .actions button {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            cursor: pointer;
-            border-radius: 3px;
-        }
-        .actions button.merge {
-            background-color: #007bff;
-        }
-        .actions button:hover {
-            opacity: 0.9;
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 </head>
 <body>
-    <h1>Pull Requests for Repository: {{ repo_name }}</h1>
+    <div class="container mt-5">
+        <h1 class="mb-4">Pull Requests for Repository: {{ repo_name }}</h1>
+        <a href="{{ url_for('main.home') }}" class="btn btn-secondary mb-4">Back to Home</a>
 
-    <!-- List of pull requests -->
-    {% if pull_requests %}
-        <ul class="pull-requests">
-            {% for pr in pull_requests %}
-                <li class="pull-request">
-                    <strong>Title:</strong> {{ pr.title }}<br>
-                    <strong>Number:</strong> {{ pr.number }}<br>
-                    <strong>Status:</strong> {{ pr.state }}<br>
-                    <strong>Author:</strong> {{ pr.user.login }}<br>
-                    <div class="actions">
-                        {% if pr.state == "open" %}
-                            <form method="POST" action="{{ url_for('main.manage_pull_requests', repo_name=repo_name, create=True) }}">
-                                <input type="hidden" name="action" value="merge">
-                                <input type="hidden" name="pr_number" value="{{ pr.number }}">
-                                <button class="merge" type="submit">Merge Pull Request</button>
-                            </form>
-                        {% else %}
-                            <span style="color: gray;">Pull request already merged/closed</span>
-                        {% endif %}
-                    </div>
-                </li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No pull requests found for this repository. <a href="{{ url_for('main.manage_pull_requests', repo_name=repo_name, create=True) }}">Create a new pull request</a>.</p>
-    {% endif %}
+        {% if pull_requests %}
+            <ul class="list-group">
+                {% for pr in pull_requests %}
+                    <li class="list-group-item">
+                        <strong>Title:</strong> {{ pr.title }}<br>
+                        <strong>Number:</strong> {{ pr.number }}<br>
+                        <strong>Status:</strong> {{ pr.state }}<br>
+                        <strong>Author:</strong> {{ pr.user.login }}<br>
+                        <div class="mt-2">
+                            {% if pr.state == "open" %}
+                                <form method="POST" action="{{ url_for('main.manage_pull_requests', repo_name=repo_name, create=True) }}" class="d-inline">
+                                    <input type="hidden" name="action" value="merge">
+                                    <input type="hidden" name="pr_number" value="{{ pr.number }}">
+                                    <button class="btn btn-primary btn-sm" type="submit">Merge Pull Request</button>
+                                </form>
+                            {% else %}
+                                <span class="text-muted">Pull request already merged/closed</span>
+                            {% endif %}
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-warning">No pull requests found for this repository. <a href="{{ url_for('main.manage_pull_requests', repo_name=repo_name, create=True) }}">Create a new pull request</a>.</p>
+        {% endif %}
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -3,17 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Branch</title>
+    <title>Create Branch | RepoMaster</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
-    <h1>Create a New Branch in {{ repo_name }}</h1>
-    <form action="{{ url_for('main.main_create_branch', owner=owner, repo_name=repo_name) }}" method="POST">
-        <label for="ref">Branch Name:</label><br>
-        <input type="text" id="ref" name="ref" required><br><br>
-        
-        
-        <button type="submit">Create Branch</button>
-    </form>
-    <a href="/">Back Home</a>
+<body class="bg-light">
+    <div class="container mt-5">
+        <div class="card shadow-sm p-4">
+            <h1 class="text-center mb-4">Create a New Branch in <span class="text-primary">{{ repo_name }}</span></h1>
+            
+            <form action="{{ url_for('main.main_create_branch', owner=owner, repo_name=repo_name) }}" method="POST">
+                <div class="mb-3">
+                    <label for="ref" class="form-label">Branch Name:</label>
+                    <input type="text" id="ref" name="ref" class="form-control" placeholder="Enter branch name" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary w-100">Create Branch</button>
+            </form>
+            
+            <div class="text-center mt-3">
+                <a href="/" class="btn btn-outline-secondary">Back Home</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
