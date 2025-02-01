@@ -4,7 +4,7 @@ import os
 import logging
 import requests
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
-from app.controllers.auth_controller import get_installation_access_token, is_user_logged_in, get_jwt
+from app.controllers.auth_controller import get_installation_access_token, is_user_logged_in, get_jwt, clear_session
 from app.controllers.issues_controller import get_github_issues, create_github_issue, close_github_issue
 from app.controllers.repo_controller import get_github_repositories, delete_repository, get_branches, get_branch_details, create_branch, get_default_branch_sha, get_repository_contents, create_file, update_file, delete_file
 from app.controllers.pull_requests_controller import get_pull_requests, create_pull_request, merge_pull_request, view_pull_request
@@ -17,6 +17,15 @@ def home():
     Renders the home page.
     """
     return render_template('index.html', is_user_logged_in=is_user_logged_in)
+
+@main_routes.route('/logout')
+def logout():
+    """
+    Route to log out the user.
+    """
+    clear_session()
+    flash("You have been logged out successfully.", "info")
+    return redirect(url_for('main.home'))
 
 @main_routes.route('/github/authorize', methods=['GET'])
 def github_authorize():
