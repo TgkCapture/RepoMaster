@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Repositories | RepoMaster</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
     <header class="bg-primary text-white text-center py-4">
@@ -22,22 +22,24 @@
                         <div class="card-body">
                             <h5 class="card-title">{{ repository.name }}</h5>
                             <p class="card-text">{{ repository.description or "No description provided." }}</p>
+                            
                             <div class="d-flex align-items-center mb-2">
                                 <span class="me-2" style="color: {{ repository.language_color }}; font-size: 1.2rem;">&#9679;</span>
                                 <span class="text-muted">{{ repository.language or "Unknown" }}</span>
                             </div>
+
                             <div class="d-flex justify-content-between text-muted">
-                                <span><i class="fa fa-star"></i> {{ repository.stars or 0 }}</span>
-                                <span><i class="fa fa-code-fork"></i> {{ repository.forks or 0 }}</span>
-                            </div>
+                                <span><i class="fas fa-star" style="color: gold;"></i> {{ repository.stargazers_count or 0 }}</span>
+                                <span><i class="fas fa-code-branch"></i> {{ repository.forks_count or 0 }}</span>
+                            </div>                            
                         </div>
                         <div class="card-footer text-center">
                             <a href="{{ url_for('main.get_contents', owner=repository.owner.login, repo=repository.name) }}" 
-                               class="btn btn-primary btn-sm" title="View contents of repository {{ repository.name }}">
+                            class="btn btn-primary btn-sm" title="View contents of repository {{ repository.name }}">
                                 View Contents
                             </a>
                             <a href="{{ url_for('main.show_repo_details', owner=repository.owner.login, repo_name=repository.name) }}" 
-                               class="btn btn-secondary btn-sm" title="View branches for {{ repository.name }}">
+                            class="btn btn-secondary btn-sm" title="View branches for {{ repository.name }}">
                                 View Branches
                             </a>
                         </div>
