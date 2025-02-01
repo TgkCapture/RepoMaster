@@ -365,16 +365,25 @@ def rename_branch(owner, repo_name, branch_name):
 
 @main_routes.route('/github/repos/<owner>/<repo>/contents', methods=['GET'])
 def get_contents(owner, repo):
-    """
-    Get repository contents.
-    """
     path = request.args.get('path', '')
-    contents = get_repository_contents(owner, repo, path)
-    if contents is not None:
-        return render_template('contents.html', contents=contents, owner=owner, repo=repo, path=path)
-    else:
-        flash("Failed to fetch repository contents", "danger")
-        return redirect(url_for('main.home'))
+    branch = request.args.get('branch')  
+    access_token = get_installation_access_token()
+
+    contents = get_repository_contents(owner, repo, path, branch)
+    branches = get_branches(owner, repo)
+    issues = get_github_issues(repo)
+    pull_requests = get_pull_requests(owner, repo)
+
+    return render_template(
+        'contents.html',
+        owner=owner,
+        repo=repo,
+        contents=contents,
+        current_branch=branch,
+        branches=branches,
+        issues=issues,
+        pull_requests=pull_requests
+    )
 
 @main_routes.route('/github/repos/<owner>/<repo>/contents', methods=['POST'])
 def create_new_file(owner, repo):
