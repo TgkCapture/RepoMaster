@@ -73,7 +73,12 @@
                     <li class="list-group-item">
                         <strong>#{{ issue.number }}:</strong> {{ issue.title }}
                         <span class="badge bg-{{ 'success' if issue.state == 'closed' else 'warning' }} ms-2">{{ issue.state }}</span>
-                        <a href="{{ issue.html_url }}" class="btn btn-outline-secondary btn-sm float-end" target="_blank">View on GitHub</a>
+                        <div class="float-end">
+                            <!-- Button to view issue in your app -->
+                            <a href="{{ url_for('main.manage_issues', repo_name=repo, issue_number=issue.number) }}" class="btn btn-outline-info btn-sm me-2">View in App</a>
+                            <!-- Button to view issue on GitHub -->
+                            <a href="{{ issue.html_url }}" class="btn btn-outline-secondary btn-sm" target="_blank">View on GitHub</a>
+                        </div>
                     </li>
                 {% endfor %}
             </ul>
@@ -89,7 +94,12 @@
                     <li class="list-group-item">
                         <strong>#{{ pr.number }}:</strong> {{ pr.title }}
                         <span class="badge bg-{{ 'success' if pr.state == 'closed' else 'primary' }} ms-2">{{ pr.state }}</span>
-                        <a href="{{ pr.html_url }}" class="btn btn-outline-secondary btn-sm float-end" target="_blank">View on GitHub</a>
+                        <div class="float-end">
+                            <!-- Button to view pull request in your app -->
+                            <a href="{{ url_for('main.manage_pull_requests', repo_name=repo, pr_number=pr.number) }}" class="btn btn-outline-info btn-sm me-2">View in App</a>
+                            <!-- Button to view pull request on GitHub -->
+                            <a href="{{ pr.html_url }}" class="btn btn-outline-secondary btn-sm" target="_blank">View on GitHub</a>
+                        </div>
                     </li>
                 {% endfor %}
             </ul>
