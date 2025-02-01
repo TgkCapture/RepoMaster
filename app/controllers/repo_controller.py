@@ -137,7 +137,7 @@ def get_branch_details(owner, repo_name, branch_name):
         logging.error(f"Failed to fetch details for branch '{branch}' in repository '{owner}/{repo_name}': {e}")
         return None
 
-def get_repository_contents(owner, repo, path=""):
+def get_repository_contents(owner, repo, path, branch):
     """
     Retrieve the contents of a file or directory.
     """
@@ -145,8 +145,10 @@ def get_repository_contents(owner, repo, path=""):
     access_token = get_installation_access_token()
     headers = {'Authorization': f'Bearer {access_token}'}
 
+    params = {"ref": branch}
+
     try:
-        response = requests.get(url, headers=headers, timeout=60)
+        response = requests.get(url, headers=headers, params=params)
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
