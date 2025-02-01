@@ -14,18 +14,23 @@
     <header>
         <h2><a href="#">RepoMaster</a></h2>
         <nav>
-        <li><a href="#hero">Home</a></li>
-        <li><a href="#services">Services</a></li>
-       
-
+            <li><a href="#hero">Home</a></li>
+            <li><a href="#services">Services</a></li>
             {% if is_user_logged_in() %}
-                <li><a href="{{ url_for('main.logout') }}">Log Out</a></li>
                 <li><a href="{{ url_for('main.show_github_repositories') }}">View Repositories</a></li>
+                <li><a href="{{ url_for('main.logout') }}">Log Out</a></li>
+                
+                <!-- Profile section -->
+                <li class="profile-container">
+                    <img src="{{ session.get('github_avatar_url') }}" alt="GitHub Profile" class="profile-pic">
+                    <span class="profile-username">{{ session.get('github_username') }}</span>
+                </li>
             {% else %}
                 <li><a href="{{ url_for('main.install_github_app') }}">Login with GitHub</a></li>
             {% endif %}
         </nav>
     </header>
+    
     
     <section class="hero" id="hero">
         <div class="background-image"></div>

@@ -101,9 +101,7 @@ section p {
         padding: 50px 20px;
     }
 }
-
 /*Header Styles*/
-
 header {
     position: absolute;
     width: 100%;
@@ -129,12 +127,35 @@ header h2 {
 
 header nav {
     display: flex;
+    align-items: center;  
     margin-right: -15px;
 }
 
 header nav li {
     margin: 0 15px;
+    list-style: none;  
+    display: flex;
+    align-items: center;
 }
+
+.profile-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.profile-pic {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid white; 
+}
+
+.profile-username {
+    font-weight: bold;
+    font-size: 16px;
+}
+
 
 @media (max-width: 800px) {
     header {
