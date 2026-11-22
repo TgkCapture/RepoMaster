@@ -1,15 +1,12 @@
-# app.py
-from flask import Flask
-import os
-from app.routes.main_routes import main_routes
-from app.config.development_config import DevelopmentConfig
+"""run.py
 
-app = Flask(__name__, template_folder='app/templates', static_folder='app/static')
-app.config.from_object(DevelopmentConfig)
+Entry point for the RepoMaster web app.
+Development: python run.py
+Production (WSGI): point the server at run:app and set FLASK_CONFIG=production.
+"""
+from app import create_app
 
-DevelopmentConfig.setup_logging()
-
-app.register_blueprint(main_routes)
+app = create_app()
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=app.config['DEBUG'])
