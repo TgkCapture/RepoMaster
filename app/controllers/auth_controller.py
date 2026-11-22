@@ -1,21 +1,33 @@
+import os
 import requests
 import logging
 import time
-from flask import session
-from app.config.github_app_config import GITHUB_APP_ID, GITHUB_PRIVATE_KEY
+from functools import lru_cache
+from flask import session, current_app
 from jose import jwt
+
+@lru_cache(maxsize=1)
+def load_private_key(private_key_path):
+    """
+    Read the GitHub App private key from disk (cached after the first read).
+    """
+    if private_key_path and os.path.exists(private_key_path):
+        with open(private_key_path, 'r') as f:
+            return f.read()
+    raise FileNotFoundError(f"Private key file not found at {private_key_path}")
 
 def get_jwt():
     """
     Generate a JWT for GitHub App authentication.
     """
-    app_id = int(GITHUB_APP_ID)
+    app_id = int(current_app.config['GITHUB_APP_ID'])
+    private_key = load_private_key(current_app.config['GITHUB_PRIVATE_KEY_PATH'])
     payload = {
         'iat': int(time.time()),
         'exp': int(time.time()) + 600,  # Token valid for 10 minutes
         'iss': app_id,
     }
-    token = jwt.encode(payload, GITHUB_PRIVATE_KEY, algorithm='RS256')
+    token = jwt.encode(payload, private_key, algorithm='RS256')
     logging.info("Generated JWT for GitHub App.")
     return token
 
