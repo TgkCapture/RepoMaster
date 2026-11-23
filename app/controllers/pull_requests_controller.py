@@ -71,14 +71,18 @@ def create_pull_request(owner, repo_name, title, body, base, head):
         logging.info(f"Pull request created successfully in repository {repo_name}.")
         return pull
     except requests.exceptions.RequestException as e:
-        if e.response:
-            logging.error(f"Failed to create pull request: {e.response.json()}")
+        # A failed Response is falsy, so compare against None explicitly
+        if e.response is not None:
+            logging.error(f"Failed to create pull request: {e.response.text}")
         else:
             logging.error(f"Failed to create pull request: {e}")
         return None
 
 def merge_pull_request(owner, repo_name, pr_number):
-    """Merges a pull request in a repository."""
+    """
+    Merges a pull request in a repository.
+    Returns the merge result, {"error": message} if GitHub refused the merge, or None on failure.
+    """
     access_token = get_installation_access_token()
 
     if not access_token:
@@ -90,9 +94,11 @@ def merge_pull_request(owner, repo_name, pr_number):
 
     try:
         response = requests.put(api_url, headers=headers, timeout=60)
-        if response.status_code == 409:
-            logging.error(f"Merge conflict for pull request #{pr_number} in repository {repo_name}.")
-            return {"error": "Merge conflict"}
+        # 405: not mergeable (e.g. conflicts), 409: head branch was modified
+        if response.status_code in (405, 409):
+            message = response.json().get('message', 'Pull request cannot be merged')
+            logging.error(f"Cannot merge pull request #{pr_number} in repository {repo_name}: {message}")
+            return {"error": message}
 
         response.raise_for_status()
         merge_result = response.json()
