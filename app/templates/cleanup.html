@@ -1,0 +1,150 @@
+{#- One table of cleanup candidates. Archive/Delete submit the selection to the bulk confirm step. -#}
+{% macro repo_section(id, title, help, repos, extra_header=None) %}
+<section class="card shadow-sm mb-4" id="{{ id }}">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+            <div>
+                <h2 class="h5 mb-1">{{ title }} <span class="badge bg-secondary">{{ repos|length }}</span></h2>
+                <p class="text-muted small mb-3">{{ help }}</p>
+            </div>
+        </div>
+
+        {% if repos %}
+        <form method="POST" action="{{ url_for('main.bulk_actions_confirm') }}" class="cleanup-form">
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-3">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 2.5rem;"><input type="checkbox" class="form-check-input select-all" aria-label="Select all in {{ title }}"></th>
+                            <th>Repository</th>
+                            <th>Visibility</th>
+                            {% if extra_header %}<th>{{ extra_header }}</th>{% endif %}
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for repo in repos %}
+                        <tr>
+                            <td><input type="checkbox" class="form-check-input repo-checkbox" name="repos" value="{{ repo.full_name }}" aria-label="Select {{ repo.full_name }}"></td>
+                            <td>
+                                <strong>{{ repo.full_name }}</strong>
+                                <div class="text-muted small">{{ repo.description or '' }}</div>
+                            </td>
+                            <td><span class="badge {{ 'bg-secondary' if repo.private else 'bg-success' }}">{{ 'Private' if repo.private else 'Public' }}</span></td>
+                            {% if extra_header %}<td class="small">{{ caller(repo) }}</td>{% endif %}
+                            <td class="text-end">
+                                <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.cleanup_branches', repo=repo.full_name, months=months) }}">Branches</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" name="action" value="archive" class="btn btn-outline-primary btn-sm selection-button" disabled>Archive selected</button>
+                <button type="submit" name="action" value="delete" class="btn btn-outline-danger btn-sm selection-button" disabled>Delete selected</button>
+            </div>
+        </form>
+        {% else %}
+            <p class="text-success mb-0">Nothing to clean up here.</p>
+        {% endif %}
+    </div>
+</section>
+{% endmacro %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cleanup | RepoMaster</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+    <div class="container my-5">
+        <h1 class="mb-1">Cleanup</h1>
+        <p class="text-muted">
+            Repositories that look like they need attention. {{ total }} checked{% if archived_count %}, {{ archived_count }} already archived and skipped{% endif %}.
+            Archive and delete go through a confirmation step first.
+        </p>
+
+        <div class="d-flex flex-wrap gap-2 align-items-end mb-4">
+            <a href="{{ url_for('main.show_github_repositories') }}" class="btn btn-outline-secondary btn-sm">Repositories</a>
+            <a href="{{ url_for('main.bulk_actions') }}" class="btn btn-outline-secondary btn-sm">Bulk Actions</a>
+            <form method="GET" action="{{ url_for('main.cleanup_dashboard') }}" class="d-flex gap-2 align-items-end ms-md-auto">
+                <div>
+                    <label for="months" class="form-label small mb-1">Inactive after</label>
+                    <select id="months" name="months" class="form-select form-select-sm">
+                        {% for option in [1, 3, 6, 12, 24, 36] %}
+                            <option value="{{ option }}" {{ 'selected' if option == months }}>{{ option }} month{{ 's' if option != 1 }}</option>
+                        {% endfor %}
+                        {% if months not in [1, 3, 6, 12, 24, 36] %}
+                            <option value="{{ months }}" selected>{{ months }} months</option>
+                        {% endif %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Apply</button>
+            </form>
+        </div>
+
+        {% include '_flash_messages.html' %}
+
+        {% call(repo) repo_section('inactive', 'Inactive', 'No push in the last ' ~ months ~ ' month' ~ ('s' if months != 1 else '') ~ ' (oldest first).', inactive, 'Last push') %}
+            {{ repo.pushed_at_date.strftime('%Y-%m-%d') }}
+        {% endcall %}
+
+        {{ repo_section('empty', 'Empty', 'Repositories with no content (size 0).', empty) }}
+
+        {% call(repo) repo_section('forks', 'Unmodified forks', "Forks with no commits of their own on top of the parent's default branch.", unmodified_forks, 'Forked from') %}
+            <code>{{ repo.parent }}</code>
+        {% endcall %}
+
+        {% if unchecked_forks %}
+            <div class="alert alert-secondary small">
+                Could not check {{ unchecked_forks|length }} fork(s):
+                {% for item in unchecked_forks %}<code>{{ item.repo.full_name }}</code> ({{ item.reason }}){{ ', ' if not loop.last }}{% endfor %}
+            </div>
+        {% endif %}
+
+        <section class="card shadow-sm mb-4" id="branches">
+            <div class="card-body">
+                <h2 class="h5 mb-1">Branches</h2>
+                <p class="text-muted small">Find branches already merged into the default branch, or with no new commits in the last {{ months }} month{{ 's' if months != 1 }}. Checked one repository at a time.</p>
+                {% if reviewable %}
+                <form method="GET" action="{{ url_for('main.cleanup_branches') }}" class="d-flex flex-wrap gap-2">
+                    <input type="hidden" name="months" value="{{ months }}">
+                    <select name="repo" class="form-select form-select-sm w-auto" aria-label="Repository" required>
+                        {% for repo in reviewable %}
+                            <option value="{{ repo.full_name }}">{{ repo.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-primary btn-sm">Review branches</button>
+                </form>
+                {% else %}
+                    <p class="mb-0 text-muted">No repositories to review.</p>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+
+    <script>
+        document.querySelectorAll('.cleanup-form').forEach(form => {
+            const boxes = Array.from(form.querySelectorAll('.repo-checkbox'));
+            const selectAll = form.querySelector('.select-all');
+            const buttons = form.querySelectorAll('.selection-button');
+
+            function refresh() {
+                const any = boxes.some(cb => cb.checked);
+                buttons.forEach(button => { button.disabled = !any; });
+                selectAll.checked = boxes.length > 0 && boxes.every(cb => cb.checked);
+            }
+
+            selectAll.addEventListener('change', () => {
+                boxes.forEach(cb => { cb.checked = selectAll.checked; });
+                refresh();
+            });
+            boxes.forEach(cb => cb.addEventListener('change', refresh));
+            refresh();
+        });
+    </script>
+</body>
+</html>
