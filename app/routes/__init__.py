@@ -16,4 +16,5 @@ from app.routes import (  # noqa: E402,F401
     branch_routes,
     content_routes,
     bulk_routes,
+    cleanup_routes,
 )
