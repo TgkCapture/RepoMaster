@@ -11,6 +11,8 @@
     <div class="container mt-5">
         <div class="card shadow p-4">
             <h1 class="text-center">Branch Details</h1>
+
+            {% include '_flash_messages.html' %}
             <p><strong>Repository:</strong> {{ owner }}/{{ repo }}</p>
             <p><strong>Branch:</strong> {{ branch }}</p>
             
