@@ -3,6 +3,7 @@
 import requests
 import logging
 import base64
+from urllib.parse import quote
 from flask import session
 from requests.exceptions import RequestException
 from app.controllers.auth_controller import get_installation_access_token
@@ -304,6 +305,53 @@ def _github_error_message(e):
     except ValueError:
         message = None
     return message or f"GitHub returned status {response.status_code}"
+
+def _github_api(method, path, access_token, **kwargs):
+    """
+    Call the GitHub REST API. Returns (json_or_None, None) on success or (None, error_message).
+    `path` is relative to https://api.github.com and must already be URL-safe.
+    """
+    headers = {'Authorization': f'Bearer {access_token}', 'Accept': 'application/vnd.github+json'}
+    try:
+        response = requests.request(method, f'https://api.github.com{path}', headers=headers,
+                                    timeout=REQUEST_TIMEOUT, **kwargs)
+        response.raise_for_status()
+        return (response.json() if response.status_code != 204 else None), None
+    except RequestException as e:
+        logging.error(f"GitHub API {method} {path} failed: {_error_details(e)}")
+        return None, _github_error_message(e)
+
+def _ref(name):
+    """URL-encode a branch name for use in an API path (slashes are kept)."""
+    return quote(name, safe='/')
+
+def get_repository(owner, repo, access_token):
+    """Returns (repository, None) or (None, error_message)."""
+    return _github_api('GET', f'/repos/{owner}/{repo}', access_token)
+
+def delete_repository_by_name(owner, repo, access_token):
+    """Permanently delete a repository. Returns (True, None) or (False, error_message)."""
+    _, error = _github_api('DELETE', f'/repos/{owner}/{repo}', access_token)
+    return error is None, error
+
+def list_branches(owner, repo, access_token):
+    """
+    Up to 100 branches as returned by GitHub (each has 'name' and 'protected').
+    Returns (branches, None) or (None, error_message).
+    """
+    return _github_api('GET', f'/repos/{owner}/{repo}/branches', access_token, params={'per_page': 100})
+
+def compare_refs(owner, repo, base, head, access_token):
+    """
+    Compare two refs. `head` may be 'other_owner:branch' when comparing across forks.
+    Returns (comparison, None) or (None, error_message).
+    """
+    return _github_api('GET', f'/repos/{owner}/{repo}/compare/{_ref(base)}...{_ref(head)}', access_token)
+
+def delete_branch_ref(owner, repo, branch, access_token):
+    """Delete a branch. Returns (True, None) or (False, error_message)."""
+    _, error = _github_api('DELETE', f'/repos/{owner}/{repo}/git/refs/heads/{_ref(branch)}', access_token)
+    return error is None, error
 
 def update_repository(owner, repo, access_token, fields):
     """
