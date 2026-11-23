@@ -2,9 +2,8 @@
 
 Home page, GitHub App installation/authorization and logout.
 """
-import os
 import logging
-from flask import render_template, request, redirect, url_for, session, flash
+from flask import render_template, request, redirect, url_for, session, flash, current_app
 from app.routes import main_routes
 from app.controllers.auth_controller import get_installation_access_token, is_user_logged_in, clear_session
 
@@ -51,10 +50,10 @@ def install_github_app():
     """
     Redirect the user to the GitHub App installation page.
     """
-    github_app_name = os.getenv("GITHUB_APP_NAME")
+    github_app_name = current_app.config.get('GITHUB_APP_NAME')
     if not github_app_name:
-        logging.error("GITHUB_APP_ID is not set in the environment.")
-        return "Configuration error: GITHUB_APP_ID is not defined.", 500
+        logging.error("GITHUB_APP_NAME is not set in the environment.")
+        return "Configuration error: GITHUB_APP_NAME is not defined.", 500
 
     installation_url = f"https://github.com/apps/{github_app_name}/installations/new"
     return redirect(installation_url)
