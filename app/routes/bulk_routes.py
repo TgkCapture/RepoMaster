@@ -9,8 +9,14 @@ from app.routes import main_routes
 from app.controllers.auth_controller import get_installation_access_token, login_required
 from app.controllers.repo_controller import get_github_repositories
 from app.controllers.bulk_controller import (
-    ACTIONS, validate_bulk_request, describe_bulk_request, apply_bulk_action,
+    ACTIONS, DELETE_CONFIRMATION_TEXT, validate_bulk_request, describe_bulk_request,
+    apply_bulk_action, is_delete_confirmed,
 )
+
+def _render_confirm(bulk_request, error=None, status=200):
+    return render_template('bulk_confirm.html', bulk_request=bulk_request,
+                           summary=describe_bulk_request(bulk_request), error=error,
+                           delete_confirmation_text=DELETE_CONFIRMATION_TEXT), status
 
 def _bulk_request_from_form():
     return validate_bulk_request(
@@ -47,8 +53,7 @@ def bulk_actions_confirm():
         flash(error, "danger")
         return redirect(url_for('main.bulk_actions'))
 
-    return render_template('bulk_confirm.html', bulk_request=bulk_request,
-                           summary=describe_bulk_request(bulk_request))
+    return _render_confirm(bulk_request)
 
 @main_routes.route('/repositories/bulk/apply', methods=['POST'])
 @login_required
@@ -60,6 +65,10 @@ def bulk_actions_apply():
     if error:
         flash(error, "danger")
         return redirect(url_for('main.bulk_actions'))
+
+    if not is_delete_confirmed(bulk_request, request.form.get('confirmation')):
+        return _render_confirm(bulk_request, status=400,
+                               error=f"Type '{DELETE_CONFIRMATION_TEXT}' to confirm permanent deletion.")
 
     access_token = get_installation_access_token()
     if not access_token:

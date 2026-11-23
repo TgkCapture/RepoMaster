@@ -5,8 +5,11 @@ Validate and apply one action to many repositories at once (issue #35).
 import re
 import logging
 from app.controllers.repo_controller import (
-    update_repository, get_repository_topics, replace_repository_topics,
+    update_repository, get_repository_topics, replace_repository_topics, delete_repository_by_name,
 )
+
+# Text the user must type on the confirmation page before a bulk delete is applied
+DELETE_CONFIRMATION_TEXT = 'delete'
 
 # action -> label shown in the UI, which extra input it needs, and the past-tense result
 ACTIONS = {
@@ -17,6 +20,7 @@ ACTIONS = {
     'add_topics': {'label': 'Add topics', 'needs': 'topics', 'done': 'Topics updated'},
     'remove_topics': {'label': 'Remove topics', 'needs': 'topics', 'done': 'Topics updated'},
     'set_default_branch': {'label': 'Change default branch', 'needs': 'branch', 'done': 'Default branch changed'},
+    'delete': {'label': 'Delete permanently', 'needs': None, 'done': 'Deleted'},
 }
 
 # Fields sent to PATCH /repos/{owner}/{repo} for the simple actions
@@ -95,6 +99,13 @@ def validate_bulk_request(action, repo_full_names, topics_raw='', branch=''):
     return bulk_request, None
 
 
+def is_delete_confirmed(bulk_request, confirmation_text):
+    """True unless this is a delete that the user has not confirmed by typing the confirmation text."""
+    if bulk_request['action'] != 'delete':
+        return True
+    return (confirmation_text or '').strip().lower() == DELETE_CONFIRMATION_TEXT
+
+
 def describe_bulk_request(bulk_request):
     """One-line, human readable summary of what will happen to each repository."""
     action = bulk_request['action']
@@ -141,6 +152,9 @@ def apply_bulk_action(access_token, bulk_request):
 
         if action in ('add_topics', 'remove_topics'):
             ok, message = _apply_topics(owner, repo, access_token, action, bulk_request['topics'])
+        elif action == 'delete':
+            ok, error = delete_repository_by_name(owner, repo, access_token)
+            message = error or ACTIONS[action]['done']
         else:
             fields = (REPOSITORY_FIELDS[action] if action in REPOSITORY_FIELDS
                       else {'default_branch': bulk_request['branch']})
