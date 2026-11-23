@@ -1,0 +1,102 @@
+{#- Table of branch candidates; protected branches are listed but cannot be selected. -#}
+{% macro branch_table(title, help, branches, show_ahead) %}
+<h2 class="h5 mt-4 mb-1">{{ title }} <span class="badge bg-secondary">{{ branches|length }}</span></h2>
+<p class="text-muted small">{{ help }}</p>
+{% if branches %}
+<div class="table-responsive">
+    <table class="table table-sm align-middle bg-white">
+        <thead class="table-light">
+            <tr>
+                <th style="width: 2.5rem;"></th>
+                <th>Branch</th>
+                {% if show_ahead %}<th>Unmerged commits</th><th>Last commit</th>{% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for branch in branches %}
+            <tr>
+                <td>
+                    <input type="checkbox" class="form-check-input branch-checkbox" name="branches" value="{{ branch.name }}"
+                           aria-label="Select {{ branch.name }}" {{ 'disabled' if branch.protected }}>
+                </td>
+                <td>
+                    <code>{{ branch.name }}</code>
+                    {% if branch.protected %}<span class="badge bg-warning text-dark ms-1">Protected</span>{% endif %}
+                </td>
+                {% if show_ahead %}
+                    <td>{{ branch.ahead_by }}</td>
+                    <td>{{ branch.last_commit_date.strftime('%Y-%m-%d') if branch.last_commit_date else 'unknown' }}</td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+    <p class="text-success">None.</p>
+{% endif %}
+{% endmacro %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Branch Cleanup | RepoMaster</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+    <div class="container my-5" style="max-width: 900px;">
+        <h1 class="mb-1">Branch Cleanup</h1>
+        <p class="text-muted">
+            <code>{{ full_name }}</code> · compared with the default branch <code>{{ default_branch }}</code>
+            · {{ active_count }} active branch{{ 'es' if active_count != 1 }} not shown
+        </p>
+
+        <a href="{{ url_for('main.cleanup_dashboard', months=months) }}" class="btn btn-outline-secondary btn-sm mb-3">Back to Cleanup</a>
+
+        {% include '_flash_messages.html' %}
+
+        {% if truncated %}
+            <div class="alert alert-info small">Only the first 100 branches were checked.</div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('main.cleanup_delete_branches') }}" id="branchForm">
+            <input type="hidden" name="repo" value="{{ full_name }}">
+            <input type="hidden" name="months" value="{{ months }}">
+
+            {{ branch_table('Merged', 'Every commit on these branches is already in ' ~ default_branch ~ '. Safe to delete.', merged, false) }}
+            {{ branch_table('Stale', 'Unmerged commits, but nothing new in the last ' ~ months ~ ' month' ~ ('s' if months != 1 else '') ~ '. Deleting loses those commits.', stale, true) }}
+
+            {% if unchecked %}
+                <div class="alert alert-secondary small">
+                    Could not check: {% for item in unchecked %}<code>{{ item.name }}</code> ({{ item.reason }}){{ ', ' if not loop.last }}{% endfor %}
+                </div>
+            {% endif %}
+
+            {% if merged or stale %}
+                <button type="submit" class="btn btn-danger" id="deleteBranches" disabled>Delete selected branches</button>
+            {% endif %}
+        </form>
+    </div>
+
+    <script>
+        (function () {
+            const form = document.getElementById('branchForm');
+            const button = document.getElementById('deleteBranches');
+            if (!button) return;
+            const boxes = Array.from(form.querySelectorAll('.branch-checkbox:not([disabled])'));
+
+            boxes.forEach(cb => cb.addEventListener('change', () => {
+                button.disabled = !boxes.some(box => box.checked);
+            }));
+
+            form.addEventListener('submit', event => {
+                const names = boxes.filter(cb => cb.checked).map(cb => cb.value);
+                if (!confirm(`Delete ${names.length} branch(es) from {{ full_name }}?\n\n${names.join('\n')}`)) {
+                    event.preventDefault();
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
