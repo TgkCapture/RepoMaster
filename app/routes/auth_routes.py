@@ -1,11 +1,27 @@
 """auth_routes.py
 
-Home page, GitHub App installation/authorization and logout.
+Home page, sign-in with GitHub, GitHub App installation and logout.
+
+Sign-in flow:
+1. /login              -> redirect to GitHub with a one-time `state` value
+2. /github/callback    -> verify `state`, exchange the code for a user token, then pick an
+                          App installation *that this user can access* and start the session
+3. /github/authorize   -> GitHub App "Setup URL". GitHub redirects here after the App is
+                          installed. The installation_id in the URL is only a hint; it is
+                          verified against the user's installations during sign-in.
 """
 import logging
 from flask import render_template, request, redirect, url_for, session, flash, current_app
 from app.routes import main_routes
-from app.controllers.auth_controller import get_installation_access_token, is_user_logged_in, clear_session
+from app.controllers.auth_controller import (
+    is_user_logged_in, clear_session, generate_oauth_state, validate_oauth_state,
+    build_authorize_url, exchange_code_for_user_token, get_authenticated_user,
+    get_user_installations, choose_installation, start_user_session,
+)
+
+def _oauth_callback_url():
+    """The OAuth redirect URI. Must match the Callback URL configured on the GitHub App."""
+    return current_app.config.get('GITHUB_OAUTH_CALLBACK_URL') or url_for('main.github_callback', _external=True)
 
 @main_routes.route('/')
 def home():
@@ -23,27 +39,78 @@ def logout():
     flash("You have been logged out successfully.", "info")
     return redirect(url_for('main.home'))
 
+@main_routes.route('/login', methods=['GET'])
+def login():
+    """
+    Start signing in with GitHub.
+    """
+    if not current_app.config.get('GITHUB_CLIENT_ID'):
+        logging.error("GITHUB_CLIENT_ID is not set in the environment.")
+        return "Configuration error: GITHUB_CLIENT_ID is not defined.", 500
+
+    state = generate_oauth_state()
+    return redirect(build_authorize_url(state, _oauth_callback_url()))
+
+@main_routes.route('/github/callback', methods=['GET'])
+def github_callback():
+    """
+    OAuth callback: verify the user and the installation they may use, then sign them in.
+    """
+    if request.args.get('error'):
+        logging.warning(f"GitHub sign-in was not completed: {request.args.get('error')}")
+        flash("GitHub sign-in was cancelled.", "info")
+        return redirect(url_for('main.home'))
+
+    if not validate_oauth_state(request.args.get('state')):
+        logging.warning("OAuth callback with missing or invalid state.")
+        return "Invalid or expired sign-in request. Please try signing in again.", 400
+
+    code = request.args.get('code')
+    if not code:
+        return "Missing authorization code. Please try signing in again.", 400
+
+    requested_installation_id = session.pop('pending_installation_id', None)
+
+    user_token = exchange_code_for_user_token(code, _oauth_callback_url())
+    if not user_token:
+        return "Failed to sign in with GitHub. Please try again.", 500
+
+    user = get_authenticated_user(user_token)
+    installations = get_user_installations(user_token)
+    if user is None or installations is None:
+        return "Failed to load your GitHub account details. Please try again.", 500
+
+    if not installations:
+        flash("Install the RepoMaster GitHub App on your account to get started.", "info")
+        return redirect(url_for('main.install_github_app'))
+
+    installation = choose_installation(installations, user.get('login'), requested_installation_id)
+    if installation is None:
+        logging.warning(f"User '{user.get('login')}' requested installation {requested_installation_id} "
+                        "which they cannot access.")
+        return "That GitHub App installation is not available to your GitHub account.", 403
+
+    start_user_session(user, installation)
+    flash(f"Signed in as {user.get('login')}.", "success")
+    return redirect(url_for('main.home'))
+
 @main_routes.route('/github/authorize', methods=['GET'])
 def github_authorize():
     """
-    Handle the GitHub App installation callback.
+    GitHub App Setup URL: GitHub redirects here after the App is installed.
+    The installation is not trusted from the URL; the user signs in and it is verified.
     """
-    installation_id = request.args.get('installation_id')
-
-    if not installation_id:
-        logging.error("No installation ID provided in the request.")
-        return "Installation ID is missing. Please install the GitHub App again.", 400
-
-    session['installation_id'] = installation_id
-    logging.info(f"Received installation ID: {installation_id}")
-
-    access_token = get_installation_access_token()
-    if access_token:
-        logging.info("Installation access token successfully generated.")
+    if request.args.get('setup_action') == 'request':
+        # An organization member asked an owner to install the App; nothing to use yet.
+        flash("Installation requested. You can sign in once an organization owner approves it.", "info")
         return redirect(url_for('main.home'))
-    else:
-        logging.error("Failed to generate installation access token.")
-        return "Failed to complete installation process. Please try again.", 500
+
+    installation_id = request.args.get('installation_id')
+    if installation_id:
+        session['pending_installation_id'] = installation_id
+        logging.info(f"Installation {installation_id} pending verification through sign-in.")
+
+    return redirect(url_for('main.login'))
 
 @main_routes.route('/github/install', methods=['GET'])
 def install_github_app():
