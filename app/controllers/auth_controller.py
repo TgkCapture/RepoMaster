@@ -2,9 +2,11 @@ import os
 import requests
 import logging
 import time
-from functools import lru_cache
-from flask import session, current_app
+from functools import lru_cache, wraps
+from flask import session, current_app, request
 from jose import jwt
+
+REQUEST_TIMEOUT = 60  # seconds
 
 @lru_cache(maxsize=1)
 def load_private_key(private_key_path):
@@ -35,14 +37,14 @@ def get_installation_access_token():
     """
     Exchange the JWT for an installation access token and retrieve the username and avatar URL.
     """
-    jwt_token = get_jwt()
-    installation_id = session.get('installation_id') 
-
-    logging.info(f"Making POST request to GitHub API with installation ID: {installation_id}")
+    installation_id = session.get('installation_id')
 
     if not installation_id:
         logging.error("Missing installation ID in session.")
         return None
+
+    logging.info(f"Making POST request to GitHub API with installation ID: {installation_id}")
+    jwt_token = get_jwt()
 
     token_url = f'https://api.github.com/app/installations/{installation_id}/access_tokens'
     headers = {
@@ -50,7 +52,11 @@ def get_installation_access_token():
         'Accept': 'application/vnd.github+json',
     }
 
-    token_response = requests.post(token_url, headers=headers)
+    try:
+        token_response = requests.post(token_url, headers=headers, timeout=REQUEST_TIMEOUT)
+    except requests.RequestException as e:
+        logging.error(f"Failed to reach GitHub for installation token: {e}")
+        return None
     if token_response.status_code == 201:
         access_token = token_response.json().get('token')
         logging.info("Fetched GitHub App installation access token.")
@@ -58,7 +64,11 @@ def get_installation_access_token():
 
         # Get the username associated with the installation
         installation_url = f'https://api.github.com/app/installations/{installation_id}'
-        installation_response = requests.get(installation_url, headers=headers)
+        try:
+            installation_response = requests.get(installation_url, headers=headers, timeout=REQUEST_TIMEOUT)
+        except requests.RequestException as e:
+            logging.error(f"Failed to reach GitHub for installation details: {e}")
+            return access_token
         if installation_response.status_code == 200:
             user_data = installation_response.json().get('account', {})
             session['github_username'] = user_data.get('login')
@@ -85,11 +95,21 @@ def is_user_logged_in():
         logging.warning("User is not authenticated. No installation access token found in the session.")
         return False
 
+def login_required(view):
+    """
+    Route decorator: respond 403 unless the user is logged in.
+    """
+    @wraps(view)
+    def wrapped_view(*args, **kwargs):
+        if not is_user_logged_in():
+            logging.warning(f"Unauthenticated access attempt to '{request.path}'.")
+            return "You are not logged in", 403
+        return view(*args, **kwargs)
+    return wrapped_view
+
 def clear_session():
     """
-    Clears all GitHub authentication-related session data.
+    Clears all session data (installation, token, username and avatar).
     """
     logging.info("Clearing session data for logout.")
-    session.pop('installation_id', None)
-    session.pop('github_installation_token', None)
-    session.pop('github_username', None)
+    session.clear()
