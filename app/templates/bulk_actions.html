@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk Actions | RepoMaster</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+    <div class="container my-5">
+        <h1 class="mb-1">Bulk Actions</h1>
+        <p class="text-muted">Apply one change to many repositories. You'll review the exact list before anything changes.</p>
+
+        <div class="mb-4">
+            <a href="{{ url_for('main.show_github_repositories') }}" class="btn btn-outline-secondary btn-sm">Back to Repositories</a>
+            <a href="{{ url_for('main.delete_repositories') }}" class="btn btn-outline-danger btn-sm">Delete Repositories</a>
+        </div>
+
+        {% include '_flash_messages.html' %}
+
+        {% if repositories %}
+        <form method="POST" action="{{ url_for('main.bulk_actions_confirm') }}" id="bulkForm">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label for="action" class="form-label">Action</label>
+                            <select id="action" name="action" class="form-select" required>
+                                <option value="" disabled selected>Choose an action…</option>
+                                {% for key, action in actions.items() %}
+                                    <option value="{{ key }}" data-needs="{{ action.needs or '' }}">{{ action.label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-5 d-none" id="topicsField">
+                            <label for="topics" class="form-label">Topics</label>
+                            <input type="text" id="topics" name="topics" class="form-control" placeholder="e.g. python, flask, cli">
+                            <div class="form-text">Comma or space separated. Lowercase letters, numbers and hyphens.</div>
+                        </div>
+                        <div class="col-md-5 d-none" id="branchField">
+                            <label for="branch" class="form-label">New default branch</label>
+                            <input type="text" id="branch" name="branch" class="form-control" placeholder="e.g. main">
+                            <div class="form-text">The branch must already exist in each selected repository.</div>
+                        </div>
+                        <div class="col-md-3 ms-auto text-md-end">
+                            <button type="submit" class="btn btn-primary w-100" id="reviewButton" disabled>Review changes</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <input type="search" id="filter" class="form-control form-control-sm w-auto" placeholder="Filter repositories…" aria-label="Filter repositories">
+                <span class="text-muted small"><span id="selectedCount">0</span> of {{ repositories|length }} selected</span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle bg-white shadow-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col" style="width: 2.5rem;">
+                                <input type="checkbox" class="form-check-input" id="selectAll" aria-label="Select all shown repositories">
+                            </th>
+                            <th scope="col">Repository</th>
+                            <th scope="col">Visibility</th>
+                            <th scope="col">Default branch</th>
+                            <th scope="col">Topics</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for repo in repositories %}
+                        <tr data-name="{{ repo.full_name|lower }}">
+                            <td>
+                                <input type="checkbox" class="form-check-input repo-checkbox" name="repos" value="{{ repo.full_name }}" aria-label="Select {{ repo.full_name }}">
+                            </td>
+                            <td>
+                                <strong>{{ repo.full_name }}</strong>
+                                {% if repo.archived %}<span class="badge bg-warning text-dark ms-1">Archived</span>{% endif %}
+                                <div class="text-muted small">{{ repo.description or '' }}</div>
+                            </td>
+                            <td>
+                                <span class="badge {{ 'bg-secondary' if repo.private else 'bg-success' }}">{{ 'Private' if repo.private else 'Public' }}</span>
+                            </td>
+                            <td><code>{{ repo.default_branch }}</code></td>
+                            <td>
+                                {% for topic in repo.topics or [] %}
+                                    <span class="badge rounded-pill text-bg-light border">{{ topic }}</span>
+                                {% endfor %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </form>
+        {% else %}
+            <p class="text-muted">No repositories are available to this GitHub App installation.</p>
+        {% endif %}
+    </div>
+
+    <script>
+        (function () {
+            const form = document.getElementById('bulkForm');
+            if (!form) return;
+
+            const action = document.getElementById('action');
+            const topicsField = document.getElementById('topicsField');
+            const branchField = document.getElementById('branchField');
+            const topicsInput = document.getElementById('topics');
+            const branchInput = document.getElementById('branch');
+            const checkboxes = Array.from(form.querySelectorAll('.repo-checkbox'));
+            const selectAll = document.getElementById('selectAll');
+            const filter = document.getElementById('filter');
+            const selectedCount = document.getElementById('selectedCount');
+            const reviewButton = document.getElementById('reviewButton');
+
+            function visibleCheckboxes() {
+                return checkboxes.filter(cb => !cb.closest('tr').hidden);
+            }
+
+            function refresh() {
+                const needs = action.selectedOptions[0]?.dataset.needs || '';
+                topicsField.classList.toggle('d-none', needs !== 'topics');
+                branchField.classList.toggle('d-none', needs !== 'branch');
+                topicsInput.required = needs === 'topics';
+                branchInput.required = needs === 'branch';
+
+                const selected = checkboxes.filter(cb => cb.checked).length;
+                selectedCount.textContent = selected;
+                reviewButton.disabled = !(selected && action.value);
+
+                const visible = visibleCheckboxes();
+                selectAll.checked = visible.length > 0 && visible.every(cb => cb.checked);
+            }
+
+            action.addEventListener('change', refresh);
+            checkboxes.forEach(cb => cb.addEventListener('change', refresh));
+
+            selectAll.addEventListener('change', () => {
+                visibleCheckboxes().forEach(cb => { cb.checked = selectAll.checked; });
+                refresh();
+            });
+
+            filter.addEventListener('input', () => {
+                const term = filter.value.trim().toLowerCase();
+                checkboxes.forEach(cb => {
+                    const row = cb.closest('tr');
+                    row.hidden = term !== '' && !row.dataset.name.includes(term);
+                });
+                refresh();
+            });
+
+            refresh();
+        })();
+    </script>
+</body>
+</html>

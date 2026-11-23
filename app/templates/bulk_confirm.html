@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirm Bulk Action | RepoMaster</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+    <div class="container my-5" style="max-width: 760px;">
+        <h1 class="mb-4">Confirm Bulk Action</h1>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <p class="mb-1 text-muted">Action</p>
+                <p class="fs-5 fw-semibold">{{ summary }}</p>
+
+                <p class="mb-2 text-muted">This will change {{ bulk_request.repos|length }} {{ 'repository' if bulk_request.repos|length == 1 else 'repositories' }}:</p>
+                <ul class="list-group mb-4">
+                    {% for repo in bulk_request.repos %}
+                        <li class="list-group-item"><code>{{ repo }}</code></li>
+                    {% endfor %}
+                </ul>
+
+                {% if bulk_request.action == 'make_public' %}
+                    <div class="alert alert-warning">Making a repository public exposes all of its code and history to everyone.</div>
+                {% elif bulk_request.action == 'archive' %}
+                    <div class="alert alert-info">Archived repositories become read-only. You can unarchive them later.</div>
+                {% endif %}
+
+                <form method="POST" action="{{ url_for('main.bulk_actions_apply') }}" class="d-flex gap-2">
+                    <input type="hidden" name="action" value="{{ bulk_request.action }}">
+                    <input type="hidden" name="topics" value="{{ bulk_request.topics|join(',') }}">
+                    <input type="hidden" name="branch" value="{{ bulk_request.branch }}">
+                    {% for repo in bulk_request.repos %}
+                        <input type="hidden" name="repos" value="{{ repo }}">
+                    {% endfor %}
+                    <button type="submit" class="btn btn-primary">Apply to {{ bulk_request.repos|length }} {{ 'repository' if bulk_request.repos|length == 1 else 'repositories' }}</button>
+                    <a href="{{ url_for('main.bulk_actions') }}" class="btn btn-outline-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
