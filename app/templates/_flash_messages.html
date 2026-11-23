@@ -1,0 +1,6 @@
+{# Renders flash() messages as Bootstrap alerts. Include with: {% include '_flash_messages.html' %} #}
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+        <div class="alert alert-{{ 'danger' if category in ('danger', 'error') else ('success' if category == 'success' else 'info') }}" role="alert">{{ message }}</div>
+    {% endfor %}
+{% endwith %}
