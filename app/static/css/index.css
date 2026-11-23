@@ -404,3 +404,26 @@ header nav li:last-child a:hover {
 
 
 
+/* Flash messages on the home page (no Bootstrap here) */
+.flash-messages {
+    max-width: 560px;
+    margin: 0 auto 20px;
+}
+
+.flash-messages .alert {
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    font: 16px "Raleway", sans-serif;
+    color: #fff;
+    background-color: rgba(0, 0, 0, 0.55);
+    border-left: 4px solid #4aa3df;
+}
+
+.flash-messages .alert-success {
+    border-left-color: #2ecc71;
+}
+
+.flash-messages .alert-danger {
+    border-left-color: #e74c3c;
+}
