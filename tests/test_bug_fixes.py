@@ -34,16 +34,6 @@ def fake_token(monkeypatch):
         monkeypatch.setattr(module, 'get_installation_access_token', lambda: 'fake-token')
 
 
-@pytest.fixture
-def logged_in_client(client):
-    with client.session_transaction() as sess:
-        sess['installation_id'] = '1'
-        sess['github_installation_token'] = 'fake-token'
-        sess['github_username'] = 'alice'
-        sess['github_avatar_url'] = 'https://example.com/avatar.png'
-    return client
-
-
 # --- Authentication ----------------------------------------------------------
 
 @pytest.mark.parametrize('method, url', [
@@ -70,9 +60,7 @@ def test_installation_token_without_installation_id_returns_none(app):
 def test_logout_clears_whole_session(logged_in_client):
     logged_in_client.get('/logout')
     with logged_in_client.session_transaction() as sess:
-        assert 'github_avatar_url' not in sess
-        assert 'github_username' not in sess
-        assert 'github_installation_token' not in sess
+        assert dict(sess) == {'_flashes': [('info', 'You have been logged out successfully.')]}
 
 
 def test_install_redirect_uses_configured_app_name(client):
