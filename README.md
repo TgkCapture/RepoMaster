@@ -77,73 +77,71 @@ RepoMaster now uses a GitHub App for authentication and repository management, p
 - Install the GitHub App on your account or organization.
 - Set up the GitHub App’s private key and ID in the environment variables.
 
+## Project Structure
+
+```
+run.py                        # Entry point: creates the app via the factory
+app/
+  __init__.py                 # create_app() application factory
+  config/                     # BaseConfig + Development / Production / Testing configs
+  routes/                     # HTTP routes, one module per feature (all on the "main" blueprint)
+    auth_routes.py            #   home, GitHub App install/authorize, logout
+    repo_routes.py            #   repository list, details, bulk delete
+    issue_routes.py           #   issues
+    pull_request_routes.py    #   pull requests
+    branch_routes.py          #   branches
+    content_routes.py         #   repository contents and files
+  controllers/                # GitHub REST API calls (auth, repos, issues, pull requests)
+  templates/                  # Jinja templates
+  static/                     # CSS, JS, images
+tests/                        # pytest suite
+```
+
 ## Setting Up the Project Locally
 
-### For Windows:
-1. **Clone the Repository:**
+1. **Clone the repository:**
    ```bash
    git clone <repository_url>
    cd RepoMaster
    ```
 
-2. **Set Up Python Virtual Environment:**
+2. **Create and activate a virtual environment:**
    ```bash
    python -m venv venv
-   venv\Scripts\activate
+   venv\Scripts\activate        # Windows
+   source venv/bin/activate     # Linux / macOS
    ```
 
-3. **Install Dependencies:**
+3. **Install dependencies:**
    ```bash
-   pip install -r requirements.txt
+   pip install -r requirements-dev.txt   # app + test dependencies
    ```
 
-4. **Set Environment Variables:**
+4. **Configure environment variables:** copy `.env.default` to `.env` and fill it in.
+
+   | Variable | Description |
+   |---|---|
+   | `FLASK_CONFIG` | `development` (default), `production` or `testing` |
+   | `SECRET_KEY` | Flask session secret. Required in production |
+   | `GITHUB_APP_ID` | Your GitHub App's ID |
+   | `GITHUB_APP_NAME` | Your GitHub App's URL slug (used for the install link) |
+   | `GITHUB_PRIVATE_KEY_PATH` | Path to the GitHub App's `.pem` private key |
+
+5. **Run the application:**
    ```bash
-   set GITHUB_APP_ID=your_github_app_id
-   set GITHUB_PRIVATE_KEY_PATH=path_to_your_private_key.pem
+   python run.py
    ```
+   Then open http://127.0.0.1:5000/.
 
-5. **Run the Flask Application:**
+6. **Run the tests:**
    ```bash
-   python app.py
+   pytest
    ```
 
-6. **Access the Application:**
-   Open a web browser and visit http://127.0.0.1:5000/ to access the application.
+### Deploying
 
-
-### For Linux
-
-1. **Clone the Repository:**
-   ```bash
-   git clone <repository_url>
-   cd RepoMaster
-   ```
-
-2. **Set Up Python Virtual Environment:**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate
-   ```
-
-3. **Install Dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Set Environment Variables:**
-   ```bash
-   export GITHUB_APP_ID=your_github_app_id
-   export GITHUB_PRIVATE_KEY_PATH=path_to_your_private_key.pem
-   ```
-
-5. **Run the Flask Application:**
-   ```bash
-   python app.py
-   ```
-
-6. **Access the Application:**
-   Open a web browser and visit http://127.0.0.1:5000/ to access the application.
+Point your WSGI server at `run:app` (e.g. `gunicorn run:app`) and set `FLASK_CONFIG=production`.
+The production config refuses to start if `SECRET_KEY` or any GitHub App setting is missing.
 
 
 ### Production Version
