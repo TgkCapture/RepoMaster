@@ -10,6 +10,8 @@ EXPECTED_ENDPOINTS = {
     'main.logout',
     'main.github_authorize',
     'main.install_github_app',
+    'main.login',
+    'main.github_callback',
     'main.show_github_repositories',
     'main.show_repo_details',
     'main.delete_repositories',

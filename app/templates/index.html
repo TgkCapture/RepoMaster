@@ -23,10 +23,10 @@
                 <!-- Profile section -->
                 <li class="profile-container">
                     <img src="{{ session.get('github_avatar_url') }}" alt="GitHub Profile" class="profile-pic">
-                    <span class="profile-username">{{ session.get('github_username') }}</span>
+                    <span class="profile-username" title="Managing repositories of {{ session.get('github_username') }}">{{ session.get('github_user_login') }}</span>
                 </li>
             {% else %}
-                <li><a href="{{ url_for('main.install_github_app') }}">Login with GitHub</a></li>
+                <li><a href="{{ url_for('main.login') }}">Login with GitHub</a></li>
             {% endif %}
         </nav>
     </header>
@@ -35,6 +35,7 @@
     <section class="hero" id="hero">
         <div class="background-image"></div>
         <div class="hero-content-area">
+        <div class="flash-messages">{% include '_flash_messages.html' %}</div>
         <h1>RepoMaster!</h1>
         <h3>Master Your Repositories with RepoMaster</h3>
         <a href="" class="btn">Get Started</a>

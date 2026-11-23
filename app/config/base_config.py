@@ -20,6 +20,13 @@ class BaseConfig:
     GITHUB_APP_NAME = os.getenv('GITHUB_APP_NAME')
     GITHUB_PRIVATE_KEY_PATH = os.getenv('GITHUB_PRIVATE_KEY_PATH')
 
+    # GitHub App user sign-in (OAuth). Found on the App's settings page.
+    GITHUB_CLIENT_ID = os.getenv('GITHUB_CLIENT_ID')
+    GITHUB_CLIENT_SECRET = os.getenv('GITHUB_CLIENT_SECRET')
+    # Optional: full OAuth callback URL, e.g. https://example.com/github/callback.
+    # Set this when running behind a proxy so the URL matches the App's Callback URL exactly.
+    GITHUB_OAUTH_CALLBACK_URL = os.getenv('GITHUB_OAUTH_CALLBACK_URL')
+
     # Logging
     LOG_LEVEL = logging.INFO
     LOG_FILE_PATH = os.path.join('logs', 'repomaster.log')
