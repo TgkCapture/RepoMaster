@@ -33,7 +33,17 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
   - Make private / public
   - Add / remove topics (merged with each repository's existing topics, max 20)
   - Change the default branch (the branch must exist in each repository)
+  - Delete permanently (you must type `delete` on the confirmation page)
 - **Flow:** select repositories (with filter and select-all) → review a confirmation page listing every repository that will change → apply and get a per-repository success/failure report. One failure doesn't stop the rest.
+
+### 3b. Cleanup Dashboard (Available)
+- **Route:** `/repositories/cleanup?months=6`
+- **Functionality:** Finds repositories that probably need attention (archived ones are skipped):
+  - **Inactive:** no push in the last N months (selectable, default 6)
+  - **Empty:** size 0
+  - **Unmodified forks:** no commits of their own compared with the parent's default branch
+- **Branches** (`/repositories/cleanup/branches?repo=owner/name`): for one repository, lists branches already **merged** into the default branch and **stale** branches (unmerged, nothing new in N months), and deletes the selected ones. The default branch and protected branches are never deleted.
+- Archive / delete of repositories goes through the bulk actions confirmation step.
 
 ### 4. Manage Pull Requests (Available)
 - **Route:** `/repositories/<repo_name>/pull_requests`
@@ -113,6 +123,7 @@ app/
     branch_routes.py          #   branches
     content_routes.py         #   repository contents and files
     bulk_routes.py            #   bulk repository actions
+    cleanup_routes.py         #   cleanup dashboard and branch cleanup
   controllers/                # GitHub REST API calls (auth, repos, issues, pull requests)
   templates/                  # Jinja templates
   static/                     # CSS, JS, images
