@@ -8,7 +8,6 @@ from flask import Blueprint
 main_routes = Blueprint('main', __name__)
 
 # Imported for their side effect of registering routes on main_routes.
-# Order matters where two routes share a URL rule (see content_routes).
 from app.routes import (  # noqa: E402,F401
     auth_routes,
     repo_routes,
