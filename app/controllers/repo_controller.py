@@ -7,20 +7,28 @@ from flask import session
 from requests.exceptions import RequestException
 from app.controllers.auth_controller import get_installation_access_token
 
-def get_github_repositories(username, access_token):
-    url = f'https://api.github.com/users/{username}/repos'
+REQUEST_TIMEOUT = 60  # seconds
+
+def _error_details(e):
+    """Return GitHub's response body for a failed request, if there is one."""
+    response = getattr(e, 'response', None)
+    return response.text if response is not None else str(e)
+
+def get_github_repositories(access_token):
+    """
+    Fetches the repositories the GitHub App installation has access to
+    (including private ones).
+    """
+    url = 'https://api.github.com/installation/repositories'
     headers = {'Authorization': f'Bearer {access_token}'}
 
     try:
-        response = requests.get(url, headers=headers, timeout=60)
+        response = requests.get(url, headers=headers, params={'per_page': 100}, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
-        repositories = response.json()
+        repositories = response.json().get('repositories', [])
 
         for repo in repositories:
-        #     repo['stars'] = repo.get('stargazers_count', 0)  
-        #     repo['forks'] = repo.get('forks_count', 0)  
-        #     repo['language'] = repo.get('language', 'Unknown')  
-            repo['language_color'] = get_language_color(repo['language'])  
+            repo['language_color'] = get_language_color(repo['language'])
 
         return repositories
     except RequestException as e:
@@ -49,10 +57,15 @@ def get_language_color(language):
     return language_colors.get(language, "#cccccc")
 
 def delete_repository(repos_to_delete):
-    """Deletes GitHub repositories."""
+    """Deletes GitHub repositories owned by the logged-in installation account."""
 
     deleted_repos = []
-    username = session.get("username", "TgkCapture")  
+    failed_repos = []
+    username = session.get('github_username')
+    if not username:
+        logging.error("No GitHub username in session. Refusing to delete repositories.")
+        return "Could not determine the repository owner. Please log in again."
+
     access_token = get_installation_access_token()
 
     if not access_token:
@@ -68,7 +81,7 @@ def delete_repository(repos_to_delete):
         }
 
         try:
-            response = requests.delete(delete_url, headers=headers, timeout=60)
+            response = requests.delete(delete_url, headers=headers, timeout=REQUEST_TIMEOUT)
             response.raise_for_status()
 
             if response.status_code == 204:
@@ -76,11 +89,14 @@ def delete_repository(repos_to_delete):
                 deleted_repos.append(repo_name)
         except requests.exceptions.RequestException as e:
             logging.error(f"Failed to delete repository {repo_name}: {e}")
+            failed_repos.append(repo_name)
 
+    messages = []
     if deleted_repos:
-        return f"Repositories '{', '.join(deleted_repos)}' deleted successfully"
-    else:
-        return "No repositories were deleted."
+        messages.append(f"Repositories '{', '.join(deleted_repos)}' deleted successfully.")
+    if failed_repos:
+        messages.append(f"Failed to delete '{', '.join(failed_repos)}'.")
+    return " ".join(messages) or "No repositories were deleted."
 
 def get_branches(owner, repo_name):
     """Fetches all branches of a repository."""
@@ -94,7 +110,7 @@ def get_branches(owner, repo_name):
     api_url = f'https://api.github.com/repos/{owner}/{repo_name}/branches'
 
     try:
-        response = requests.get(api_url, headers=headers, timeout=60)
+        response = requests.get(api_url, headers=headers, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         branches = response.json()
         return [branch['name'] for branch in branches]
@@ -112,30 +128,30 @@ def create_branch(owner, repo, access_token, ref_name, sha):
         'Content-Type': 'application/json'
     }
     payload = {
-        "ref": f"refs/heads/{ref_name}",  
+        "ref": f"refs/heads/{ref_name}",
         "sha": sha
     }
 
     try:
-        response = requests.post(url, json=payload, headers=headers, timeout=60)
+        response = requests.post(url, json=payload, headers=headers, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
-        return response.json()  
+        return response.json()
     except RequestException as e:
-        logging.error(f"Failed to create branch '{ref_name}' in repository '{owner}/{repo}': {e}")
+        logging.error(f"Failed to create branch '{ref_name}' in repository '{owner}/{repo}': {_error_details(e)}")
         return None
 
 def get_default_branch_sha(owner, repo, access_token):
     url = f'https://api.github.com/repos/{owner}/{repo}'
     headers = {'Authorization': f'Bearer {access_token}'}
-    
+
     try:
-        response = requests.get(url, headers=headers, timeout=60)
+        response = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         repo_data = response.json()
         default_branch = repo_data['default_branch']
 
         branch_url = f'https://api.github.com/repos/{owner}/{repo}/git/refs/heads/{default_branch}'
-        branch_response = requests.get(branch_url, headers=headers, timeout=60)
+        branch_response = requests.get(branch_url, headers=headers, timeout=REQUEST_TIMEOUT)
         branch_response.raise_for_status()
         branch_data = branch_response.json()
         return branch_data['object']['sha']
@@ -146,6 +162,7 @@ def get_default_branch_sha(owner, repo, access_token):
 def get_branch_details(owner, repo_name, branch_name):
     """
     Fetch details about a specific branch in the repository.
+    Returns (branch_details, error_message).
     """
     access_token = get_installation_access_token()
     if not access_token:
@@ -156,59 +173,60 @@ def get_branch_details(owner, repo_name, branch_name):
     headers = {'Authorization': f'Bearer {access_token}'}
 
     try:
-        response = requests.get(url, headers=headers, timeout=60)
+        response = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         branch_details = response.json()
-        logging.info(f"Branch details fetched successfully: {branch_details}")
+        logging.info(f"Branch details fetched successfully for '{owner}/{repo_name}:{branch_name}'.")
         return branch_details, None
     except RequestException as e:
-        logging.error(f"Failed to fetch details for branch '{branch}' in repository '{owner}/{repo_name}': {e}")
-        return None
+        logging.error(f"Failed to fetch details for branch '{branch_name}' in repository '{owner}/{repo_name}': {e}")
+        return None, f"Failed to fetch details for branch '{branch_name}'"
 
-def get_repository_contents(owner, repo, path, branch):
+def get_repository_contents(owner, repo, path, branch=None):
     """
     Retrieve the contents of a file or directory.
+    A directory returns a list of entries; a file returns a single dict.
     """
     url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
     access_token = get_installation_access_token()
     headers = {'Authorization': f'Bearer {access_token}'}
 
-    params = {"ref": branch}
+    params = {"ref": branch} if branch else {}
 
     try:
-        response = requests.get(url, headers=headers, params=params)
+        response = requests.get(url, headers=headers, params=params, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
         logging.error(f"Failed to fetch repository contents: {e}")
         return None
 
-def create_file(owner, repo, file_name, content, message):
+def create_file(owner, repo, file_name, content, message, branch=None):
     """
     Add a new file to the repository.
     """
-    if not file_name.startswith('/'):
-        file_path = file_name
-    else:
-        file_path = file_name.strip('/') 
+    file_path = file_name.strip('/')
 
     url = f"https://api.github.com/repos/{owner}/{repo}/contents/{file_path}"
     access_token = get_installation_access_token()
     headers = {'Authorization': f'Bearer {access_token}'}
     data = {
         "message": message,
-        "content": content.encode('utf-8').decode('utf-8')  
+        # The GitHub contents API requires base64-encoded content
+        "content": base64.b64encode(content.encode('utf-8')).decode('utf-8'),
     }
+    if branch:
+        data["branch"] = branch
 
     try:
-        response = requests.put(url, headers=headers, json=data, timeout=60)
+        response = requests.put(url, headers=headers, json=data, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
-        logging.error(f"Failed to create file: {e}")
+        logging.error(f"Failed to create file: {_error_details(e)}")
         return None
 
-def update_file(owner, repo, path, content, sha, message): #TODO: Fix update file
+def update_file(owner, repo, path, content, sha, message, branch=None):
     """
     Modify the content of an existing file.
     """
@@ -223,40 +241,40 @@ def update_file(owner, repo, path, content, sha, message): #TODO: Fix update fil
         "content": encoded_content,
         "sha": sha
     }
-
-    logging.debug(f"Encoded content: {encoded_content[:50]}...")  # Log the first 50 characters for privacy
+    if branch:
+        data["branch"] = branch
 
     try:
-        response = requests.put(url, headers=headers, json=data, timeout=60)
+        response = requests.put(url, headers=headers, json=data, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
-        logging.error(f"Failed to update file: {e}")
-        logging.error(f"Response: {response.text}")
+        logging.error(f"Failed to update file: {_error_details(e)}")
         return None
 
-def fetch_file_sha(owner, repo, path):
+def fetch_file_sha(owner, repo, path, branch=None):
     """
     Fetch the SHA for the given file path in the repository.
     """
     url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
     access_token = get_installation_access_token()
     headers = {'Authorization': f'Bearer {access_token}'}
+    params = {"ref": branch} if branch else {}
 
     try:
-        response = requests.get(url, headers=headers, timeout=60)
+        response = requests.get(url, headers=headers, params=params, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         return response.json().get('sha')
     except requests.RequestException as e:
         logging.error(f"Failed to fetch file SHA: {e}")
         return None
 
-def delete_file(owner, repo, path, sha, message):
+def delete_file(owner, repo, path, sha, message, branch=None):
     """
-    Remove a file from the repository.
+    Remove a file from the repository. Looks up the file's SHA if not given.
     """
     if not sha:
-        sha = fetch_file_sha(owner, repo, path)
+        sha = fetch_file_sha(owner, repo, path, branch)
         if not sha:
             logging.error("Unable to fetch SHA for the file. Aborting deletion.")
             return None
@@ -265,12 +283,13 @@ def delete_file(owner, repo, path, sha, message):
     access_token = get_installation_access_token()
     headers = {'Authorization': f'Bearer {access_token}'}
     data = {"message": message, "sha": sha}
+    if branch:
+        data["branch"] = branch
 
     try:
-        response = requests.delete(url, headers=headers, json=data, timeout=60)
+        response = requests.delete(url, headers=headers, json=data, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
-        logging.error(f"Failed to delete file: {e}")
-        logging.error(f"Response: {response.text}")
+        logging.error(f"Failed to delete file: {_error_details(e)}")
         return None
