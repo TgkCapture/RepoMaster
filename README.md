@@ -60,7 +60,7 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
 - **API Endpoint:** `PUT /repos/{owner}/{repo}/contents/{path}`  
 - **Functionality:** Add a new file to the repository.
 
-### Update a File(Buggy)
+### Update a File
 - **API Endpoint:** `PUT /repos/{owner}/{repo}/contents/{path}`  
 - **Functionality:** Modify the content of an existing file.
 
