@@ -200,6 +200,7 @@ def start_user_session(user, installation):
     session['installation_id'] = installation.get('id')
     # Owner of the repositories the installation manages (user or organization)
     session['github_username'] = account.get('login')
+    session['github_account_type'] = account.get('type')  # 'User' or 'Organization'
     logging.info(f"User '{user.get('login')}' signed in with installation {installation.get('id')} "
                  f"on account '{account.get('login')}'.")
 
