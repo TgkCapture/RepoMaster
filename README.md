@@ -70,12 +70,24 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
 
 ## Migration to GitHub App
 RepoMaster now uses a GitHub App for authentication and repository management, providing enhanced security and scalability:
-- **Authentication:** The app uses a GitHub App installation access token for API interactions.
+- **Sign-in:** Users sign in with GitHub (the App's user authorization / OAuth flow). RepoMaster then asks GitHub which App installations *that user* can access and only uses one of those, so nobody can act on an installation that isn't theirs.
+- **API calls:** Repository operations use a short-lived installation access token for the verified installation.
 - **Benefits:** Fine-grained permissions, easier token management, and enhanced security.
 
+### GitHub App settings
+On the App's settings page (**GitHub → Settings → Developer settings → GitHub Apps → your app**):
+
+| Setting | Value |
+|---|---|
+| **Callback URL** | `https://<your-domain>/github/callback` (add `http://127.0.0.1:5000/github/callback` for local development) |
+| **Setup URL** (under *Post installation*) | `https://<your-domain>/github/authorize` |
+| **Request user authorization (OAuth) during installation** | Off. RepoMaster starts sign-in itself, with CSRF protection, after installation |
+| **Client secret** | Generate one and put it in `GITHUB_CLIENT_SECRET` |
+| **Private key** | Generate one and point `GITHUB_PRIVATE_KEY_PATH` at the `.pem` file |
+
 ### Prerequisites
-- Install the GitHub App on your account or organization.
-- Set up the GitHub App’s private key and ID in the environment variables.
+- Install the GitHub App on your account or organization (the **Login with GitHub** button sends you there if you haven't).
+- Set the GitHub App's ID, name, private key, Client ID and Client secret in the environment variables.
 
 ## Project Structure
 
@@ -85,7 +97,7 @@ app/
   __init__.py                 # create_app() application factory
   config/                     # BaseConfig + Development / Production / Testing configs
   routes/                     # HTTP routes, one module per feature (all on the "main" blueprint)
-    auth_routes.py            #   home, GitHub App install/authorize, logout
+    auth_routes.py            #   home, sign-in with GitHub, App install/setup, logout
     repo_routes.py            #   repository list, details, bulk delete
     issue_routes.py           #   issues
     pull_request_routes.py    #   pull requests
@@ -126,6 +138,9 @@ tests/                        # pytest suite
    | `GITHUB_APP_ID` | Your GitHub App's ID |
    | `GITHUB_APP_NAME` | Your GitHub App's URL slug (used for the install link) |
    | `GITHUB_PRIVATE_KEY_PATH` | Path to the GitHub App's `.pem` private key |
+   | `GITHUB_CLIENT_ID` | The GitHub App's Client ID (for user sign-in) |
+   | `GITHUB_CLIENT_SECRET` | A Client secret generated on the GitHub App |
+   | `GITHUB_OAUTH_CALLBACK_URL` | Optional. Exact callback URL; set it when running behind a reverse proxy so it matches the App's Callback URL |
 
 5. **Run the application:**
    ```bash
@@ -141,7 +156,7 @@ tests/                        # pytest suite
 ### Deploying
 
 Point your WSGI server at `run:app` (e.g. `gunicorn run:app`) and set `FLASK_CONFIG=production`.
-The production config refuses to start if `SECRET_KEY` or any GitHub App setting is missing.
+The production config refuses to start if `SECRET_KEY` or any GitHub App setting (including the Client ID and secret) is missing.
 
 
 ### Production Version
