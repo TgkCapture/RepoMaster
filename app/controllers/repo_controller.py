@@ -293,3 +293,62 @@ def delete_file(owner, repo, path, sha, message, branch=None):
     except requests.RequestException as e:
         logging.error(f"Failed to delete file: {_error_details(e)}")
         return None
+
+def _github_error_message(e):
+    """A short, user-facing reason for a failed GitHub request."""
+    response = getattr(e, 'response', None)
+    if response is None:
+        return "Could not reach GitHub"
+    try:
+        message = response.json().get('message')
+    except ValueError:
+        message = None
+    return message or f"GitHub returned status {response.status_code}"
+
+def update_repository(owner, repo, access_token, fields):
+    """
+    Update repository settings, e.g. {'archived': True}, {'private': False}
+    or {'default_branch': 'main'}.
+    Returns (repository, None) on success or (None, error_message).
+    """
+    url = f'https://api.github.com/repos/{owner}/{repo}'
+    headers = {'Authorization': f'Bearer {access_token}', 'Accept': 'application/vnd.github+json'}
+
+    try:
+        response = requests.patch(url, headers=headers, json=fields, timeout=REQUEST_TIMEOUT)
+        response.raise_for_status()
+        return response.json(), None
+    except RequestException as e:
+        logging.error(f"Failed to update repository '{owner}/{repo}' with {fields}: {_error_details(e)}")
+        return None, _github_error_message(e)
+
+def get_repository_topics(owner, repo, access_token):
+    """
+    Returns (list_of_topics, None) on success or (None, error_message).
+    """
+    url = f'https://api.github.com/repos/{owner}/{repo}/topics'
+    headers = {'Authorization': f'Bearer {access_token}', 'Accept': 'application/vnd.github+json'}
+
+    try:
+        response = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
+        response.raise_for_status()
+        return response.json().get('names', []), None
+    except RequestException as e:
+        logging.error(f"Failed to fetch topics for '{owner}/{repo}': {_error_details(e)}")
+        return None, _github_error_message(e)
+
+def replace_repository_topics(owner, repo, access_token, topics):
+    """
+    Replace all of a repository's topics with `topics`.
+    Returns (list_of_topics, None) on success or (None, error_message).
+    """
+    url = f'https://api.github.com/repos/{owner}/{repo}/topics'
+    headers = {'Authorization': f'Bearer {access_token}', 'Accept': 'application/vnd.github+json'}
+
+    try:
+        response = requests.put(url, headers=headers, json={'names': topics}, timeout=REQUEST_TIMEOUT)
+        response.raise_for_status()
+        return response.json().get('names', []), None
+    except RequestException as e:
+        logging.error(f"Failed to set topics for '{owner}/{repo}': {_error_details(e)}")
+        return None, _github_error_message(e)
