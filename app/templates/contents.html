@@ -15,13 +15,13 @@
             <span class="me-2">Current Branch:</span>
             <div class="dropdown">
                 <button class="btn btn-secondary dropdown-toggle" type="button" id="branchDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                    {{ current_branch }}
+                    {{ current_branch or 'default branch' }}
                 </button>
                 <ul class="dropdown-menu" aria-labelledby="branchDropdown">
-                    {% for branch in branches %}
+                    {% for branch in branches or [] %}
                         <li>
-                            <a class="dropdown-item" href="{{ url_for('main.get_contents', owner=owner, repo=repo, branch=branch.name) }}">
-                                {{ branch.name }}
+                            <a class="dropdown-item" href="{{ url_for('main.get_contents', owner=owner, repo=repo, branch=branch) }}">
+                                {{ branch }}
                             </a>
                         </li>
                     {% endfor %}
@@ -31,6 +31,12 @@
 
         <!-- Back to Home Button -->
         <a href="{{ url_for('main.home') }}" class="btn btn-secondary mb-4">Back to Home</a>
+
+        {% include '_flash_messages.html' %}
+
+        {% if current_path %}
+            <p class="text-muted">Path: <code>/{{ current_path }}</code></p>
+        {% endif %}
 
         <!-- Repository Contents -->
         {% if contents %}
@@ -50,10 +56,13 @@
                                 <a href="{{ url_for('main.get_contents', owner=owner, repo=repo, path=item.path, branch=current_branch) }}" class="btn btn-outline-info btn-sm">View</a>
                             {% else %}
                                 <a href="{{ item.download_url }}" class="btn btn-outline-secondary btn-sm" target="_blank">Download</a>
-                                <a href="#" class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#updateFileModal" 
-                                   data-path="{{ item.path }}" data-sha="{{ item.sha }}">Edit</a>
-                                <form action="{{ url_for('main.delete_existing_file', owner=owner, repo=repo, path=item.path) }}" method="POST" class="d-inline">
+                                <a href="#" class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#updateFileModal"
+                                   data-path="{{ item.path }}" data-sha="{{ item.sha }}"
+                                   data-action="{{ url_for('main.update_existing_file', owner=owner, repo=repo, path=item.path) }}">Edit</a>
+                                <form action="{{ url_for('main.delete_existing_file', owner=owner, repo=repo, path=item.path) }}" method="POST" class="d-inline"
+                                      data-path="{{ item.path }}" onsubmit="return confirm('Delete ' + this.dataset.path + '?')">
                                     <input type="hidden" name="sha" value="{{ item.sha }}">
+                                    <input type="hidden" name="branch" value="{{ current_branch or '' }}">
                                     <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
                                 </form>
                             {% endif %}
@@ -113,6 +122,7 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <form action="{{ url_for('main.create_new_file', owner=owner, repo=repo) }}" method="POST">
+                        <input type="hidden" name="branch" value="{{ current_branch or '' }}">
                         <div class="modal-header">
                             <h5 class="modal-title" id="addFileModalLabel">Add New File</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -144,9 +154,9 @@
         <div class="modal fade" id="updateFileModal" tabindex="-1" aria-labelledby="updateFileModalLabel" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
-                    <form action="{{ url_for('main.update_existing_file', owner=owner, repo=repo, path='') }}" 
-                        method="POST"
-                        onsubmit="this.action = this.action.replace('path=', 'path=' + encodeURIComponent(document.getElementById('updateFilePath').value))">
+                    <!-- action is set from the clicked Edit button's data-action -->
+                    <form id="updateFileForm" method="POST">
+                        <input type="hidden" name="branch" value="{{ current_branch or '' }}">
                         <div class="modal-header">
                             <h5 class="modal-title" id="updateFileModalLabel">Update File</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -181,9 +191,10 @@
                 const button = event.relatedTarget;
                 const path = button.getAttribute('data-path');
                 const sha = button.getAttribute('data-sha');
+                document.getElementById('updateFileForm').action = button.getAttribute('data-action');
                 document.getElementById('updateFilePath').value = path;
                 document.getElementById('updateFileSha').value = sha;
-                console.log(`Path set in modal: ${path}`);
+                document.getElementById('updateFileModalLabel').textContent = `Update ${path}`;
             });
         });
     </script>
