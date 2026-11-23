@@ -9,12 +9,14 @@
 <body class="bg-light">
     <div class="container mt-4">
         <h1 class="text-center text-primary">Branches for {{ repo_name }}</h1>
+
+        {% include '_flash_messages.html' %}
         
         {% if branches %}
             <ul class="list-group mt-3">
                 {% for branch in branches %}
                     <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <a href="{{ url_for('main.show_branch_details', repo_name=repo_name, branch_name=branch) }}" class="text-decoration-none text-dark">
+                        <a href="{{ url_for('main.show_branch_details', owner=owner, repo_name=repo_name, branch_name=branch) }}" class="text-decoration-none text-dark">
                             {{ branch }}
                         </a>
                     </li>
