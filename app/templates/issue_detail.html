@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>#{{ issue.number }} {{ issue.title }} | RepoMaster</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>.issue-text { white-space: pre-wrap; word-break: break-word; }</style>
+</head>
+<body class="bg-light">
+    {% set action_url = url_for('main.issue_detail', repo_name=repo_name, issue_number=issue.number) %}
+    <div class="container my-5">
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <a href="{{ url_for('main.manage_issues', repo_name=repo_name) }}" class="btn btn-outline-secondary btn-sm">&larr; Issues</a>
+            <a href="{{ issue.html_url }}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+        </div>
+
+        {% include '_flash_messages.html' %}
+
+        <h1 class="h3">{{ issue.title }} <span class="text-muted">#{{ issue.number }}</span></h1>
+        <p>
+            <span class="badge {{ 'bg-success' if issue.state == 'open' else 'bg-secondary' }}">
+                {{ issue.state }}{% if issue.state == 'closed' and issue.state_reason == 'not_planned' %} (not planned){% endif %}
+            </span>
+            <span class="text-muted small">opened {{ issue.created_ago }} by {{ issue.user.login if issue.user else 'unknown' }}</span>
+        </p>
+
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        {% if issue.body %}
+                            <div class="issue-text">{{ issue.body }}</div>
+                        {% else %}
+                            <p class="text-muted fst-italic mb-0">No description.</p>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer bg-white">
+                        <details>
+                            <summary class="small">Edit title and description</summary>
+                            <form method="POST" action="{{ action_url }}" class="mt-2">
+                                <input type="hidden" name="action" value="edit">
+                                <input type="text" class="form-control mb-2" name="title" value="{{ issue.title }}" maxlength="256" required>
+                                <textarea class="form-control mb-2" name="body" rows="6">{{ issue.body or '' }}</textarea>
+                                <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                            </form>
+                        </details>
+                    </div>
+                </div>
+
+                <h2 class="h5 mt-4">Comments ({{ comments|length }})</h2>
+                {% for comment in comments %}
+                <div class="card shadow-sm mb-2">
+                    <div class="card-header bg-white small">
+                        <strong>{{ comment.user.login if comment.user else 'unknown' }}</strong>
+                        <span class="text-muted">commented {{ comment.created_ago }}</span>
+                    </div>
+                    <div class="card-body issue-text">{{ comment.body }}</div>
+                </div>
+                {% else %}
+                <p class="text-muted">No comments yet.</p>
+                {% endfor %}
+
+                <form method="POST" action="{{ action_url }}" class="mt-3">
+                    <input type="hidden" name="action" value="comment">
+                    <textarea class="form-control mb-2" name="body" rows="4" placeholder="Leave a comment" required></textarea>
+                    <button type="submit" class="btn btn-success btn-sm">Comment</button>
+                </form>
+
+                <div class="mt-3">
+                    {% if issue.state == 'open' %}
+                    <form method="POST" action="{{ action_url }}" class="d-flex gap-2 align-items-center">
+                        <input type="hidden" name="action" value="close">
+                        <select name="state_reason" class="form-select form-select-sm w-auto" aria-label="Close reason">
+                            {% for value, text in close_reasons.items() %}
+                                <option value="{{ value }}">{{ text }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-outline-danger btn-sm">Close issue</button>
+                    </form>
+                    {% else %}
+                    <form method="POST" action="{{ action_url }}">
+                        <input type="hidden" name="action" value="reopen">
+                        <button type="submit" class="btn btn-outline-success btn-sm">Reopen issue</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <h2 class="h6">Assignees</h2>
+                        {% for user in issue.assignees %}
+                        <form method="POST" action="{{ action_url }}" class="d-flex justify-content-between align-items-center mb-1">
+                            <input type="hidden" name="action" value="remove_assignee">
+                            <input type="hidden" name="assignee" value="{{ user.login }}">
+                            <span>{{ user.login }}</span>
+                            <button type="submit" class="btn btn-link btn-sm text-danger p-0" title="Unassign {{ user.login }}">Remove</button>
+                        </form>
+                        {% else %}
+                        <p class="text-muted small mb-1">No one assigned.</p>
+                        {% endfor %}
+                        {% if available_assignees %}
+                        <form method="POST" action="{{ action_url }}" class="d-flex gap-2 mt-2">
+                            <input type="hidden" name="action" value="add_assignee">
+                            <select name="assignee" class="form-select form-select-sm" aria-label="Assignee" required>
+                                <option value="">Assign someone…</option>
+                                {% for user in available_assignees %}
+                                    <option value="{{ user.login }}">{{ user.login }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn btn-outline-primary btn-sm">Add</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <h2 class="h6">Labels</h2>
+                        {% for label in issue.labels %}
+                        <form method="POST" action="{{ action_url }}" class="d-inline">
+                            <input type="hidden" name="action" value="remove_label">
+                            <input type="hidden" name="label" value="{{ label.name }}">
+                            <button type="submit" class="badge rounded-pill border-0 mb-1" style="{{ label_style(label) }}" title="Remove {{ label.name }}">{{ label.name }} &times;</button>
+                        </form>
+                        {% else %}
+                        <p class="text-muted small mb-1">None yet.</p>
+                        {% endfor %}
+                        {% if available_labels %}
+                        <form method="POST" action="{{ action_url }}" class="d-flex gap-2 mt-2">
+                            <input type="hidden" name="action" value="add_label">
+                            <select name="label" class="form-select form-select-sm" aria-label="Label" required>
+                                <option value="">Add a label…</option>
+                                {% for label in available_labels %}
+                                    <option value="{{ label.name }}">{{ label.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn btn-outline-primary btn-sm">Add</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h2 class="h6">Milestone</h2>
+                        <form method="POST" action="{{ action_url }}" class="d-flex gap-2">
+                            <input type="hidden" name="action" value="set_milestone">
+                            <select name="milestone" class="form-select form-select-sm" aria-label="Milestone">
+                                <option value="">No milestone</option>
+                                {% if issue.milestone and issue.milestone.number not in milestones|map(attribute='number')|list %}
+                                    <option value="" selected disabled>{{ issue.milestone.title }} (closed)</option>
+                                {% endif %}
+                                {% for milestone in milestones %}
+                                    <option value="{{ milestone.number }}" {{ 'selected' if issue.milestone and issue.milestone.number == milestone.number }}>{{ milestone.title }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn btn-outline-primary btn-sm">Set</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
