@@ -28,6 +28,7 @@ EXPECTED_ENDPOINTS = {
     'main.issue_detail',
     'main.issue_action',
     'main.manage_pull_requests',
+    'main.pull_request_action',
     'main.main_create_branch',
     'main.show_branch_details',
     'main.delete_branch',

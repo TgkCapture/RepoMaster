@@ -235,11 +235,12 @@ def test_issue_creation_failure_returns_500(logged_in_client, monkeypatch):
 
 
 def test_merge_refused_by_github_is_reported(logged_in_client, fake_token, monkeypatch):
-    monkeypatch.setattr(pull_request_routes, 'merge_pull_request',
-                        lambda *args, **kwargs: {'error': 'Pull Request is not mergeable'})
-    response = logged_in_client.post('/repositories/repo/pull_requests', data={'action': 'merge', 'pr_number': '3'})
-    assert response.status_code == 409
-    assert b'not mergeable' in response.data
+    monkeypatch.setattr(pull_request_routes, 'apply_pull_request_action',
+                        lambda *args: (None, 'Could not merge: Pull Request is not mergeable'))
+    response = logged_in_client.post('/repositories/repo/pull_requests/3', data={'action': 'merge'})
+    assert response.status_code == 302
+    with logged_in_client.session_transaction() as sess:
+        assert sess['_flashes'] == [('error', 'Could not merge: Pull Request is not mergeable')]
 
 
 def test_invalid_pr_number_returns_400(logged_in_client, fake_token):

@@ -69,8 +69,16 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
 - **How it works:** GitHub only lets a user's own token create repositories in a personal account, so submitting the form sends you through GitHub's authorization once more (instant if RepoMaster is already authorized). That token is used for this one request and never stored. A results page shows each step; setup steps that fail (e.g. branch protection on a private repository without a paid plan) don't undo the creation.
 
 ### 4. Manage Pull Requests (Available)
-- **Route:** `/repositories/<repo_name>/pull_requests`
-- **Functionality:** Enables viewing, creation, merging, or management of pull requests for a specific repository.  
+- **Route:** `/repositories/<repo_name>/pull_requests?state=open|closed|all`
+- **Functionality:** Lists a repository's pull requests (open / closed / all) and creates new ones.
+- **Pull request page** (`/repositories/<repo_name>/pull_requests?pr_number=<number>`): everything needed to review and merge without leaving RepoMaster:
+  - Changed files with a colored diff (first 100 files; the rest are linked on GitHub)
+  - Reviews (with who approved / requested changes) and review comments
+  - Check runs (CI status) for the latest commit
+  - A clear merge status: conflicts, blocked by branch protection, behind, failing checks
+  - Merge with a merge commit, squash or rebase (only the methods the repository allows), with an optional commit title/message and an option to delete the head branch afterwards
+  - Close and reopen
+- Merging sends the commit RepoMaster showed you, so if new commits were pushed in the meantime GitHub refuses the merge and you're asked to review them first.
 
 ### 5. Branch Management (Available)
 
