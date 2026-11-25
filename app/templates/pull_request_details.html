@@ -3,21 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pull Request Details</title>
+    <title>#{{ pull_request.number }} {{ pull_request.title }} | RepoMaster</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .pr-text { white-space: pre-wrap; word-break: break-word; }
+        .diff { font-size: .8rem; margin: 0; overflow-x: auto; }
+        .diff span { display: block; white-space: pre; padding: 0 .5rem; }
+        .diff .add { background: #e6ffec; }
+        .diff .del { background: #ffebe9; }
+        .diff .hunk { background: #ddf4ff; color: #57606a; }
+    </style>
 </head>
-<body class="container py-4">
-    <h1 class="mb-4 text-primary">Pull Request Details</h1>
-    <div class="card shadow-sm">
-        <div class="card-body">
-            <h2 class="card-title">{{ pull_request.title }}</h2>
-            <p><strong>Number:</strong> {{ pull_request.number }}</p>
-            <p><strong>Status:</strong> <span class="badge bg-info">{{ pull_request.state }}</span></p>
-            <p><strong>Author:</strong> {{ pull_request.user.login }}</p>
-            <p><strong>Created at:</strong> {{ pull_request.created_at }}</p>
-            <p><strong>Description:</strong> {{ pull_request.body }}</p>
-            <a href="{{ pull_request.html_url }}" target="_blank" class="btn btn-primary">View on GitHub</a>
+<body class="bg-light">
+    {% set pr = pull_request %}
+    {% set action_url = url_for('main.pull_request_action', repo_name=repo_name, pr_number=pr.number) %}
+    <div class="container my-5">
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <a href="{{ url_for('main.manage_pull_requests', repo_name=repo_name) }}" class="btn btn-outline-secondary btn-sm">&larr; Pull requests</a>
+            <a href="{{ pr.html_url }}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">View on GitHub</a>
         </div>
+
+        {% include '_flash_messages.html' %}
+
+        <h1 class="h3">{{ pr.title }} <span class="text-muted">#{{ pr.number }}</span></h1>
+        <p>
+            {% if pr.merged %}
+                <span class="badge bg-primary">merged</span>
+            {% elif pr.state == 'closed' %}
+                <span class="badge bg-danger">closed</span>
+            {% elif pr.draft %}
+                <span class="badge bg-secondary">draft</span>
+            {% else %}
+                <span class="badge bg-success">open</span>
+            {% endif %}
+            <span class="small text-muted">
+                {{ pr.user.login if pr.user else 'unknown' }} wants to merge
+                <code>{{ pr.head.label if pr.head else '?' }}</code> into <code>{{ pr.base.ref if pr.base else '?' }}</code>
+                · opened {{ pr.created_ago }}
+                · {{ pr.commits or 0 }} commit{{ 's' if pr.commits != 1 }}
+                · <span class="text-success">+{{ pr.additions or 0 }}</span> <span class="text-danger">−{{ pr.deletions or 0 }}</span>
+            </span>
+        </p>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                {% if pr.body %}
+                    <div class="pr-text">{{ pr.body }}</div>
+                {% else %}
+                    <p class="text-muted fst-italic mb-0">No description.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {# --- Merge box --- #}
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="alert alert-{{ merge_level }} mb-3" role="status" id="merge-status">{{ merge_message }}</div>
+
+                <ul class="list-unstyled small mb-3">
+                    <li>
+                        <strong>Checks:</strong>
+                        {% if checks.state == 'none' %}<span class="text-muted">none reported</span>
+                        {% elif checks.state == 'success' %}<span class="text-success">all passed</span>
+                        {% elif checks.state == 'pending' %}<span class="text-warning">{{ checks.pending }} running</span>
+                        {% else %}<span class="text-danger">{{ checks.failure }} failing</span>{% endif %}
+                        {% if checks.state != 'none' %}<span class="text-muted">({{ checks.success }} passed{% if checks.skipped %}, {{ checks.skipped }} skipped{% endif %})</span>{% endif %}
+                    </li>
+                    <li>
+                        <strong>Reviews:</strong>
+                        {% if review_summary.approved %}<span class="text-success">approved by {{ review_summary.approved|join(', ') }}</span>{% endif %}
+                        {% if review_summary.changes_requested %}<span class="text-danger">changes requested by {{ review_summary.changes_requested|join(', ') }}</span>{% endif %}
+                        {% if not review_summary.approved and not review_summary.changes_requested %}<span class="text-muted">no approvals yet</span>{% endif %}
+                    </li>
+                </ul>
+
+                {% if pr.state == 'open' %}
+                    {% if not pr.draft %}
+                    <form method="POST" action="{{ action_url }}" class="mb-3">
+                        <input type="hidden" name="action" value="merge">
+                        <input type="hidden" name="sha" value="{{ pr.head.sha }}">
+                        <div class="row g-2 align-items-center mb-2">
+                            <div class="col-sm-auto">
+                                <select name="merge_method" class="form-select form-select-sm" aria-label="Merge method">
+                                    {% for value, label in merge_methods.items() %}
+                                        <option value="{{ value }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            {% if can_delete_branch %}
+                            <div class="col-sm-auto form-check ms-sm-2">
+                                <input class="form-check-input" type="checkbox" name="delete_branch" id="delete_branch">
+                                <label class="form-check-label small" for="delete_branch">Delete <code>{{ pr.head.ref }}</code> after merging</label>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <details class="mb-2">
+                            <summary class="small">Commit title and message (not used when rebasing)</summary>
+                            <input type="text" name="commit_title" class="form-control form-control-sm mt-2" maxlength="256" placeholder="Default: GitHub's title">
+                            <textarea name="commit_message" class="form-control form-control-sm mt-2" rows="3" placeholder="Default: GitHub's message"></textarea>
+                        </details>
+                        <button type="submit" class="btn btn-success btn-sm" {{ 'disabled' if pr.mergeable is sameas false }}>Merge pull request</button>
+                    </form>
+                    {% endif %}
+                    <form method="POST" action="{{ action_url }}">
+                        <input type="hidden" name="action" value="close">
+                        <button type="submit" class="btn btn-outline-danger btn-sm">Close pull request</button>
+                    </form>
+                {% elif not pr.merged %}
+                    <form method="POST" action="{{ action_url }}">
+                        <input type="hidden" name="action" value="reopen">
+                        <button type="submit" class="btn btn-outline-success btn-sm">Reopen pull request</button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+
+        {# --- Checks --- #}
+        {% if check_runs %}
+        <h2 class="h5">Checks</h2>
+        <ul class="list-group shadow-sm mb-4">
+            {% for run in check_runs %}
+            {% set result = run.conclusion if run.status == 'completed' else run.status %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span>{{ run.name }}</span>
+                <span>
+                    <span class="badge {{ 'bg-success' if result in ('success', 'neutral') else ('bg-secondary' if result in ('skipped', 'queued', 'in_progress', 'pending', 'waiting', 'requested') else 'bg-danger') }}">{{ result|replace('_', ' ') }}</span>
+                    {% if run.html_url %}<a href="{{ run.html_url }}" class="small ms-2" target="_blank" rel="noopener noreferrer">Details</a>{% endif %}
+                </span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        {# --- Reviews --- #}
+        <h2 class="h5">Reviews ({{ reviews|length }})</h2>
+        {% for review in reviews %}
+        <div class="card shadow-sm mb-2">
+            <div class="card-header bg-white small">
+                <strong>{{ review.user.login if review.user else 'unknown' }}</strong>
+                {% if review.state == 'APPROVED' %}<span class="badge bg-success">approved</span>
+                {% elif review.state == 'CHANGES_REQUESTED' %}<span class="badge bg-danger">requested changes</span>
+                {% elif review.state == 'DISMISSED' %}<span class="badge bg-secondary">dismissed</span>
+                {% else %}<span class="badge bg-light text-dark">commented</span>{% endif %}
+                <span class="text-muted">{{ review.ago }}</span>
+            </div>
+            {% if review.body %}<div class="card-body pr-text">{{ review.body }}</div>{% endif %}
+        </div>
+        {% else %}
+        <p class="text-muted">No reviews yet.</p>
+        {% endfor %}
+
+        {% if review_comments %}
+        <h2 class="h5 mt-4">Review comments ({{ review_comments|length }})</h2>
+        {% for comment in review_comments %}
+        <div class="card shadow-sm mb-2">
+            <div class="card-header bg-white small">
+                <strong>{{ comment.user.login if comment.user else 'unknown' }}</strong>
+                on <code>{{ comment.path }}{% if comment.line %}:{{ comment.line }}{% endif %}</code>
+                <span class="text-muted">{{ comment.ago }}</span>
+            </div>
+            <div class="card-body pr-text">{{ comment.body }}</div>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        {# --- Files changed --- #}
+        <h2 class="h5 mt-4">Files changed ({{ pr.changed_files or files|length }})</h2>
+        {% if files_truncated %}
+            <div class="alert alert-info small">Showing the first {{ max_files }} files. <a href="{{ pr.html_url }}/files" target="_blank" rel="noopener noreferrer">See all on GitHub</a>.</div>
+        {% endif %}
+        {% for file in files %}
+        <details class="card shadow-sm mb-2" {{ 'open' if file.lines|length <= 200 }}>
+            <summary class="card-header bg-white small d-flex justify-content-between">
+                <span><code>{{ file.filename }}</code>
+                    {% if file.status == 'renamed' and file.previous_filename %}<span class="text-muted">(renamed from <code>{{ file.previous_filename }}</code>)</span>{% endif %}
+                    <span class="badge bg-light text-dark">{{ file.status }}</span>
+                </span>
+                <span><span class="text-success">+{{ file.additions }}</span> <span class="text-danger">−{{ file.deletions }}</span></span>
+            </summary>
+            {% if file.lines %}
+                <pre class="diff">{% for css, text in file.lines %}<span class="{{ css }}">{{ text }}</span>{% endfor %}</pre>
+            {% else %}
+                <div class="card-body small text-muted">No diff to show (binary file, or too large for GitHub to include).</div>
+            {% endif %}
+        </details>
+        {% else %}
+        <p class="text-muted">No changed files.</p>
+        {% endfor %}
     </div>
 </body>
 </html>
