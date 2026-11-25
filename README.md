@@ -13,11 +13,17 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
   - Requires the GitHub App to be installed on the user’s account or organization.
 
 ### 2. Manage Issues (Available)
-- **Route:** `/repositories/<repo_name>/issues`
-- **Functionality:** Enables viewing, creation, closure, or management of issues for a specific repository.
-- **Planned Features:**
-  - Endpoints to retrieve and display issues for a repository.
-  - Options to create new issues, close existing ones, or perform other basic issue management tasks.
+- **Route:** `/repositories/<repo_name>/issues?state=open|closed|all`
+- **Functionality:** Lists a repository's issues (pull requests are left out), with an open / closed / all filter. Create issues and close or reopen them from the list.
+- **Issue page** (`/repositories/<repo_name>/issues/<number>`):
+  - Edit the title and description
+  - Close (as completed or not planned) and reopen
+  - Read and post comments
+  - Add / remove labels (from the repository's labels)
+  - Assign / unassign people who can be assigned in the repository
+  - Set or clear the milestone (open milestones)
+- Pull request numbers open on the pull request page. The inbox and repository contents pages link to the issue page.
+- Issue text is shown as plain text (Markdown isn't rendered).
 
 ### 3. Delete Repositories (Available)
 - **Route:** `/delete_repo`
