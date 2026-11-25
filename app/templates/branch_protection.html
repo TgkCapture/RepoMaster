@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protect {{ branch }} | RepoMaster</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+    {% macro toggle(name, label, help=None) %}
+        <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" name="{{ name }}" id="{{ name }}" {{ 'checked' if settings[name] }}>
+            <label class="form-check-label" for="{{ name }}">{{ label }}</label>
+            {% if help %}<div class="form-text mt-0">{{ help }}</div>{% endif %}
+        </div>
+    {% endmacro %}
+
+    <div class="container my-5" style="max-width: 760px;">
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <a href="{{ url_for('main.show_repo_details', owner=owner, repo_name=repo) }}" class="btn btn-outline-secondary btn-sm">&larr; Branches</a>
+            <a href="{{ url_for('main.show_branch_details', owner=owner, repo_name=repo, branch_name=branch) }}" class="btn btn-outline-secondary btn-sm">Branch details</a>
+        </div>
+
+        <h1 class="h3">Protection rules for <code>{{ branch }}</code></h1>
+        <p class="text-muted">{{ owner }}/{{ repo }} ·
+            {% if settings.protected %}<span class="badge bg-success">protected</span>{% else %}<span class="badge bg-secondary">not protected</span>{% endif %}
+        </p>
+
+        {% include '_flash_messages.html' %}
+
+        {% if load_error %}
+            <div class="alert alert-danger">Couldn't load the protection rules: {{ load_error }}</div>
+        {% else %}
+        <form method="POST" action="{{ url_for('main.branch_protection', owner=owner, repo_name=repo) }}">
+            <input type="hidden" name="branch" value="{{ branch }}">
+
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <h2 class="h6">Pull requests</h2>
+                    {{ toggle('require_pull_request', 'Require a pull request before merging') }}
+                    <div class="ms-4">
+                        <label for="required_approvals" class="form-label small mb-1">Required approvals</label>
+                        <select name="required_approvals" id="required_approvals" class="form-select form-select-sm w-auto mb-2">
+                            {% for n in range(0, max_approvals + 1) %}
+                                <option value="{{ n }}" {{ 'selected' if n == settings.required_approvals }}>{{ n }}</option>
+                            {% endfor %}
+                        </select>
+                        {{ toggle('dismiss_stale_reviews', 'Dismiss approvals when new commits are pushed') }}
+                        {{ toggle('require_code_owner_reviews', 'Require review from code owners') }}
+                        {{ toggle('require_last_push_approval', 'Require approval of the most recent push') }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <h2 class="h6">Status checks</h2>
+                    {{ toggle('require_status_checks', 'Require status checks to pass before merging') }}
+                    <div class="ms-4">
+                        {{ toggle('strict_status_checks', 'Require the branch to be up to date before merging') }}
+                        <label for="status_checks" class="form-label small mb-1">Required checks, one per line (the check name as shown on pull requests)</label>
+                        <textarea name="status_checks" id="status_checks" rows="4" class="form-control form-control-sm" placeholder="tests&#10;lint">{{ settings.status_checks }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <h2 class="h6">Other rules</h2>
+                    {{ toggle('required_conversation_resolution', 'Require conversations to be resolved before merging') }}
+                    {{ toggle('required_linear_history', 'Require linear history', 'Blocks merge commits; only squash or rebase merges.') }}
+                    {{ toggle('enforce_admins', 'Apply these rules to administrators too') }}
+                    {{ toggle('allow_force_pushes', 'Allow force pushes', 'Anyone with push access can rewrite the branch history.') }}
+                    {{ toggle('allow_deletions', 'Allow the branch to be deleted') }}
+                    {% if settings.has_restrictions %}
+                        <p class="small text-muted mb-0">This branch also restricts who can push. That list is kept as-is; edit it on GitHub.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                <button type="submit" name="action" value="save" class="btn btn-primary">{{ 'Save rules' if settings.protected else 'Protect branch' }}</button>
+                {% if settings.protected %}
+                    <button type="submit" name="action" value="remove" class="btn btn-outline-danger"
+                            onclick="return confirm('Remove all protection rules from this branch?')">Remove protection</button>
+                {% endif %}
+            </div>
+            <p class="small text-muted mt-3">Protecting branches of private repositories requires a paid GitHub plan.</p>
+        </form>
+        {% endif %}
+    </div>
+</body>
+</html>
