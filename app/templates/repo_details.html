@@ -19,6 +19,10 @@
                         <a href="{{ url_for('main.show_branch_details', owner=owner, repo_name=repo_name, branch_name=branch) }}" class="text-decoration-none text-dark">
                             {{ branch }}
                         </a>
+                        <span class="d-flex gap-2">
+                            <a href="{{ url_for('main.compare_branches_page', owner=owner, repo_name=repo_name, head=branch) }}" class="btn btn-outline-secondary btn-sm">Compare</a>
+                            <a href="{{ url_for('main.branch_protection', owner=owner, repo_name=repo_name, branch=branch) }}" class="btn btn-outline-secondary btn-sm">Protection</a>
+                        </span>
                     </li>
                 {% endfor %}
             </ul>
@@ -29,7 +33,10 @@
         {% endif %}
         
         <div class="d-flex justify-content-between mt-4">
-            <a href="{{ url_for('main.main_create_branch', owner=owner, repo_name=repo_name) }}" class="btn btn-success">Create New Branch</a>
+            <span class="d-flex gap-2">
+                <a href="{{ url_for('main.main_create_branch', owner=owner, repo_name=repo_name) }}" class="btn btn-success">Create New Branch</a>
+                <a href="{{ url_for('main.compare_branches_page', owner=owner, repo_name=repo_name) }}" class="btn btn-outline-primary">Compare Branches</a>
+            </span>
             <a href="/" class="btn btn-secondary">Go Back to Home</a>
         </div>
     </div>
