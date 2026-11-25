@@ -1,0 +1,13 @@
+{#- Header and tabs for the Actions pages. Needs: owner, repo, active ('runs' or 'secrets'). -#}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div>
+        <h1 class="h3 mb-0">Actions</h1>
+        <span class="text-muted">{{ owner }}/{{ repo }}</span>
+    </div>
+    <a href="{{ url_for('main.show_github_repositories') }}" class="btn btn-outline-secondary btn-sm">Repositories</a>
+</div>
+<ul class="nav nav-tabs mb-4">
+    <li class="nav-item"><a class="nav-link {{ 'active' if active == 'runs' }}" href="{{ url_for('main.actions_overview', owner=owner, repo=repo) }}">Workflows &amp; runs</a></li>
+    <li class="nav-item"><a class="nav-link {{ 'active' if active == 'secrets' }}" href="{{ url_for('main.actions_secrets', owner=owner, repo=repo) }}">Secrets</a></li>
+</ul>
+{% include '_flash_messages.html' %}
