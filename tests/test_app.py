@@ -48,6 +48,7 @@ EXPECTED_ENDPOINTS = {
     'main.delete_release_route',
     'main.upload_release_assets',
     'main.delete_release_asset',
+    'main.repository_analytics',
 }
 
 
