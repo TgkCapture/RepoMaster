@@ -17,7 +17,7 @@ import logging
 import time
 from functools import lru_cache, wraps
 from urllib.parse import urlencode
-from flask import session, current_app, request
+from flask import session, current_app, request, url_for
 from jose import jwt
 
 REQUEST_TIMEOUT = 60  # seconds
@@ -86,23 +86,34 @@ def get_installation_access_token():
 
 # --- User sign-in (OAuth) ----------------------------------------------------
 
-def generate_oauth_state():
+def oauth_callback_url():
+    """The OAuth redirect URI. Must match the Callback URL configured on the GitHub App."""
+    return current_app.config.get('GITHUB_OAUTH_CALLBACK_URL') or url_for('main.github_callback', _external=True)
+
+OAUTH_PURPOSE_LOGIN = 'login'
+OAUTH_PURPOSE_CREATE_REPOSITORY = 'create_repository'
+
+def generate_oauth_state(purpose=OAUTH_PURPOSE_LOGIN):
     """
-    Create a one-time CSRF token for the OAuth round trip and remember it in the session.
+    Create a one-time CSRF token for the OAuth round trip and remember it, together with
+    what the round trip is for, in the session.
     """
     state = secrets.token_urlsafe(32)
     session['oauth_state'] = state
+    session['oauth_purpose'] = purpose
     return state
 
 def validate_oauth_state(received_state):
     """
     Check the state GitHub sent back against the one we issued. The stored state is
     consumed, so each one can only be used once.
+    Returns the purpose the state was issued for, or None if it doesn't match.
     """
     expected_state = session.pop('oauth_state', None)
+    purpose = session.pop('oauth_purpose', None) or OAUTH_PURPOSE_LOGIN
     if not expected_state or not received_state:
-        return False
-    return hmac.compare_digest(expected_state, received_state)
+        return None
+    return purpose if hmac.compare_digest(expected_state, received_state) else None
 
 def build_authorize_url(state, redirect_uri):
     """
