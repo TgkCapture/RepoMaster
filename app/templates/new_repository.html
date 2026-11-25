@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Repository | RepoMaster</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+    {% set source = values.get('source') or 'blank' %}
+    <div class="container my-5" style="max-width: 760px;">
+        <h1 class="mb-1">New Repository</h1>
+        <p class="text-muted">Create a repository and set it up in one step.</p>
+
+        <a href="{{ url_for('main.show_github_repositories') }}" class="btn btn-outline-secondary btn-sm mb-3">Back to Repositories</a>
+
+        {% include '_flash_messages.html' %}
+        {% if error %}
+            <div class="alert alert-danger" role="alert">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('main.new_repository') }}" class="card shadow-sm">
+            <div class="card-body">
+                <div class="row g-2 mb-3">
+                    <div class="col-sm-5">
+                        <label class="form-label" for="owner">Owner</label>
+                        <input type="text" id="owner" class="form-control" value="{{ owner }}" disabled>
+                    </div>
+                    <div class="col-sm-7">
+                        <label class="form-label" for="name">Repository name</label>
+                        <input type="text" id="name" name="name" class="form-control" value="{{ values.get('name', '') }}"
+                               required maxlength="100" pattern="[A-Za-z0-9._\-]+" autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="description">Description <span class="text-muted small">(optional)</span></label>
+                    <input type="text" id="description" name="description" class="form-control" maxlength="350"
+                           value="{{ values.get('description', '') }}">
+                </div>
+
+                <fieldset class="mb-3">
+                    <legend class="form-label fs-6">Visibility</legend>
+                    {% for value, label, help in [('private', 'Private', 'Only you and people you choose can see it.'),
+                                                  ('public', 'Public', 'Anyone on the internet can see it.')] %}
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="visibility" id="visibility-{{ value }}" value="{{ value }}"
+                               {{ 'checked' if (values.get('visibility') or 'private') == value }}>
+                        <label class="form-check-label" for="visibility-{{ value }}">{{ label }} <span class="text-muted small">· {{ help }}</span></label>
+                    </div>
+                    {% endfor %}
+                </fieldset>
+
+                <fieldset class="mb-3">
+                    <legend class="form-label fs-6">Start from</legend>
+                    <div class="form-check">
+                        <input class="form-check-input source-radio" type="radio" name="source" id="source-blank" value="blank" {{ 'checked' if source == 'blank' }}>
+                        <label class="form-check-label" for="source-blank">An empty repository</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input source-radio" type="radio" name="source" id="source-template" value="template"
+                               {{ 'checked' if source == 'template' }} {{ 'disabled' if not templates }}>
+                        <label class="form-check-label" for="source-template">
+                            A template repository
+                            {% if not templates %}<span class="text-muted small">· none of your repositories is marked as a template</span>{% endif %}
+                        </label>
+                    </div>
+                </fieldset>
+
+                <div id="blankOptions" class="border rounded p-3 mb-3 {{ 'd-none' if source != 'blank' }}">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" name="auto_init" id="auto_init" value="1" {{ 'checked' if values.get('auto_init') }}>
+                        <label class="form-check-label" for="auto_init">Add a README</label>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-sm-6">
+                            <label class="form-label small" for="gitignore">.gitignore template</label>
+                            <select id="gitignore" name="gitignore" class="form-select form-select-sm">
+                                <option value="">None</option>
+                                {% for template in gitignore_templates %}
+                                    <option value="{{ template }}" {{ 'selected' if values.get('gitignore') == template }}>{{ template }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label small" for="license">License</label>
+                            <select id="license" name="license" class="form-select form-select-sm">
+                                <option value="">None</option>
+                                {% for license in licenses %}
+                                    <option value="{{ license.key }}" {{ 'selected' if values.get('license') == license.key }}>{{ license.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-text">Choosing a .gitignore or license also creates the initial commit with a README.</div>
+                </div>
+
+                <div id="templateOptions" class="border rounded p-3 mb-3 {{ 'd-none' if source != 'template' }}">
+                    <label class="form-label small" for="template">Template</label>
+                    <select id="template" name="template" class="form-select form-select-sm mb-2">
+                        {% for template in templates %}
+                            <option value="{{ template }}" {{ 'selected' if values.get('template') == template }}>{{ template }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="include_all_branches" id="include_all_branches" value="1"
+                               {{ 'checked' if values.get('include_all_branches') }}>
+                        <label class="form-check-label" for="include_all_branches">Include all branches (not just the default branch)</label>
+                    </div>
+                </div>
+
+                <fieldset class="mb-4">
+                    <legend class="form-label fs-6">Setup</legend>
+                    <div class="mb-2">
+                        <label class="form-label small" for="copy_labels_from">Copy labels from</label>
+                        <select id="copy_labels_from" name="copy_labels_from" class="form-select form-select-sm">
+                            <option value="">Don't copy labels</option>
+                            {% for full_name in label_sources %}
+                                <option value="{{ full_name }}" {{ 'selected' if values.get('copy_labels_from') == full_name }}>{{ full_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="protect_default_branch" id="protect_default_branch" value="1"
+                               {{ 'checked' if values.get('protect_default_branch') }}>
+                        <label class="form-check-label" for="protect_default_branch">
+                            Protect the default branch
+                            <span class="text-muted small">· require 1 approving review, block force pushes and deletion</span>
+                        </label>
+                    </div>
+                    <div class="form-text">Branch protection on private repositories needs a paid GitHub plan.</div>
+                </fieldset>
+
+                <button type="submit" class="btn btn-success">Create repository</button>
+                <p class="form-text mt-2 mb-0">
+                    GitHub will ask you to confirm with your account. If you've already authorized RepoMaster you'll come straight back.
+                </p>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.querySelectorAll('.source-radio').forEach(radio => {
+            radio.addEventListener('change', () => {
+                const source = document.querySelector('.source-radio:checked').value;
+                document.getElementById('blankOptions').classList.toggle('d-none', source !== 'blank');
+                document.getElementById('templateOptions').classList.toggle('d-none', source !== 'template');
+            });
+        });
+    </script>
+</body>
+</html>
