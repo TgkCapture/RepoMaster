@@ -1,0 +1,40 @@
+{#- Commit message and target branch. Needs: branches, branch, form, owner, session_owner, fixed_branch (optional). -#}
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h2 class="h6">Commit</h2>
+        <div class="mb-2">
+            <label for="message" class="form-label small mb-1">Commit message</label>
+            <input type="text" name="message" id="message" class="form-control form-control-sm" value="{{ form.message or '' }}"
+                   maxlength="65536" placeholder="Leave empty for a default message">
+        </div>
+        {% if fixed_branch %}
+            <input type="hidden" name="branch" value="{{ branch }}">
+        {% else %}
+        <div class="mb-2">
+            <label for="branch" class="form-label small mb-1">Branch</label>
+            <select name="branch" id="branch" class="form-select form-select-sm">
+                {% for name in branches %}<option value="{{ name }}" {{ 'selected' if name == (form.branch or branch) }}>{{ name }}</option>{% endfor %}
+            </select>
+        </div>
+        {% endif %}
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="target" id="target_current" value="current" {{ 'checked' if form.target != 'new' }}>
+            <label class="form-check-label small" for="target_current">Commit directly to <code>{{ branch if fixed_branch else 'the selected branch' }}</code></label>
+        </div>
+        <div class="form-check mb-2">
+            <input class="form-check-input" type="radio" name="target" id="target_new" value="new" {{ 'checked' if form.target == 'new' }}>
+            <label class="form-check-label small" for="target_new">Create a new branch for this commit</label>
+        </div>
+        <div class="ms-4 mb-2">
+            <input type="text" name="new_branch" class="form-control form-control-sm mb-1" value="{{ form.new_branch or '' }}"
+                   placeholder="e.g. update-readme" aria-label="New branch name">
+            {% if owner == session_owner %}
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="open_pr" id="open_pr" {{ 'checked' if form.open_pr or not form }}>
+                <label class="form-check-label small" for="open_pr">Then open a pull request</label>
+            </div>
+            {% endif %}
+        </div>
+        <button type="submit" class="btn btn-success btn-sm">Commit changes</button>
+    </div>
+</div>
