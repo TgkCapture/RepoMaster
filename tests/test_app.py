@@ -39,6 +39,8 @@ EXPECTED_ENDPOINTS = {
     'main.create_new_file',
     'main.update_existing_file',
     'main.delete_existing_file',
+    'main.edit_file',
+    'main.upload_files',
 }
 
 

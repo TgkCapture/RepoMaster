@@ -27,6 +27,9 @@ class BaseConfig:
     # Set this when running behind a proxy so the URL matches the App's Callback URL exactly.
     GITHUB_OAUTH_CALLBACK_URL = os.getenv('GITHUB_OAUTH_CALLBACK_URL')
 
+    # Largest request body accepted (file uploads). Bigger requests get 413 before being read.
+    MAX_CONTENT_LENGTH = 25 * 1024 * 1024
+
     # Logging
     LOG_LEVEL = logging.INFO
     LOG_FILE_PATH = os.path.join('logs', 'repomaster.log')
