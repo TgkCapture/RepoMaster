@@ -16,12 +16,10 @@ from app.routes import main_routes
 from app.controllers.auth_controller import (
     is_user_logged_in, clear_session, generate_oauth_state, validate_oauth_state,
     build_authorize_url, exchange_code_for_user_token, get_authenticated_user,
-    get_user_installations, choose_installation, start_user_session,
+    get_user_installations, choose_installation, start_user_session, oauth_callback_url,
+    OAUTH_PURPOSE_CREATE_REPOSITORY,
 )
-
-def _oauth_callback_url():
-    """The OAuth redirect URI. Must match the Callback URL configured on the GitHub App."""
-    return current_app.config.get('GITHUB_OAUTH_CALLBACK_URL') or url_for('main.github_callback', _external=True)
+from app.routes.repo_creation_routes import finish_repository_creation
 
 @main_routes.route('/')
 def home():
@@ -49,7 +47,7 @@ def login():
         return "Configuration error: GITHUB_CLIENT_ID is not defined.", 500
 
     state = generate_oauth_state()
-    return redirect(build_authorize_url(state, _oauth_callback_url()))
+    return redirect(build_authorize_url(state, oauth_callback_url()))
 
 @main_routes.route('/github/callback', methods=['GET'])
 def github_callback():
@@ -61,7 +59,8 @@ def github_callback():
         flash("GitHub sign-in was cancelled.", "info")
         return redirect(url_for('main.home'))
 
-    if not validate_oauth_state(request.args.get('state')):
+    purpose = validate_oauth_state(request.args.get('state'))
+    if not purpose:
         logging.warning("OAuth callback with missing or invalid state.")
         return "Invalid or expired sign-in request. Please try signing in again.", 400
 
@@ -69,13 +68,18 @@ def github_callback():
     if not code:
         return "Missing authorization code. Please try signing in again.", 400
 
-    requested_installation_id = session.pop('pending_installation_id', None)
-
-    user_token = exchange_code_for_user_token(code, _oauth_callback_url())
+    user_token = exchange_code_for_user_token(code, oauth_callback_url())
     if not user_token:
         return "Failed to sign in with GitHub. Please try again.", 500
 
     user = get_authenticated_user(user_token)
+
+    if purpose == OAUTH_PURPOSE_CREATE_REPOSITORY:
+        if user is None:
+            return "Failed to load your GitHub account details. Please try again.", 500
+        return finish_repository_creation(user, user_token)
+
+    requested_installation_id = session.pop('pending_installation_id', None)
     installations = get_user_installations(user_token)
     if user is None or installations is None:
         return "Failed to load your GitHub account details. Please try again.", 500
