@@ -18,6 +18,7 @@
             <a href="{{ url_for('main.home') }}" class="btn btn-outline-secondary btn-sm">Home</a>
             <a href="{{ url_for('main.new_repository') }}" class="btn btn-success btn-sm">New Repository</a>
             <a href="{{ url_for('main.inbox') }}" class="btn btn-outline-primary btn-sm">Inbox</a>
+            {% include '_notification_bell.html' %}
             <a href="{{ url_for('main.cleanup_dashboard') }}" class="btn btn-outline-primary btn-sm">Cleanup</a>
             <a href="{{ url_for('main.bulk_actions') }}" class="btn btn-primary btn-sm">Bulk Actions</a>
             <a href="{{ url_for('main.delete_repositories') }}" class="btn btn-outline-danger btn-sm">Delete Repositories</a>
