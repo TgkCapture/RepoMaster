@@ -53,6 +53,15 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
   - 50 per page (GitHub search returns at most 1,000 results)
   - Each item links to its page in RepoMaster and on GitHub
 
+### 3d. Create Repositories (Available)
+- **Route:** `/repositories/new`
+- **Functionality:** Create a repository and set it up in one step:
+  - Name, description and visibility
+  - Start empty (optional README, `.gitignore` template and license) or from one of your template repositories (optionally with all branches)
+  - Copy labels from an existing repository
+  - Protect the default branch (1 approving review, no force pushes or deletion)
+- **How it works:** GitHub only lets a user's own token create repositories in a personal account, so submitting the form sends you through GitHub's authorization once more (instant if RepoMaster is already authorized). That token is used for this one request and never stored. A results page shows each step; setup steps that fail (e.g. branch protection on a private repository without a paid plan) don't undo the creation.
+
 ### 4. Manage Pull Requests (Available)
 - **Route:** `/repositories/<repo_name>/pull_requests`
 - **Functionality:** Enables viewing, creation, merging, or management of pull requests for a specific repository.  
@@ -133,6 +142,7 @@ app/
     bulk_routes.py            #   bulk repository actions
     cleanup_routes.py         #   cleanup dashboard and branch cleanup
     inbox_routes.py           #   cross-repository issue & PR inbox
+    repo_creation_routes.py   #   create repositories
   controllers/                # GitHub REST API calls (auth, repos, issues, pull requests)
   templates/                  # Jinja templates
   static/                     # CSS, JS, images
