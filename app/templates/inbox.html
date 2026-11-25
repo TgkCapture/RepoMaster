@@ -107,7 +107,7 @@
                             {% if item.kind == 'pr' %}
                                 <a href="{{ url_for('main.manage_pull_requests', repo_name=item.repo_name, pr_number=item.number) }}" class="btn btn-outline-primary btn-sm">Open in app</a>
                             {% else %}
-                                <a href="{{ url_for('main.manage_issues', repo_name=item.repo_name) }}" class="btn btn-outline-primary btn-sm">Open in app</a>
+                                <a href="{{ url_for('main.issue_detail', repo_name=item.repo_name, issue_number=item.number) }}" class="btn btn-outline-primary btn-sm">Open in app</a>
                             {% endif %}
                             <a href="{{ item.html_url }}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">GitHub</a>
                         </div>
