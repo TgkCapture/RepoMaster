@@ -89,6 +89,16 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
 - GitHub computes the statistics in the background the first time they're requested; RepoMaster retries briefly and otherwise asks you to reload in a minute. Each section loads independently, so one that fails (e.g. traffic without permission) doesn't hide the rest.
 - Traffic needs the GitHub App's **Administration: Read** permission.
 
+### 3g. GitHub Actions (Available)
+- **Route:** `/repos/<owner>/<repo>/actions` (the **Actions** button on each repository)
+- **Functionality:**
+  - Workflows and recent runs, filterable by workflow and status, with paging
+  - Run page with jobs, steps and durations; **re-run failed jobs**, **re-run all jobs** or **cancel** a running run
+  - **Download logs** (GitHub's short-lived .zip link)
+  - **Run a workflow manually** (`workflow_dispatch`): RepoMaster reads the workflow file on the chosen branch and builds a form from its inputs (text, number, boolean, choice), validating them before dispatching
+  - **Secrets:** list names, add / replace and delete. Values are encrypted in RepoMaster with the repository's public key (libsodium sealed box, via PyNaCl) and are never shown, logged or sent in plain text
+- Needs the GitHub App permissions **Actions: Read & write** and **Secrets: Read & write**.
+
 ### 4. Manage Pull Requests (Available)
 - **Route:** `/repositories/<repo_name>/pull_requests?state=open|closed|all`
 - **Functionality:** Lists a repository's pull requests (open / closed / all) and creates new ones.
