@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ file.path if file else 'New file' }} | RepoMaster</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <style>
+        .CodeMirror { height: 60vh; border: 1px solid #dee2e6; border-radius: .375rem; font-size: .875rem; }
+        #content { font-family: monospace; min-height: 60vh; }
+        #preview { min-height: 60vh; border: 1px solid #dee2e6; border-radius: .375rem; padding: 1rem; background: #fff; overflow: auto; }
+        #preview img { max-width: 100%; }
+    </style>
+</head>
+<body class="bg-light">
+    {% set listing_path = (file.path.rpartition('/')[0] if file else directory) %}
+    <div class="container-fluid px-4 my-4">
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <a href="{{ url_for('main.get_contents', owner=owner, repo=repo, path=listing_path or None, branch=branch) }}" class="btn btn-outline-secondary btn-sm">&larr; Back to files</a>
+            {% if file and file.html_url %}
+                <a href="{{ file.html_url }}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+            {% endif %}
+        </div>
+
+        <h1 class="h4">{% if file %}Edit <code>{{ file.path }}</code>{% else %}New file{% endif %}</h1>
+        <p class="text-muted small">{{ owner }}/{{ repo }}</p>
+
+        {% include '_flash_messages.html' %}
+
+        {% if file %}
+        <form method="GET" action="{{ url_for('main.edit_file', owner=owner, repo=repo) }}" class="d-flex gap-2 align-items-center mb-3">
+            <input type="hidden" name="path" value="{{ file.path }}">
+            <label for="switch_branch" class="small text-muted">Editing on</label>
+            <select name="branch" id="switch_branch" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                {% for name in branches %}<option value="{{ name }}" {{ 'selected' if name == branch }}>{{ name }}</option>{% endfor %}
+            </select>
+            <noscript><button type="submit" class="btn btn-outline-secondary btn-sm">Switch</button></noscript>
+        </form>
+        {% endif %}
+
+        {% if file and text is none %}
+            <div class="alert alert-warning">{{ file.reason }}</div>
+            <a href="{{ url_for('main.upload_files', owner=owner, repo=repo, dir=listing_path or None, branch=branch) }}" class="btn btn-primary btn-sm">Upload a replacement</a>
+        {% else %}
+        <form method="POST" action="{{ url_for('main.edit_file', owner=owner, repo=repo) }}" id="editorForm">
+            {% if file %}
+                <input type="hidden" name="original_path" value="{{ file.path }}">
+                <input type="hidden" name="sha" value="{{ form.sha or file.sha }}">
+            {% endif %}
+            <div class="row g-4">
+                <div class="col-lg-9">
+                    {% if not file %}
+                        <label for="path" class="form-label small mb-1">File path</label>
+                        <input type="text" name="path" id="path" class="form-control form-control-sm mb-3" required
+                               value="{{ form.path or ((directory ~ '/') if directory else '') }}" placeholder="e.g. docs/notes.md">
+                    {% endif %}
+
+                    <ul class="nav nav-tabs mb-2" role="tablist" id="editorTabs" {{ 'hidden' if not markdown }}>
+                        <li class="nav-item"><button type="button" class="nav-link active" data-tab="write">Edit</button></li>
+                        <li class="nav-item"><button type="button" class="nav-link" data-tab="preview">Preview</button></li>
+                    </ul>
+                    <textarea name="content" id="content" class="form-control" spellcheck="false" data-mode="{{ mode }}">
+{{ text }}</textarea>{# the newline after the tag is dropped by the browser, so a file's own leading newline survives #}
+                    <div id="preview" hidden></div>
+                </div>
+                <div class="col-lg-3">
+                    {% with fixed_branch = file is not none %}{% include '_commit_target.html' %}{% endwith %}
+                    {% if file %}<p class="small text-muted mt-2">If the file changes on GitHub before you commit, RepoMaster won't overwrite it.</p>{% endif %}
+                </div>
+            </div>
+        </form>
+        {% endif %}
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    {% for script in mode_scripts %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/{{ script }}/{{ script }}.min.js"></script>
+    {% endfor %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <script>
+        // Progressive enhancement: without the CDN scripts the plain textarea still works.
+        document.addEventListener('DOMContentLoaded', () => {
+            const textarea = document.getElementById('content');
+            if (!textarea) return;
+            let editor = null;
+            if (window.CodeMirror) {
+                editor = CodeMirror.fromTextArea(textarea, {
+                    mode: textarea.dataset.mode, lineNumbers: true, lineWrapping: true, indentUnit: 4,
+                    extraKeys: { Tab: (cm) => cm.replaceSelection(cm.getOption('indentWithTabs') ? '\t' : '    ') },
+                });
+            }
+            const value = () => (editor ? editor.getValue() : textarea.value);
+
+            // A new file's mode follows its extension only for the preview tab (Markdown).
+            const pathInput = document.getElementById('path');
+            const tabs = document.getElementById('editorTabs');
+            if (pathInput) {
+                pathInput.addEventListener('input', () => {
+                    tabs.hidden = !/\.(md|markdown)$/i.test(pathInput.value);
+                    if (tabs.hidden) showTab('write');
+                });
+            }
+
+            const preview = document.getElementById('preview');
+            function showTab(name) {
+                tabs.querySelectorAll('.nav-link').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
+                const wrapper = editor ? editor.getWrapperElement() : textarea;
+                wrapper.hidden = name === 'preview';
+                preview.hidden = name !== 'preview';
+                if (name === 'preview') {
+                    if (window.marked && window.DOMPurify) {
+                        preview.innerHTML = DOMPurify.sanitize(marked.parse(value()));
+                    } else {
+                        preview.textContent = 'Preview is unavailable (the Markdown libraries did not load).';
+                    }
+                } else if (editor) {
+                    editor.refresh();
+                }
+            }
+            tabs.querySelectorAll('.nav-link').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
+        });
+    </script>
+</body>
+</html>
