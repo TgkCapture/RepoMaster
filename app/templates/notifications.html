@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications | RepoMaster</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+    {% set level_badge = {'danger': ('bg-danger', 'failed'), 'warning': ('bg-warning text-dark', 'action needed'),
+                          'success': ('bg-success', 'done'), 'info': ('bg-secondary', 'update')} %}
+    <div class="container my-5" style="max-width: 860px;">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+            <h1 class="h3 mb-0">Notifications</h1>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('main.show_github_repositories') }}" class="btn btn-outline-secondary btn-sm">Repositories</a>
+                <a href="{{ url_for('main.inbox') }}" class="btn btn-outline-secondary btn-sm">Inbox</a>
+                {% if notifications|selectattr('read', 'equalto', 0)|list %}
+                <form method="POST" action="{{ url_for('main.notifications_read_all') }}">
+                    <button type="submit" class="btn btn-primary btn-sm">Mark all as read</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        {% include '_flash_messages.html' %}
+
+        {% if notifications %}
+        <div class="list-group shadow-sm">
+            {% for item in notifications %}
+            {% set badge = level_badge.get(item.level, level_badge.info) %}
+            <a href="{{ url_for('main.open_notification', notification_id=item.id) }}"
+               class="list-group-item list-group-item-action d-flex justify-content-between align-items-start gap-3 {{ 'fw-semibold' if not item.read }}">
+                <span>
+                    <span class="badge {{ badge[0] }} me-1">{{ badge[1] }}</span>
+                    {{ item.title }}
+                    <span class="d-block small text-muted fw-normal">{{ item.repo or '' }} · {{ item.ago }}</span>
+                </span>
+                {% if not item.read %}<span class="badge bg-primary rounded-pill">new</span>{% endif %}
+            </a>
+            {% endfor %}
+        </div>
+        <p class="small text-muted mt-3">Showing the latest {{ notifications|length }}. RepoMaster keeps the newest 500 per installation.</p>
+        {% else %}
+        <div class="text-center text-muted py-5">
+            <p class="mb-1">No notifications yet.</p>
+            <p class="small">They appear here when GitHub sends events: new pull requests, review requests, failed CI runs, new issues and pushes.</p>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
