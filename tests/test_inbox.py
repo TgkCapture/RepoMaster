@@ -170,7 +170,7 @@ def test_inbox_lists_issues_and_prs_with_in_app_links(logged_in_client, github):
     assert github['queries'] == [{'query': 'is:open user:alice', 'sort': 'updated', 'order': 'desc', 'page': 1}]
     assert '2 results' in html
     assert 'Item 1' in html and 'Item 2' in html
-    assert 'href="/repositories/app/issues"' in html
+    assert 'href="/repositories/app/issues/1"' in html
     assert 'href="/repositories/app/pull_requests?pr_number=2"' in html
     assert 'background-color: #d73a4a' in html
     assert '<option value="alice/lib" >alice/lib</option>' in html  # repo filter option
