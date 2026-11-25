@@ -41,6 +41,13 @@ EXPECTED_ENDPOINTS = {
     'main.delete_existing_file',
     'main.edit_file',
     'main.upload_files',
+    'main.releases',
+    'main.new_release',
+    'main.release_detail',
+    'main.edit_release',
+    'main.delete_release_route',
+    'main.upload_release_assets',
+    'main.delete_release_asset',
 }
 
 

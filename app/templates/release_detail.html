@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ release.name or release.tag_name }} | RepoMaster</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>.notes { white-space: pre-wrap; word-break: break-word; }</style>
+</head>
+<body class="bg-light">
+    <div class="container my-5" style="max-width: 900px;">
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <a href="{{ url_for('main.releases', owner=owner, repo=repo) }}" class="btn btn-outline-secondary btn-sm">&larr; Releases</a>
+            <a href="{{ release.html_url }}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+            <a href="{{ url_for('main.edit_release', owner=owner, repo=repo, release_id=release.id) }}" class="btn btn-primary btn-sm">Edit</a>
+        </div>
+
+        {% include '_flash_messages.html' %}
+
+        <h1 class="h3">{{ release.name or release.tag_name }}
+            {% if release.draft %}<span class="badge bg-secondary fs-6 align-middle">draft</span>{% endif %}
+            {% if release.prerelease %}<span class="badge bg-warning text-dark fs-6 align-middle">pre-release</span>{% endif %}
+        </h1>
+        <p class="text-muted small">
+            <code>{{ release.tag_name }}</code> · {{ 'created' if release.draft else 'published' }} {{ release.ago }}
+            {% if release.author %} by {{ release.author.login }}{% endif %}
+        </p>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                {% if release.body %}<div class="notes">{{ release.body }}</div>
+                {% else %}<p class="text-muted fst-italic mb-0">No release notes.</p>{% endif %}
+            </div>
+        </div>
+
+        <h2 class="h5">Files ({{ release.assets|length }})</h2>
+        {% if release.assets %}
+        <ul class="list-group shadow-sm mb-3">
+            {% for asset in release.assets %}
+            <li class="list-group-item d-flex justify-content-between align-items-center gap-3">
+                <span>
+                    <a href="{{ asset.browser_download_url }}" rel="noopener noreferrer">{{ asset.name }}</a>
+                    <span class="small text-muted">{{ asset.size_text }} · {{ asset.download_count or 0 }} download{{ 's' if asset.download_count != 1 }}</span>
+                </span>
+                <form method="POST" action="{{ url_for('main.delete_release_asset', owner=owner, repo=repo, release_id=release.id, asset_id=asset.id) }}"
+                      onsubmit="return confirm('Delete this file from the release?')">
+                    <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                </form>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('main.upload_release_assets', owner=owner, repo=repo, release_id=release.id) }}"
+              enctype="multipart/form-data" class="card shadow-sm mb-4">
+            <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+                <input type="file" name="assets" class="form-control form-control-sm w-auto" multiple required aria-label="Files to attach">
+                <button type="submit" class="btn btn-outline-primary btn-sm">Upload files</button>
+                <span class="small text-muted">Up to {{ max_assets }} files, 25 MB in total.</span>
+            </div>
+        </form>
+
+        <form method="POST" action="{{ url_for('main.delete_release_route', owner=owner, repo=repo, release_id=release.id) }}"
+              class="card border-danger" onsubmit="return confirm('Delete this release? This cannot be undone.')">
+            <div class="card-body">
+                <h2 class="h6 text-danger">Delete release</h2>
+                {% if not release.draft %}
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" name="delete_tag" id="delete_tag">
+                    <label class="form-check-label small" for="delete_tag">Also delete the tag <code>{{ release.tag_name }}</code></label>
+                </div>
+                {% endif %}
+                <button type="submit" class="btn btn-danger btn-sm">Delete release</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

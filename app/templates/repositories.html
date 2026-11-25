@@ -51,6 +51,10 @@
                             class="btn btn-secondary btn-sm" title="View branches for {{ repository.name }}">
                                 View Branches
                             </a>
+                            <a href="{{ url_for('main.releases', owner=repository.owner.login, repo=repository.name) }}"
+                            class="btn btn-outline-secondary btn-sm" title="Releases of {{ repository.name }}">
+                                Releases
+                            </a>
                         </div>
                     </div>
                 </div>
