@@ -124,6 +124,18 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
 - **API Endpoint:** `PUT /repos/{owner}/{repo}/contents/{path}`  
 - **Functionality:** Modify the content of an existing file.
 
+### File Editor & Uploads
+- **Routes:** `/github/repos/<owner>/<repo>/edit?path=<file>&branch=<branch>` (no `path`: a new file) and `/github/repos/<owner>/<repo>/upload?dir=<folder>`
+- **API Endpoints:** Git Data API: `GET /git/ref/heads/{branch}`, `POST /git/blobs`, `POST /git/trees`, `POST /git/commits`, `PATCH /git/refs/heads/{branch}` / `POST /git/refs`
+- **Functionality:**
+  - Code editor (CodeMirror) with syntax highlighting chosen from the file extension; falls back to a plain text area if the editor can't load
+  - Markdown preview (sanitized) for `.md` files
+  - Upload up to 20 files (text or binary, 25 MB per upload) into a folder as **one commit**
+  - Commit to the current branch, or to a **new branch**, optionally going straight to the pull request form
+  - Safe saves: if the file changed on GitHub after you opened it (or the branch moved while committing), nothing is overwritten and your edit stays in the editor
+  - Line endings are kept: a file that uses LF stays LF even though browsers submit CRLF
+  - Binary files and files over 1 MB open read-only, with a link to upload a replacement
+
 ### Delete a File
 **API Endpoint:** `DELETE /repos/{owner}/{repo}/contents/{path}`  
 - **Functionality:** Remove a file from the repository.
