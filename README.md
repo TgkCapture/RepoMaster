@@ -78,6 +78,17 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
   - Upload release files (up to 10 at a time) and delete them
 - Release notes are shown as plain text.
 
+### 3f. Repository Analytics (Available)
+- **Route:** `/repos/<owner>/<repo>/analytics` (the **Analytics** button on each repository)
+- **Functionality:** Charts (Chart.js) and tables for one repository:
+  - Views and clones per day, total and unique (last 14 days), plus top referrers and popular pages
+  - Commits per week over the last 12 months
+  - Languages by share of code
+  - Top 20 contributors with commits and lines added / removed
+- Each chart has a "Show data" table, and the page follows the system's light / dark setting.
+- GitHub computes the statistics in the background the first time they're requested; RepoMaster retries briefly and otherwise asks you to reload in a minute. Each section loads independently, so one that fails (e.g. traffic without permission) doesn't hide the rest.
+- Traffic needs the GitHub App's **Administration: Read** permission.
+
 ### 4. Manage Pull Requests (Available)
 - **Route:** `/repositories/<repo_name>/pull_requests?state=open|closed|all`
 - **Functionality:** Lists a repository's pull requests (open / closed / all) and creates new ones.

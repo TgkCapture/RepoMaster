@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics - {{ repo }} | RepoMaster</title>
+    <script>
+        // Follow the OS light/dark setting with Bootstrap's own dark theme (before first paint).
+        document.documentElement.dataset.bsTheme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    </script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        /* Chart colours; the dark steps are chosen for the dark surface, not flipped. */
+        .viz-root {
+            --text-primary: #0b0b0b;
+            --text-secondary: #52514e;
+            --grid: #e6e5e1;
+            --series-1: #2a78d6;  /* blue: total / commits / languages */
+            --series-2: #eb6834;  /* orange: unique */
+        }
+        [data-bs-theme="dark"] .viz-root {
+            --text-primary: #f0efec;
+            --text-secondary: #c3c2b7;
+            --grid: #3a3936;
+            --series-1: #3987e5;
+            --series-2: #d95926;
+        }
+        .stat-value { font-size: 1.75rem; font-weight: 600; }
+        .stat-label { color: var(--bs-secondary-color); font-size: .875rem; }
+        .chart-box { position: relative; height: 260px; }
+        .legend-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; }
+    </style>
+</head>
+<body class="bg-body-tertiary">
+    <div class="container my-5 viz-root">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+            <div>
+                <h1 class="h3 mb-0">Analytics</h1>
+                <span class="text-muted">{{ owner }}/{{ repo }}</span>
+            </div>
+            <a href="{{ url_for('main.show_github_repositories') }}" class="btn btn-outline-secondary btn-sm">Repositories</a>
+        </div>
+
+        {% macro section_error(key) %}
+            {% if sections[key].error %}<div class="alert alert-warning small mb-0">Couldn't load this: {{ sections[key].error }}</div>{% endif %}
+        {% endmacro %}
+
+        {# --- Headline numbers --- #}
+        {% set views, clones, activity = sections.views.data, sections.clones.data, sections.commit_activity.data %}
+        <div class="row g-3 mb-4">
+            {% for label, value in [
+                ('Views, last 14 days', views.count if views else None),
+                ('Unique visitors', views.uniques if views else None),
+                ('Clones, last 14 days', clones.count if clones else None),
+                ('Commits, last 12 months', activity.total if activity else None)] %}
+            <div class="col-6 col-md-3">
+                <div class="card shadow-sm h-100"><div class="card-body">
+                    <div class="stat-value">{{ '{:,}'.format(value) if value is not none else '—' }}</div>
+                    <div class="stat-label">{{ label }}</div>
+                </div></div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="row g-4">
+            {# --- Traffic --- #}
+            {% for key, title in [('views', 'Views'), ('clones', 'Clones')] %}
+            <div class="col-lg-6">
+                <div class="card shadow-sm h-100"><div class="card-body">
+                    <h2 class="h6">{{ title }} per day</h2>
+                    {{ section_error(key) }}
+                    {% if sections[key].data and sections[key].data.days %}
+                        <p class="small mb-2" aria-hidden="true">
+                            <span class="legend-swatch" style="background: var(--series-1)"></span>Total
+                            <span class="legend-swatch ms-3" style="background: var(--series-2)"></span>Unique
+                        </p>
+                        <div class="chart-box"><canvas id="chart-{{ key }}" role="img" aria-label="{{ title }} per day, total and unique"></canvas></div>
+                        <details class="mt-2 small"><summary>Show data</summary>
+                            <table class="table table-sm mt-2"><thead><tr><th>Day</th><th class="text-end">Total</th><th class="text-end">Unique</th></tr></thead><tbody>
+                            {% for day in sections[key].data.days %}<tr><td>{{ day }}</td><td class="text-end">{{ sections[key].data.totals[loop.index0] }}</td><td class="text-end">{{ sections[key].data.unique_totals[loop.index0] }}</td></tr>{% endfor %}
+                            </tbody></table>
+                        </details>
+                    {% elif not sections[key].error %}
+                        <p class="text-muted small mb-0">No {{ title|lower }} in the last 14 days.</p>
+                    {% endif %}
+                </div></div>
+            </div>
+            {% endfor %}
+
+            {# --- Commit activity --- #}
+            <div class="col-12">
+                <div class="card shadow-sm"><div class="card-body">
+                    <h2 class="h6">Commits per week, last 12 months</h2>
+                    {{ section_error('commit_activity') }}
+                    {% if activity and activity.total %}
+                        <div class="chart-box"><canvas id="chart-commit_activity" role="img" aria-label="Commits per week over the last year"></canvas></div>
+                        <details class="mt-2 small"><summary>Show data</summary>
+                            <table class="table table-sm mt-2"><thead><tr><th>Week of</th><th class="text-end">Commits</th></tr></thead><tbody>
+                            {% for week in activity.weeks %}<tr><td>{{ week }}</td><td class="text-end">{{ activity.totals[loop.index0] }}</td></tr>{% endfor %}
+                            </tbody></table>
+                        </details>
+                    {% elif not sections.commit_activity.error %}
+                        <p class="text-muted small mb-0">No commits in the last year.</p>
+                    {% endif %}
+                </div></div>
+            </div>
+
+            {# --- Languages --- #}
+            <div class="col-lg-6">
+                <div class="card shadow-sm h-100"><div class="card-body">
+                    <h2 class="h6">Languages</h2>
+                    {{ section_error('languages') }}
+                    {% if sections.languages.data %}
+                        <div class="chart-box" style="height: {{ [sections.languages.data|length * 28 + 40, 120]|max }}px;">
+                            <canvas id="chart-languages" role="img" aria-label="Share of code by language"></canvas>
+                        </div>
+                        <details class="mt-2 small"><summary>Show data</summary>
+                            <table class="table table-sm mt-2"><thead><tr><th>Language</th><th class="text-end">Share</th></tr></thead><tbody>
+                            {% for row in sections.languages.data %}<tr><td>{{ row.name }}</td><td class="text-end">{{ row.percent }}%</td></tr>{% endfor %}
+                            </tbody></table>
+                        </details>
+                    {% elif not sections.languages.error %}
+                        <p class="text-muted small mb-0">No code detected.</p>
+                    {% endif %}
+                </div></div>
+            </div>
+
+            {# --- Contributors --- #}
+            <div class="col-lg-6">
+                <div class="card shadow-sm h-100"><div class="card-body">
+                    <h2 class="h6">Top contributors</h2>
+                    {{ section_error('contributors') }}
+                    {% if sections.contributors.data %}
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>Contributor</th><th class="text-end">Commits</th><th class="text-end">Lines added</th><th class="text-end">Lines removed</th></tr></thead>
+                        <tbody>
+                        {% for row in sections.contributors.data %}
+                            <tr>
+                                <td>{% if row.html_url %}<a href="{{ row.html_url }}" target="_blank" rel="noopener noreferrer">{{ row.login }}</a>{% else %}{{ row.login }}{% endif %}</td>
+                                <td class="text-end">{{ '{:,}'.format(row.commits) }}</td>
+                                <td class="text-end">{{ '{:,}'.format(row.additions) }}</td>
+                                <td class="text-end">{{ '{:,}'.format(row.deletions) }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    {% elif not sections.contributors.error %}
+                        <p class="text-muted small mb-0">No contributors yet.</p>
+                    {% endif %}
+                </div></div>
+            </div>
+
+            {# --- Referrers and popular pages --- #}
+            {% for key, title, label in [('referrers', 'Top referrers', 'referrer'), ('paths', 'Popular pages', 'path')] %}
+            <div class="col-lg-6">
+                <div class="card shadow-sm h-100"><div class="card-body">
+                    <h2 class="h6">{{ title }}, last 14 days</h2>
+                    {{ section_error(key) }}
+                    {% if sections[key].data %}
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>{{ 'Site' if key == 'referrers' else 'Page' }}</th><th class="text-end">Views</th><th class="text-end">Unique</th></tr></thead>
+                        <tbody>
+                        {% for row in sections[key].data %}
+                            <tr><td class="text-break">{{ row.title if key == 'paths' and row.title else row[label] }}{% if key == 'paths' %}<div class="small text-muted text-break">{{ row.path }}</div>{% endif %}</td>
+                                <td class="text-end">{{ row.count }}</td><td class="text-end">{{ row.uniques }}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    {% elif not sections[key].error %}
+                        <p class="text-muted small mb-0">Nothing yet.</p>
+                    {% endif %}
+                </div></div>
+            </div>
+            {% endfor %}
+        </div>
+        <p class="small text-muted mt-4">Traffic data needs the GitHub App's <em>Administration</em> read permission and covers the last 14 days.</p>
+    </div>
+
+    <script type="application/json" id="analytics-data">{{ chart_data|tojson }}</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script>
+        (() => {
+            if (!window.Chart) return;  // the "Show data" tables still work without charts
+            const data = JSON.parse(document.getElementById('analytics-data').textContent);
+            const root = document.querySelector('.viz-root');
+            const charts = [];
+
+            function css(name) { return getComputedStyle(root).getPropertyValue(name).trim(); }
+
+            function baseOptions(extra = {}) {
+                const text = css('--text-secondary'), grid = css('--grid');
+                return {
+                    responsive: true, maintainAspectRatio: false, animation: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { display: false }, tooltip: { enabled: true } },
+                    scales: {
+                        x: { ticks: { color: text, maxRotation: 0, autoSkipPadding: 12 }, grid: { display: false } },
+                        y: { beginAtZero: true, ticks: { color: text, precision: 0 }, grid: { color: grid }, border: { display: false } },
+                    },
+                    ...extra,
+                };
+            }
+
+            function line(id, series) {
+                const canvas = document.getElementById(id);
+                if (!canvas || !series) return;
+                charts.push(new Chart(canvas, {
+                    type: 'line',
+                    data: { labels: series.days.map((d) => d.slice(5)), datasets: [
+                        { label: 'Total', data: series.totals, borderColor: css('--series-1'), backgroundColor: css('--series-1'), borderWidth: 2, pointRadius: 3, pointHoverRadius: 5, tension: 0 },
+                        { label: 'Unique', data: series.unique_totals, borderColor: css('--series-2'), backgroundColor: css('--series-2'), borderWidth: 2, pointRadius: 3, pointHoverRadius: 5, tension: 0 },
+                    ] },
+                    options: baseOptions(),
+                }));
+            }
+
+            function draw() {
+                charts.splice(0).forEach((c) => c.destroy());
+                line('chart-views', data.views);
+                line('chart-clones', data.clones);
+
+                const activity = document.getElementById('chart-commit_activity');
+                if (activity && data.commit_activity) {
+                    charts.push(new Chart(activity, {
+                        type: 'bar',
+                        data: { labels: data.commit_activity.weeks, datasets: [{ label: 'Commits', data: data.commit_activity.totals,
+                            backgroundColor: css('--series-1'), borderRadius: 4, borderSkipped: 'start', categoryPercentage: 0.9, barPercentage: 0.9 }] },
+                        options: baseOptions(),
+                    }));
+                }
+
+                const languages = document.getElementById('chart-languages');
+                if (languages && data.languages) {
+                    const options = baseOptions({ indexAxis: 'y' });
+                    options.interaction = { mode: 'nearest', intersect: true, axis: 'y' };
+                    options.scales.x = { beginAtZero: true, max: 100, ticks: { color: css('--text-secondary'), callback: (v) => `${v}%` }, grid: { color: css('--grid') }, border: { display: false } };
+                    options.scales.y = { ticks: { color: css('--text-primary') }, grid: { display: false } };
+                    options.plugins.tooltip.callbacks = { label: (ctx) => `${ctx.parsed.x}%` };
+                    charts.push(new Chart(languages, {
+                        type: 'bar',
+                        data: { labels: data.languages.map((l) => l.name), datasets: [{ label: 'Share', data: data.languages.map((l) => l.percent),
+                            backgroundColor: css('--series-1'), borderRadius: 4, borderSkipped: 'start', barPercentage: 0.8 }] },
+                        options,
+                    }));
+                }
+            }
+
+            draw();
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (event) => {
+                document.documentElement.dataset.bsTheme = event.matches ? 'dark' : 'light';
+                draw();
+            });
+        })();
+    </script>
+</body>
+</html>
