@@ -1,6 +1,7 @@
 """testing_config.py
 """
 import os
+import tempfile
 from app.config.base_config import BaseConfig
 
 
@@ -14,3 +15,6 @@ class TestingConfig(BaseConfig):
     GITHUB_CLIENT_SECRET = 'test-client-secret'
     GITHUB_OAUTH_CALLBACK_URL = None
     LOG_FILE_PATH = os.devnull
+    GITHUB_WEBHOOK_SECRET = 'test-webhook-secret'
+    # The test suite's `app` fixture points this at a fresh file for every test.
+    DATABASE_PATH = os.path.join(tempfile.gettempdir(), 'repomaster-test.db')
