@@ -27,6 +27,12 @@ class BaseConfig:
     # Set this when running behind a proxy so the URL matches the App's Callback URL exactly.
     GITHUB_OAUTH_CALLBACK_URL = os.getenv('GITHUB_OAUTH_CALLBACK_URL')
 
+    # Webhooks: the secret set on the GitHub App's webhook. Without it, webhook deliveries are refused.
+    GITHUB_WEBHOOK_SECRET = os.getenv('GITHUB_WEBHOOK_SECRET')
+
+    # SQLite database for notifications. Defaults to <instance folder>/repomaster.db.
+    DATABASE_PATH = os.getenv('DATABASE_PATH')
+
     # Largest request body accepted (file uploads). Bigger requests get 413 before being read.
     MAX_CONTENT_LENGTH = 25 * 1024 * 1024
 
