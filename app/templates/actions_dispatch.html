@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Run {{ workflow.name }} | RepoMaster</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+    {% set action = url_for('main.actions_dispatch', owner=owner, repo=repo, workflow_id=workflow.id) %}
+    <div class="container my-5" style="max-width: 720px;">
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <a href="{{ url_for('main.actions_overview', owner=owner, repo=repo, workflow=workflow.id) }}" class="btn btn-outline-secondary btn-sm">&larr; Runs</a>
+        </div>
+        <h1 class="h4">Run {{ workflow.name }}</h1>
+        <p class="text-muted small"><code>{{ workflow.path }}</code> · {{ owner }}/{{ repo }}</p>
+
+        {% include '_flash_messages.html' %}
+
+        {# Changing the branch reloads the inputs from that branch's copy of the workflow #}
+        <form method="GET" action="{{ action }}" class="d-flex gap-2 align-items-center mb-3">
+            <label for="ref_switch" class="small text-muted">Use workflow from</label>
+            <select name="ref" id="ref_switch" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                {% for name in branches %}<option value="{{ name }}" {{ 'selected' if name == ref }}>{{ name }}</option>{% endfor %}
+            </select>
+            <noscript><button type="submit" class="btn btn-outline-secondary btn-sm">Load</button></noscript>
+        </form>
+
+        {% if load_error %}
+            <div class="alert alert-danger">Couldn't read the workflow file: {{ load_error }}</div>
+        {% elif inputs is none %}
+            <div class="alert alert-warning">
+                This workflow can't be run manually: it has no <code>workflow_dispatch</code> trigger on <code>{{ ref }}</code>.
+                Add <code>on: workflow_dispatch</code> to the workflow file to enable it.
+            </div>
+        {% else %}
+        <form method="POST" action="{{ action }}" class="card shadow-sm">
+            <div class="card-body">
+                <input type="hidden" name="ref" value="{{ ref }}">
+                {% for input in inputs %}
+                    {% set field = 'input_' ~ input.name %}
+                    {% set current = form[field] if field in form else input.default %}
+                    <div class="mb-3">
+                        {% if input.type == 'boolean' %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="{{ field }}" id="{{ field }}"
+                                       {{ 'checked' if (form[field] == 'on' if form else input.default == 'true') }}>
+                                <label class="form-check-label" for="{{ field }}">{{ input.description or input.name }}</label>
+                            </div>
+                        {% else %}
+                            <label for="{{ field }}" class="form-label">{{ input.description or input.name }}{% if input.required %} <span class="text-danger" title="required">*</span>{% endif %}</label>
+                            {% if input.type == 'choice' %}
+                                <select name="{{ field }}" id="{{ field }}" class="form-select" {{ 'required' if input.required }}>
+                                    {% if not input.required %}<option value=""></option>{% endif %}
+                                    {% for option in input.options %}<option value="{{ option }}" {{ 'selected' if option == current }}>{{ option }}</option>{% endfor %}
+                                </select>
+                            {% else %}
+                                <input type="{{ 'number' if input.type == 'number' else 'text' }}" {{ 'step=any' if input.type == 'number' }}
+                                       name="{{ field }}" id="{{ field }}" class="form-control" value="{{ current }}" {{ 'required' if input.required }}>
+                            {% endif %}
+                            {% if input.description %}<div class="form-text"><code>{{ input.name }}</code></div>{% endif %}
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">This workflow has no inputs.</p>
+                {% endfor %}
+                <button type="submit" class="btn btn-success">Run workflow on {{ ref }}</button>
+            </div>
+        </form>
+        {% endif %}
+    </div>
+</body>
+</html>

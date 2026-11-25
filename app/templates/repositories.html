@@ -59,6 +59,10 @@
                             class="btn btn-outline-secondary btn-sm" title="Analytics for {{ repository.name }}">
                                 Analytics
                             </a>
+                            <a href="{{ url_for('main.actions_overview', owner=repository.owner.login, repo=repository.name) }}"
+                            class="btn btn-outline-secondary btn-sm" title="GitHub Actions for {{ repository.name }}">
+                                Actions
+                            </a>
                         </div>
                     </div>
                 </div>

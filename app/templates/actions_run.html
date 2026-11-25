@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ run.name }} #{{ run.run_number }} | RepoMaster</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+    {% set action_url = url_for('main.actions_run_action', owner=owner, repo=repo, run_id=run.id) %}
+    <div class="container my-5" style="max-width: 960px;">
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <a href="{{ url_for('main.actions_overview', owner=owner, repo=repo, workflow=run.workflow_id) }}" class="btn btn-outline-secondary btn-sm">&larr; Runs</a>
+            <a href="{{ run.html_url }}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+        </div>
+
+        {% include '_flash_messages.html' %}
+
+        <h1 class="h4">{{ run.display_title or run.name }}</h1>
+        <p class="text-muted small">
+            <span class="badge bg-{{ run.state[1] }}{{ ' text-dark' if run.state[1] == 'warning' }}">{{ run.state[0] }}</span>
+            {{ run.name }} #{{ run.run_number }}{% if run.run_attempt and run.run_attempt > 1 %} (attempt {{ run.run_attempt }}){% endif %}
+            · {{ run.event|replace('_', ' ') }} on <code>{{ run.head_branch }}</code> · <code>{{ (run.head_sha or '')[:7] }}</code>
+            · {{ run.ago }}{% if run.actor %} by {{ run.actor.login }}{% endif %}
+        </p>
+
+        <div class="d-flex flex-wrap gap-2 mb-4">
+            {% if run.status == 'completed' %}
+                {% if run.conclusion in ('failure', 'cancelled', 'timed_out', 'startup_failure') %}
+                <form method="POST" action="{{ action_url }}"><button type="submit" name="action" value="rerun_failed" class="btn btn-primary btn-sm">Re-run failed jobs</button></form>
+                {% endif %}
+                <form method="POST" action="{{ action_url }}"><button type="submit" name="action" value="rerun" class="btn btn-outline-primary btn-sm">Re-run all jobs</button></form>
+                <a href="{{ url_for('main.actions_run_logs', owner=owner, repo=repo, run_id=run.id) }}" class="btn btn-outline-secondary btn-sm">Download logs (.zip)</a>
+            {% else %}
+                <form method="POST" action="{{ action_url }}" onsubmit="return confirm('Cancel this run?')"><button type="submit" name="action" value="cancel" class="btn btn-outline-danger btn-sm">Cancel run</button></form>
+            {% endif %}
+        </div>
+
+        <h2 class="h5">Jobs ({{ jobs|length }})</h2>
+        {% for job in jobs %}
+        <details class="card shadow-sm mb-2" {{ 'open' if job.state[1] == 'danger' }}>
+            <summary class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span><span class="badge bg-{{ job.state[1] }}{{ ' text-dark' if job.state[1] == 'warning' }}">{{ job.state[0] }}</span> {{ job.name }}</span>
+                <span class="small text-muted">{{ job.duration }}</span>
+            </summary>
+            <ul class="list-group list-group-flush">
+                {% for step in job.steps or [] %}
+                <li class="list-group-item d-flex justify-content-between small">
+                    <span>{{ step.number }}. {{ step.name }}</span>
+                    <span class="badge bg-{{ step.state[1] }}{{ ' text-dark' if step.state[1] == 'warning' }}">{{ step.state[0] }}</span>
+                </li>
+                {% else %}
+                <li class="list-group-item small text-muted">No steps reported yet.</li>
+                {% endfor %}
+            </ul>
+            {% if job.html_url %}<div class="card-footer bg-white small"><a href="{{ job.html_url }}" target="_blank" rel="noopener noreferrer">View this job's log on GitHub</a></div>{% endif %}
+        </details>
+        {% else %}
+        <p class="text-muted">No jobs yet.</p>
+        {% endfor %}
+    </div>
+</body>
+</html>

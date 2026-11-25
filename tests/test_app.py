@@ -49,6 +49,12 @@ EXPECTED_ENDPOINTS = {
     'main.upload_release_assets',
     'main.delete_release_asset',
     'main.repository_analytics',
+    'main.actions_overview',
+    'main.actions_run',
+    'main.actions_run_action',
+    'main.actions_run_logs',
+    'main.actions_dispatch',
+    'main.actions_secrets',
 }
 
 

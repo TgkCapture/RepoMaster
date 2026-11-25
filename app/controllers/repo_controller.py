@@ -316,7 +316,8 @@ def github_api(method, path, access_token, **kwargs):
         response = requests.request(method, f'https://api.github.com{path}', headers=headers,
                                     timeout=REQUEST_TIMEOUT, **kwargs)
         response.raise_for_status()
-        return (response.json() if response.status_code != 204 else None), None
+        # Some endpoints answer 201/202/204 with an empty body
+        return (response.json() if response.status_code != 204 and response.content else None), None
     except RequestException as e:
         logging.error(f"GitHub API {method} {path} failed: {_error_details(e)}")
         return None, _github_error_message(e)
