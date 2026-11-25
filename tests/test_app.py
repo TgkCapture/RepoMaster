@@ -55,6 +55,11 @@ EXPECTED_ENDPOINTS = {
     'main.actions_run_logs',
     'main.actions_dispatch',
     'main.actions_secrets',
+    'main.github_webhook',
+    'main.notifications',
+    'main.notifications_read_all',
+    'main.open_notification',
+    'main.notifications_unread',
 }
 
 
