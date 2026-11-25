@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Actions - {{ repo }} | RepoMaster</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+    <div class="container my-5">
+        {% with active = 'runs' %}{% include '_actions_nav.html' %}{% endwith %}
+
+        <div class="row g-4">
+            <div class="col-lg-3">
+                <h2 class="h6">Workflows</h2>
+                <div class="list-group shadow-sm">
+                    <a href="{{ url_for('main.actions_overview', owner=owner, repo=repo, status=status or None) }}"
+                       class="list-group-item list-group-item-action {{ 'active' if not workflow_id }}">All workflows</a>
+                    {% for workflow in workflows %}
+                    <a href="{{ url_for('main.actions_overview', owner=owner, repo=repo, workflow=workflow.id, status=status or None) }}"
+                       class="list-group-item list-group-item-action {{ 'active' if workflow.id == workflow_id }}">
+                        {{ workflow.name }}
+                        {% if workflow.state != 'active' %}<span class="badge bg-secondary">{{ workflow.state|replace('_', ' ') }}</span>{% endif %}
+                    </a>
+                    {% endfor %}
+                </div>
+                {% if not workflows %}<p class="small text-muted mt-2">No workflows in this repository.</p>{% endif %}
+                {% for workflow in workflows if workflow.id == workflow_id %}
+                    <a href="{{ url_for('main.actions_dispatch', owner=owner, repo=repo, workflow_id=workflow.id) }}" class="btn btn-success btn-sm mt-3 w-100">Run workflow</a>
+                {% endfor %}
+            </div>
+
+            <div class="col-lg-9">
+                <form method="GET" action="{{ url_for('main.actions_overview', owner=owner, repo=repo) }}" class="d-flex gap-2 mb-3">
+                    {% if workflow_id %}<input type="hidden" name="workflow" value="{{ workflow_id }}">{% endif %}
+                    <select name="status" class="form-select form-select-sm w-auto" aria-label="Status" onchange="this.form.submit()">
+                        {% for value, label in statuses.items() %}<option value="{{ value }}" {{ 'selected' if value == status }}>{{ label }}</option>{% endfor %}
+                    </select>
+                    <noscript><button type="submit" class="btn btn-outline-secondary btn-sm">Filter</button></noscript>
+                </form>
+
+                {% if runs %}
+                <ul class="list-group shadow-sm">
+                    {% for run in runs %}
+                    <li class="list-group-item d-flex justify-content-between align-items-start gap-3">
+                        <div>
+                            <span class="badge bg-{{ run.state[1] }}{{ ' text-dark' if run.state[1] == 'warning' }}">{{ run.state[0] }}</span>
+                            <a href="{{ url_for('main.actions_run', owner=owner, repo=repo, run_id=run.id) }}" class="fw-semibold">{{ run.display_title or run.name }}</a>
+                            <div class="small text-muted">
+                                {{ run.name }} #{{ run.run_number }} · {{ run.event|replace('_', ' ') }} on <code>{{ run.head_branch }}</code>
+                                · {{ run.ago }}{% if run.actor %} by {{ run.actor.login }}{% endif %}
+                            </div>
+                        </div>
+                        <a href="{{ run.html_url }}" class="btn btn-outline-secondary btn-sm flex-shrink-0" target="_blank" rel="noopener noreferrer">GitHub</a>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <div class="d-flex justify-content-between mt-3">
+                    {% if page > 1 %}<a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.actions_overview', owner=owner, repo=repo, workflow=workflow_id, status=status or None, page=page - 1) }}">&larr; Newer</a>{% else %}<span></span>{% endif %}
+                    {% if has_next %}<a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.actions_overview', owner=owner, repo=repo, workflow=workflow_id, status=status or None, page=page + 1) }}">Older &rarr;</a>{% endif %}
+                </div>
+                {% else %}
+                    <p class="text-muted">No runs{{ ' with this status' if status }}.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>
