@@ -25,6 +25,8 @@ EXPECTED_ENDPOINTS = {
     'main.show_repo_details',
     'main.delete_repositories',
     'main.manage_issues',
+    'main.issue_detail',
+    'main.issue_action',
     'main.manage_pull_requests',
     'main.main_create_branch',
     'main.show_branch_details',
@@ -67,6 +69,7 @@ def test_home_page_renders_when_logged_out(client):
     '/github/repositories',
     '/delete_repo',
     '/repositories/some-repo/issues',
+    '/repositories/some-repo/issues/1',
     '/repositories/some-repo/pull_requests',
 ])
 def test_protected_pages_require_login(client, url):
