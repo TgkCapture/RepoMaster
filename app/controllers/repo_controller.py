@@ -321,6 +321,14 @@ def _github_api(method, path, access_token, **kwargs):
         logging.error(f"GitHub API {method} {path} failed: {_error_details(e)}")
         return None, _github_error_message(e)
 
+def search_issues(query, access_token, sort='updated', order='desc', page=1, per_page=50):
+    """
+    Search issues and pull requests (GET /search/issues).
+    Returns ({'total_count', 'items', ...}, None) or (None, error_message).
+    """
+    params = {'q': query, 'sort': sort, 'order': order, 'page': page, 'per_page': per_page}
+    return _github_api('GET', '/search/issues', access_token, params=params)
+
 def _ref(name):
     """URL-encode a branch name for use in an API path (slashes are kept)."""
     return quote(name, safe='/')

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inbox | RepoMaster</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+    <div class="container my-5">
+        <h1 class="mb-1">Inbox</h1>
+        <p class="text-muted">Open issues and pull requests across all repositories available to RepoMaster.</p>
+
+        <div class="mb-3">
+            <a href="{{ url_for('main.home') }}" class="btn btn-outline-secondary btn-sm">Home</a>
+            <a href="{{ url_for('main.show_github_repositories') }}" class="btn btn-outline-secondary btn-sm">Repositories</a>
+        </div>
+
+        {% include '_flash_messages.html' %}
+        {% for warning in warnings %}
+            <div class="alert alert-warning py-2 small" role="alert">{{ warning }}</div>
+        {% endfor %}
+
+        <form method="GET" action="{{ url_for('main.inbox') }}" class="card shadow-sm mb-4">
+            <div class="card-body row g-2 align-items-end">
+                <div class="col-sm-6 col-lg-2">
+                    <label for="type" class="form-label small mb-1">Type</label>
+                    <select id="type" name="type" class="form-select form-select-sm">
+                        {% for key, label in types.items() %}
+                            <option value="{{ key }}" {{ 'selected' if filters.type == key }}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <label for="repo" class="form-label small mb-1">Repository</label>
+                    <select id="repo" name="repo" class="form-select form-select-sm">
+                        <option value="">All repositories</option>
+                        {% for full_name in repo_full_names %}
+                            <option value="{{ full_name }}" {{ 'selected' if filters.repo == full_name }}>{{ full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-sm-6 col-lg-2">
+                    <label for="label" class="form-label small mb-1">Label</label>
+                    <input type="text" id="label" name="label" value="{{ filters.label }}" class="form-control form-control-sm" placeholder="e.g. bug">
+                </div>
+                <div class="col-sm-6 col-lg-2">
+                    <label for="author" class="form-label small mb-1">Author</label>
+                    <input type="text" id="author" name="author" value="{{ filters.author }}" class="form-control form-control-sm" placeholder="username">
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <label for="age" class="form-label small mb-1">Age</label>
+                    <select id="age" name="age" class="form-select form-select-sm">
+                        {% for key, (label, _, _) in ages.items() %}
+                            <option value="{{ key }}" {{ 'selected' if filters.age == key }}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <label for="sort" class="form-label small mb-1">Sort</label>
+                    <select id="sort" name="sort" class="form-select form-select-sm">
+                        {% for key, (label, _, _) in sorts.items() %}
+                            <option value="{{ key }}" {{ 'selected' if filters.sort == key }}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-sm-12 col-lg-auto ms-lg-auto d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm">Apply filters</button>
+                    <a href="{{ url_for('main.inbox') }}" class="btn btn-outline-secondary btn-sm">Reset</a>
+                </div>
+            </div>
+        </form>
+
+        {% if error %}
+            <div class="alert alert-danger" role="alert">Could not search GitHub: {{ error }}</div>
+        {% else %}
+            <p class="text-muted small mb-2">
+                {{ total }} result{{ 's' if total != 1 }}{% if total > per_page %} · page {{ filters.page }}{% endif %}
+                {% if hidden %} · {{ hidden }} hidden from repositories not available to RepoMaster{% endif %}
+            </p>
+
+            {% if items %}
+            <div class="list-group shadow-sm mb-3">
+                {% for item in items %}
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                        <div class="flex-grow-1" style="min-width: 0;">
+                            {% if item.kind == 'pr' %}
+                                <span class="badge {{ 'bg-secondary' if item.draft else 'bg-primary' }}">{{ 'Draft PR' if item.draft else 'PR' }}</span>
+                            {% else %}
+                                <span class="badge bg-success">Issue</span>
+                            {% endif %}
+                            <span class="text-muted small">{{ item.repo }} #{{ item.number }}</span>
+                            <div class="fw-semibold text-break">{{ item.title }}</div>
+                            <div class="mt-1">
+                                {% for label in item.labels %}
+                                    <span class="badge rounded-pill" style="background-color: #{{ label.color }}; color: {{ label_text_color(label.color) }};">{{ label.name }}</span>
+                                {% endfor %}
+                            </div>
+                            <div class="text-muted small mt-1">
+                                opened {{ item.created_ago }} by <strong>{{ item.author }}</strong>
+                                · updated {{ item.updated_ago }}
+                                {% if item.comments %}· {{ item.comments }} comment{{ 's' if item.comments != 1 }}{% endif %}
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2 flex-shrink-0">
+                            {% if item.kind == 'pr' %}
+                                <a href="{{ url_for('main.manage_pull_requests', repo_name=item.repo_name, pr_number=item.number) }}" class="btn btn-outline-primary btn-sm">Open in app</a>
+                            {% else %}
+                                <a href="{{ url_for('main.manage_issues', repo_name=item.repo_name) }}" class="btn btn-outline-primary btn-sm">Open in app</a>
+                            {% endif %}
+                            <a href="{{ item.html_url }}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">GitHub</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+                <p class="text-muted">Nothing open matches these filters.</p>
+            {% endif %}
+
+            {% if filters.page > 1 or has_next %}
+            <nav aria-label="Inbox pages" class="d-flex gap-2">
+                {% if filters.page > 1 %}
+                    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.inbox', page=filters.page - 1, **link_args) }}">&larr; Previous</a>
+                {% endif %}
+                {% if has_next %}
+                    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.inbox', page=filters.page + 1, **link_args) }}">Next &rarr;</a>
+                {% endif %}
+            </nav>
+            {% endif %}
+        {% endif %}
+    </div>
+</body>
+</html>

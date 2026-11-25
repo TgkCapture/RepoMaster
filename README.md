@@ -45,6 +45,14 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
 - **Branches** (`/repositories/cleanup/branches?repo=owner/name`): for one repository, lists branches already **merged** into the default branch and **stale** branches (unmerged, nothing new in N months), and deletes the selected ones. The default branch and protected branches are never deleted.
 - Archive / delete of repositories goes through the bulk actions confirmation step.
 
+### 3c. Issue & PR Inbox (Available)
+- **Route:** `/inbox`
+- **Functionality:** One list of every open issue and pull request across the repositories available to RepoMaster, using a single GitHub search request per page.
+  - Filter by type (issues / PRs), repository, label, author and age (e.g. opened in the last 7 days, open longer than 90 days)
+  - Sort by recently updated, newest, oldest or least recently updated
+  - 50 per page (GitHub search returns at most 1,000 results)
+  - Each item links to its page in RepoMaster and on GitHub
+
 ### 4. Manage Pull Requests (Available)
 - **Route:** `/repositories/<repo_name>/pull_requests`
 - **Functionality:** Enables viewing, creation, merging, or management of pull requests for a specific repository.  
@@ -124,6 +132,7 @@ app/
     content_routes.py         #   repository contents and files
     bulk_routes.py            #   bulk repository actions
     cleanup_routes.py         #   cleanup dashboard and branch cleanup
+    inbox_routes.py           #   cross-repository issue & PR inbox
   controllers/                # GitHub REST API calls (auth, repos, issues, pull requests)
   templates/                  # Jinja templates
   static/                     # CSS, JS, images

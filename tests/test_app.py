@@ -18,6 +18,7 @@ EXPECTED_ENDPOINTS = {
     'main.cleanup_dashboard',
     'main.cleanup_branches',
     'main.cleanup_delete_branches',
+    'main.inbox',
     'main.show_github_repositories',
     'main.show_repo_details',
     'main.delete_repositories',
