@@ -30,6 +30,9 @@
             </form>
             
             <button class="btn btn-primary w-100 mt-3" data-bs-toggle="modal" data-bs-target="#renameModal">Rename Branch</button>
+
+            <a href="{{ url_for('main.branch_protection', owner=owner, repo_name=repo, branch=branch) }}" class="btn btn-outline-primary w-100 mt-3">Protection Rules</a>
+            <a href="{{ url_for('main.compare_branches_page', owner=owner, repo_name=repo, head=branch) }}" class="btn btn-outline-primary w-100 mt-3">Compare with Another Branch</a>
             
             <a href="/" class="btn btn-outline-secondary w-100 mt-3">Go Back to Home</a>
         </div>

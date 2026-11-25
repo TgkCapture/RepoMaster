@@ -33,6 +33,8 @@ EXPECTED_ENDPOINTS = {
     'main.show_branch_details',
     'main.delete_branch',
     'main.rename_branch',
+    'main.branch_protection',
+    'main.compare_branches_page',
     'main.get_contents',
     'main.create_new_file',
     'main.update_existing_file',

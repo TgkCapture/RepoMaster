@@ -57,7 +57,9 @@ def manage_pull_requests(repo_name):
             if branches is None:
                 logging.error(f"Failed to fetch branches for repository {repo_name}.")
                 return "Failed to fetch branches from GitHub", 500
-            return render_template('create_pull_request.html', repo_name=repo_name, branches=branches)
+            # ?base=...&head=... (e.g. from the branch comparison page) preselects the branches
+            return render_template('create_pull_request.html', repo_name=repo_name, branches=branches,
+                                   selected_base=request.args.get('base'), selected_head=request.args.get('head'))
 
         state = parse_state(request.args.get('state'))
         pull_requests, error = list_pull_requests(owner, repo_name, access_token, state)

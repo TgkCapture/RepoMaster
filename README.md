@@ -94,6 +94,16 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
 - **API Endpoint:** `POST /repos/{owner}/{repo}/git/refs`  
 - **Functionality:** Create a new branch from an existing reference.
 
+#### Branch Protection
+- **Route:** `/repos/<owner>/<repo>/branch-protection?branch=<name>` (the **Protection** button on the branch list)
+- **API Endpoint:** `GET/PUT/DELETE /repos/{owner}/{repo}/branches/{branch}/protection`
+- **Functionality:** View and edit a branch's protection rules: required pull request reviews (approval count, dismiss stale approvals, code owners, approval of the latest push), required status checks (with "must be up to date"), conversation resolution, linear history, applying the rules to admins, and allowing force pushes / deletion. Settings the editor doesn't show (who may push, who may dismiss reviews, which app a check must come from) are kept when saving. Protection can also be removed.
+
+#### Compare Branches
+- **Route:** `/repos/<owner>/<repo>/compare?base=<branch>&head=<branch>`
+- **API Endpoint:** `GET /repos/{owner}/{repo}/compare/{base}...{head}`
+- **Functionality:** Shows whether a branch is ahead of, behind, identical to or diverged from another, with the commit list. When the branch has new commits it offers **Open pull request** (pre-filled), or links to the pull request that's already open.
+
 ### Delete a Branch
 - **API Endpoint:** `DELETE /repos/{owner}/{repo}/git/refs/heads/{branch}`  
 - **Functionality:** Remove a branch permanently.

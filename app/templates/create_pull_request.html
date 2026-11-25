@@ -28,7 +28,7 @@
                     <select id="base" name="base" class="form-select" required>
                         <option value="">Select a branch</option>
                         {% for branch in branches %}
-                            <option value="{{ branch }}">{{ branch }}</option>
+                            <option value="{{ branch }}" {{ 'selected' if branch == selected_base }}>{{ branch }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -38,7 +38,7 @@
                     <select id="head" name="head" class="form-select" required>
                         <option value="">Select a branch</option>
                         {% for branch in branches %}
-                            <option value="{{ branch }}">{{ branch }}</option>
+                            <option value="{{ branch }}" {{ 'selected' if branch == selected_head }}>{{ branch }}</option>
                         {% endfor %}
                     </select>
                 </div>
