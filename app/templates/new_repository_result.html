@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repository Created | RepoMaster</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+    <div class="container my-5" style="max-width: 760px;">
+        {% if result.repo %}
+            <h1 class="mb-1">Repository created</h1>
+            <p class="fs-5"><a href="{{ result.repo.html_url }}" target="_blank" rel="noopener noreferrer"><code>{{ result.repo.full_name }}</code></a></p>
+            {% if not result.ok %}
+                <div class="alert alert-warning">The repository was created, but some setup steps failed. See below.</div>
+            {% endif %}
+        {% else %}
+            <h1 class="mb-3">Repository not created</h1>
+        {% endif %}
+
+        <ul class="list-group shadow-sm mb-4">
+            {% for step in result.steps %}
+            <li class="list-group-item d-flex justify-content-between align-items-start gap-3">
+                <div>
+                    <div class="fw-semibold">{{ step.name }}</div>
+                    <div class="small {{ 'text-muted' if step.ok else 'text-danger' }}">{{ step.message }}</div>
+                </div>
+                <span class="badge {{ 'bg-success' if step.ok else 'bg-danger' }}">{{ 'Done' if step.ok else 'Failed' }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+
+        {% if result.repo %}
+            <div class="alert alert-info small">
+                If RepoMaster is installed for <em>selected repositories</em> only, the new repository won't show up here until you
+                <a href="{{ installation_settings_url }}" target="_blank" rel="noopener noreferrer">add it to the installation</a>.
+            </div>
+        {% endif %}
+
+        <a href="{{ url_for('main.new_repository') }}" class="btn btn-primary">Create another</a>
+        <a href="{{ url_for('main.show_github_repositories') }}" class="btn btn-outline-secondary">Repositories</a>
+    </div>
+</body>
+</html>
