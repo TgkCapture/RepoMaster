@@ -55,6 +55,10 @@
                             class="btn btn-outline-secondary btn-sm" title="Releases of {{ repository.name }}">
                                 Releases
                             </a>
+                            <a href="{{ url_for('main.repository_analytics', owner=repository.owner.login, repo=repository.name) }}"
+                            class="btn btn-outline-secondary btn-sm" title="Analytics for {{ repository.name }}">
+                                Analytics
+                            </a>
                         </div>
                     </div>
                 </div>
