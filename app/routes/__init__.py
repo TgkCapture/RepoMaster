@@ -9,6 +9,7 @@ main_routes = Blueprint('main', __name__)
 
 # Imported for their side effect of registering routes on main_routes.
 from app.routes import (  # noqa: E402,F401
+    repo_creation_routes,  # before auth_routes, which uses it in the OAuth callback
     auth_routes,
     repo_routes,
     issue_routes,
