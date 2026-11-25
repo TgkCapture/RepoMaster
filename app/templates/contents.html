@@ -84,7 +84,7 @@
                         <span class="badge bg-{{ 'success' if issue.state == 'closed' else 'warning' }} ms-2">{{ issue.state }}</span>
                         <div class="float-end">
                             <!-- Button to view issue in your app -->
-                            <a href="{{ url_for('main.manage_issues', repo_name=repo, issue_number=issue.number) }}" class="btn btn-outline-info btn-sm me-2">View in App</a>
+                            <a href="{{ url_for('main.issue_detail', repo_name=repo, issue_number=issue.number) }}" class="btn btn-outline-info btn-sm me-2">View in App</a>
                             <!-- Button to view issue on GitHub -->
                             <a href="{{ issue.html_url }}" class="btn btn-outline-secondary btn-sm" target="_blank">View on GitHub</a>
                         </div>
