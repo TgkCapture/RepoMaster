@@ -68,6 +68,16 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
   - Protect the default branch (1 approving review, no force pushes or deletion)
 - **How it works:** GitHub only lets a user's own token create repositories in a personal account, so submitting the form sends you through GitHub's authorization once more (instant if RepoMaster is already authorized). That token is used for this one request and never stored. A results page shows each step; setup steps that fail (e.g. branch protection on a private repository without a paid plan) don't undo the creation.
 
+### 3e. Releases & Tags (Available)
+- **Route:** `/repos/<owner>/<repo>/releases` (the **Releases** button on each repository)
+- **Functionality:**
+  - List releases (including drafts and pre-releases) and the tags that don't have a release yet
+  - Create a release from an existing or new tag (on a chosen branch), with title, notes, draft / pre-release and "latest release" options
+  - **Generate release notes** from merged pull requests (since the previous release or a chosen tag) and review them before saving
+  - Edit and delete releases, optionally deleting the tag too
+  - Upload release files (up to 10 at a time) and delete them
+- Release notes are shown as plain text.
+
 ### 4. Manage Pull Requests (Available)
 - **Route:** `/repositories/<repo_name>/pull_requests?state=open|closed|all`
 - **Functionality:** Lists a repository's pull requests (open / closed / all) and creates new ones.
