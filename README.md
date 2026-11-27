@@ -111,6 +111,17 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
 - Every delivery is verified with `GITHUB_WEBHOOK_SECRET` (the `X-Hub-Signature-256` HMAC); without the secret configured, deliveries are refused. GitHub's redeliveries are ignored, uninstalling removes that installation's notifications, and the newest 500 per installation are kept.
 - Notifications are stored in a small SQLite database (`instance/repomaster.db` by default, or `DATABASE_PATH`).
 
+### 3i. Security Overview (Available)
+- **Route:** `/security` (the **Security** button on the repositories and inbox pages)
+- **Functionality:** One page with the open security alerts of every repository RepoMaster can access, most severe first:
+  - **Dependabot:** severity, package and ecosystem, the version that fixes it, CVE / GHSA and manifest file
+  - **Secret scanning:** the secret type, whether it's still active and whether it was leaked publicly. The secret itself is never shown or stored
+  - **Code scanning:** rule, tool and file / line (for repositories where it's enabled)
+- Filter by severity, alert type and repository; each alert links to GitHub. The repository and type filters also limit which GitHub requests are made.
+- GitHub doesn't rate leaked secrets, so RepoMaster lists them as **critical**. Code scanning rules without a security severity map error → high, warning → medium, note → low.
+- Repositories where a feature is off, or the App lacks permission, are listed under "Couldn't check" with GitHub's reason instead of failing the page. Up to 100 alerts per repository and type are shown.
+- Needs the GitHub App permissions **Dependabot alerts: Read**, **Secret scanning alerts: Read** and **Code scanning alerts: Read**.
+
 ### 4. Manage Pull Requests (Available)
 - **Route:** `/repositories/<repo_name>/pull_requests?state=open|closed|all`
 - **Functionality:** Lists a repository's pull requests (open / closed / all) and creates new ones.
@@ -223,6 +234,7 @@ app/
     bulk_routes.py            #   bulk repository actions
     cleanup_routes.py         #   cleanup dashboard and branch cleanup
     inbox_routes.py           #   cross-repository issue & PR inbox
+    security_routes.py        #   security alerts across repositories
     repo_creation_routes.py   #   create repositories
   controllers/                # GitHub REST API calls (auth, repos, issues, pull requests)
   templates/                  # Jinja templates

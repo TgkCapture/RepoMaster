@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security | RepoMaster</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+    {% set severity_badge = {'critical': 'bg-danger', 'high': 'bg-warning text-dark',
+                             'medium': 'bg-info text-dark', 'low': 'bg-secondary'} %}
+    <div class="container my-5">
+        <h1 class="mb-1">Security</h1>
+        <p class="text-muted">Open Dependabot, secret scanning and code scanning alerts across all repositories available to RepoMaster.</p>
+
+        <div class="mb-3">
+            <a href="{{ url_for('main.home') }}" class="btn btn-outline-secondary btn-sm">Home</a>
+            <a href="{{ url_for('main.show_github_repositories') }}" class="btn btn-outline-secondary btn-sm">Repositories</a>
+            <a href="{{ url_for('main.inbox') }}" class="btn btn-outline-secondary btn-sm">Inbox</a>
+            {% include '_notification_bell.html' %}
+        </div>
+
+        {% include '_flash_messages.html' %}
+        {% for warning in warnings %}
+            <div class="alert alert-warning py-2 small" role="alert">{{ warning }}</div>
+        {% endfor %}
+
+        <form method="GET" action="{{ url_for('main.security_overview') }}" class="card shadow-sm mb-3">
+            <div class="card-body row g-2 align-items-end">
+                <div class="col-sm-4 col-lg-3">
+                    <label for="severity" class="form-label small mb-1">Severity</label>
+                    <select id="severity" name="severity" class="form-select form-select-sm">
+                        <option value="">All severities</option>
+                        {% for severity in severities %}
+                            <option value="{{ severity }}" {{ 'selected' if filters.severity == severity }}>{{ severity|capitalize }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-sm-4 col-lg-3">
+                    <label for="kind" class="form-label small mb-1">Alert type</label>
+                    <select id="kind" name="kind" class="form-select form-select-sm">
+                        <option value="">All types</option>
+                        {% for key, (label, _) in kinds.items() %}
+                            <option value="{{ key }}" {{ 'selected' if filters.kind == key }}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-sm-4 col-lg-3">
+                    <label for="repo" class="form-label small mb-1">Repository</label>
+                    <select id="repo" name="repo" class="form-select form-select-sm">
+                        <option value="">All repositories</option>
+                        {% for full_name in repo_full_names %}
+                            <option value="{{ full_name }}" {{ 'selected' if filters.repo == full_name }}>{{ full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-sm-12 col-lg-auto ms-lg-auto d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm">Apply filters</button>
+                    <a href="{{ url_for('main.security_overview') }}" class="btn btn-outline-secondary btn-sm">Reset</a>
+                </div>
+            </div>
+        </form>
+
+        <nav class="d-flex flex-wrap gap-2 mb-3" aria-label="Filter by severity">
+            <a href="{{ url_for('main.security_overview', **link_args) }}"
+               class="btn btn-sm {{ 'btn-dark' if not filters.severity else 'btn-outline-dark' }}">All <span class="badge bg-light text-dark">{{ total }}</span></a>
+            {% for severity in severities %}
+            <a href="{{ url_for('main.security_overview', severity=severity, **link_args) }}"
+               class="btn btn-sm {{ 'btn-dark' if filters.severity == severity else 'btn-outline-dark' }}">
+                {{ severity|capitalize }} <span class="badge {{ severity_badge[severity] }}">{{ counts[severity] }}</span>
+            </a>
+            {% endfor %}
+        </nav>
+
+        {% if alerts %}
+        <div class="list-group shadow-sm mb-4">
+            {% for alert in alerts %}
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                    <div class="flex-grow-1" style="min-width: 0;">
+                        <span class="badge {{ severity_badge[alert.severity] }}">{{ alert.severity|capitalize }}</span>
+                        <span class="badge bg-light text-dark border">{{ kinds[alert.kind][0] }}</span>
+                        <span class="text-muted small">{{ alert.repo }} #{{ alert.number }}</span>
+                        <div class="fw-semibold text-break">{{ alert.title }}</div>
+                        <div class="text-muted small mt-1">
+                            {% if alert.kind == 'dependabot' %}
+                                {{ alert.ecosystem or '' }} package <strong>{{ alert.package or 'unknown' }}</strong>
+                                · {% if alert.fix_version %}fixed in <strong>{{ alert.fix_version }}</strong>{% else %}no fix available yet{% endif %}
+                                {% if alert.identifier %}· {{ alert.identifier }}{% endif %}
+                                {% if alert.location %}· {{ alert.location }}{% endif %}
+                            {% elif alert.kind == 'secret' %}
+                                {% if alert.validity == 'active' %}<strong class="text-danger">still active</strong> ·
+                                {% elif alert.validity == 'inactive' %}no longer active ·{% endif %}
+                                {% if alert.publicly_leaked %}<strong class="text-danger">leaked publicly</strong> ·{% endif %}
+                                revoke it at the provider, then close the alert
+                            {% else %}
+                                {{ alert.tool or 'Code scanning' }}{% if alert.location %} · {{ alert.location }}{% endif %}
+                            {% endif %}
+                            · opened {{ alert.created_ago }}
+                        </div>
+                    </div>
+                    {% if alert.html_url %}
+                    <a href="{{ alert.html_url }}" class="btn btn-outline-secondary btn-sm flex-shrink-0" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% elif total %}
+            <p class="text-muted">No {{ filters.severity }} alerts. Pick another severity above.</p>
+        {% else %}
+            <div class="alert alert-success" role="status">No open alerts in the repositories RepoMaster could check.</div>
+        {% endif %}
+
+        {% if truncated %}
+            <div class="alert alert-warning small" role="alert">
+                Only the first 100 alerts of a type are shown for:
+                {% for repo, label in truncated %}{{ repo }} ({{ label }}){{ ', ' if not loop.last }}{% endfor %}.
+                Open the repository's Security tab on GitHub for the rest.
+            </div>
+        {% endif %}
+
+        {% if unavailable %}
+        <details class="card shadow-sm">
+            <summary class="card-header small">
+                Couldn't check {{ unavailable|map(attribute=1)|map('length')|sum }} repository / alert type combination(s)
+            </summary>
+            <div class="card-body small">
+                <p class="text-muted">Usually the feature isn't enabled for the repository, or the GitHub App is missing the matching read permission.</p>
+                {% for reason, cells in unavailable %}
+                    <div class="mb-2">
+                        <strong>{{ reason }}</strong>
+                        <div class="text-muted">{% for repo, label in cells %}{{ repo }} ({{ label }}){{ ', ' if not loop.last }}{% endfor %}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </details>
+        {% endif %}
+    </div>
+</body>
+</html>
