@@ -181,12 +181,13 @@ def get_user_installations(user_token):
         logging.error(f"Failed to fetch the user's installations: {e}")
         return None
 
-def choose_installation(installations, user_login, requested_installation_id=None):
+def choose_installation(installations, user_login, requested_installation_id=None, previous_installation_id=None):
     """
     Pick the installation to use from those the user can access.
 
     If a specific installation was requested (e.g. right after installing the App), it
-    is returned only if it is in the user's list. Otherwise the user's personal-account
+    is returned only if it is in the user's list. Otherwise the installation used before
+    signing in again is kept if still available, then the user's personal-account
     installation is preferred, then the first available one.
     """
     if requested_installation_id is not None:
@@ -195,25 +196,87 @@ def choose_installation(installations, user_login, requested_installation_id=Non
                 return installation
         return None
 
+    if previous_installation_id is not None:
+        for installation in installations:
+            if str(installation.get('id')) == str(previous_installation_id):
+                return installation
+
     for installation in installations:
         if installation.get('account', {}).get('login') == user_login:
             return installation
     return installations[0] if installations else None
 
-def start_user_session(user, installation):
+# The session is a signed cookie, so keep the list of switchable accounts small
+MAX_SWITCHABLE_INSTALLATIONS = 25
+
+# Session keys that belong to the selected installation and must not follow a switch
+INSTALLATION_SCOPED_KEYS = ('pending_repository', 'repository_creation_result')
+
+
+def summarize_installations(installations, user_login):
     """
-    Replace the session with a fresh, verified login.
+    The installations the user verified at sign-in, compacted for the session:
+    [{'id', 'login', 'type', 'account_id'}], the user's own account first, then by name.
+    """
+    rows = []
+    for installation in installations or []:
+        account = installation.get('account') or {}
+        if installation.get('id') is None or not account.get('login'):
+            continue
+        rows.append({'id': installation['id'], 'login': account['login'],
+                     'type': account.get('type') or 'User', 'account_id': account.get('id')})
+    rows.sort(key=lambda row: (row['login'].lower() != (user_login or '').lower(), row['login'].lower()))
+    return rows[:MAX_SWITCHABLE_INSTALLATIONS]
+
+
+def account_avatar_url(account_id, size=40):
+    """GitHub avatar for a user or organization, from its numeric id."""
+    if not account_id:
+        return None
+    return f'https://avatars.githubusercontent.com/u/{int(account_id)}?s={int(size)}&v=4'
+
+
+def _select_installation(installation_id, login, account_type):
+    session['installation_id'] = installation_id
+    # Owner of the repositories the installation manages (user or organization)
+    session['github_username'] = login
+    session['github_account_type'] = account_type  # 'User' or 'Organization'
+
+
+def start_user_session(user, installation, installations=None):
+    """
+    Replace the session with a fresh, verified login. `installations` are all the
+    installations GitHub says the user can access; they become the account switcher.
     """
     session.clear()
     account = installation.get('account', {})
     session['github_user_login'] = user.get('login')
     session['github_avatar_url'] = user.get('avatar_url')
-    session['installation_id'] = installation.get('id')
-    # Owner of the repositories the installation manages (user or organization)
-    session['github_username'] = account.get('login')
-    session['github_account_type'] = account.get('type')  # 'User' or 'Organization'
+    _select_installation(installation.get('id'), account.get('login'), account.get('type'))
+    session['installations'] = summarize_installations(installations or [installation], user.get('login'))
     logging.info(f"User '{user.get('login')}' signed in with installation {installation.get('id')} "
                  f"on account '{account.get('login')}'.")
+
+
+def available_installations():
+    """The installations verified at sign-in (see start_user_session)."""
+    return session.get('installations') or []
+
+
+def switch_installation(installation_id):
+    """
+    Make another verified installation the active one. Only installations GitHub listed
+    for this user at sign-in are accepted. Returns the selected entry, or None.
+    """
+    for entry in available_installations():
+        if str(entry['id']) == str(installation_id):
+            for key in INSTALLATION_SCOPED_KEYS:
+                session.pop(key, None)
+            _select_installation(entry['id'], entry['login'], entry['type'])
+            logging.info(f"User '{session.get('github_user_login')}' switched to installation {entry['id']} "
+                         f"on account '{entry['login']}'.")
+            return entry
+    return None
 
 # --- Session helpers ----------------------------------------------------------
 
