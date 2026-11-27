@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collaborators - {{ repo }} | RepoMaster</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+    {% set action = url_for('main.collaborators_action', owner=owner, repo=repo) %}
+    {% macro role_select(selected, id=None) %}
+        <select name="role" class="form-select form-select-sm w-auto" aria-label="Permission level" {% if id %}id="{{ id }}"{% endif %}>
+            {% for key, (label, help) in roles.items() %}
+                <option value="{{ key }}" title="{{ help }}" {{ 'selected' if key == selected }}>{{ label }}</option>
+            {% endfor %}
+            {% if selected and selected not in roles %}
+                <option value="" selected disabled>{{ role_label(selected) }} (custom)</option>
+            {% endif %}
+        </select>
+    {% endmacro %}
+
+    <div class="container my-5" style="max-width: 900px;">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
+            <h1 class="h3 mb-0">Collaborators <span class="text-muted fw-normal">{{ owner }}/{{ repo }}</span></h1>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('main.show_github_repositories') }}" class="btn btn-outline-secondary btn-sm">Repositories</a>
+                <a href="{{ url_for('main.bulk_actions') }}" class="btn btn-outline-secondary btn-sm">Bulk actions</a>
+            </div>
+        </div>
+        <p class="text-muted small mb-4">Who can access this repository and what they can do. To add or remove someone across many repositories, use Bulk actions.</p>
+
+        {% include '_flash_messages.html' %}
+
+        <form method="POST" action="{{ action }}" class="card shadow-sm mb-4" autocomplete="off">
+            <div class="card-body">
+                <h2 class="h6">Invite a collaborator</h2>
+                <input type="hidden" name="action" value="invite">
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <input type="text" name="login" class="form-control form-control-sm w-auto" placeholder="GitHub username" aria-label="GitHub username" required>
+                    {{ role_select('write') }}
+                    <button type="submit" class="btn btn-primary btn-sm">Invite</button>
+                </div>
+                <div class="form-text">
+                    {% for key, (label, help) in roles.items() %}<strong>{{ label }}</strong>: {{ help }}{{ '. ' if not loop.last else '.' }}{% endfor %}
+                </div>
+            </div>
+        </form>
+
+        <h2 class="h5">People</h2>
+        {% if people_error %}
+            <div class="alert alert-danger" role="alert">Could not load collaborators: {{ people_error }}</div>
+        {% elif people %}
+        <ul class="list-group shadow-sm mb-4">
+            {% for person in people %}
+            <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <span class="d-flex align-items-center gap-2">
+                    {% if person.avatar_url %}<img src="{{ person.avatar_url }}" alt="" width="28" height="28" class="rounded-circle">{% endif %}
+                    <a href="{{ person.html_url }}" target="_blank" rel="noopener noreferrer" class="fw-semibold text-decoration-none">{{ person.login }}</a>
+                    {% if person.is_owner %}<span class="badge bg-dark">Owner</span>{% endif %}
+                </span>
+                {% if person.is_owner %}
+                    <span class="badge bg-secondary">{{ role_label(person.role) }}</span>
+                {% else %}
+                <span class="d-flex gap-2">
+                    <form method="POST" action="{{ action }}" class="d-flex gap-2">
+                        <input type="hidden" name="action" value="set_role">
+                        <input type="hidden" name="login" value="{{ person.login }}">
+                        {{ role_select(person.role) }}
+                        <button type="submit" class="btn btn-outline-primary btn-sm">Save</button>
+                    </form>
+                    <form method="POST" action="{{ action }}" onsubmit="return confirm('Remove this collaborator\'s access?')">
+                        <input type="hidden" name="action" value="remove">
+                        <input type="hidden" name="login" value="{{ person.login }}">
+                        <button type="submit" class="btn btn-outline-danger btn-sm">Remove</button>
+                    </form>
+                </span>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+            <p class="text-muted">No collaborators yet.</p>
+        {% endif %}
+
+        <h2 class="h5">Pending invitations</h2>
+        {% if invitations_error %}
+            <div class="alert alert-danger" role="alert">Could not load invitations: {{ invitations_error }}</div>
+        {% elif invitations %}
+        <ul class="list-group shadow-sm mb-4">
+            {% for invitation in invitations %}
+            <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <span>
+                    <span class="fw-semibold">{{ invitation.invitee.login }}</span>
+                    {% if invitation.expired %}<span class="badge bg-warning text-dark">Expired</span>{% endif %}
+                    <span class="d-block small text-muted">invited by {{ invitation.inviter }} {{ invitation.created_ago }}</span>
+                </span>
+                <span class="d-flex gap-2">
+                    <form method="POST" action="{{ action }}" class="d-flex gap-2">
+                        <input type="hidden" name="action" value="invitation_role">
+                        <input type="hidden" name="invitation_id" value="{{ invitation.id }}">
+                        {{ role_select(invitation.role) }}
+                        <button type="submit" class="btn btn-outline-primary btn-sm">Save</button>
+                    </form>
+                    <form method="POST" action="{{ action }}">
+                        <input type="hidden" name="action" value="cancel_invitation">
+                        <input type="hidden" name="invitation_id" value="{{ invitation.id }}">
+                        <button type="submit" class="btn btn-outline-danger btn-sm">Cancel invitation</button>
+                    </form>
+                </span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+            <p class="text-muted">No pending invitations.</p>
+        {% endif %}
+
+        {% if is_organization %}
+        <h2 class="h5">Teams</h2>
+        {% if teams_error %}
+            <div class="alert alert-danger" role="alert">Could not load teams: {{ teams_error }}</div>
+        {% else %}
+            {% if teams %}
+            <ul class="list-group shadow-sm mb-3">
+                {% for team in teams %}
+                <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <a href="{{ team.html_url }}" target="_blank" rel="noopener noreferrer" class="fw-semibold text-decoration-none">{{ team.name }}</a>
+                    <span class="d-flex gap-2">
+                        <form method="POST" action="{{ action }}" class="d-flex gap-2">
+                            <input type="hidden" name="action" value="team_role">
+                            <input type="hidden" name="team" value="{{ team.slug }}">
+                            {{ role_select(team.role) }}
+                            <button type="submit" class="btn btn-outline-primary btn-sm">Save</button>
+                        </form>
+                        <form method="POST" action="{{ action }}" onsubmit="return confirm('Remove this team\'s access?')">
+                            <input type="hidden" name="action" value="team_remove">
+                            <input type="hidden" name="team" value="{{ team.slug }}">
+                            <button type="submit" class="btn btn-outline-danger btn-sm">Remove</button>
+                        </form>
+                    </span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+                <p class="text-muted">No teams have access.</p>
+            {% endif %}
+
+            {% if available_teams %}
+            <form method="POST" action="{{ action }}" class="d-flex flex-wrap gap-2 align-items-center">
+                <input type="hidden" name="action" value="team_add">
+                <select name="team" class="form-select form-select-sm w-auto" aria-label="Team" required>
+                    <option value="" disabled selected>Add a team…</option>
+                    {% for team in available_teams %}
+                        <option value="{{ team.slug }}">{{ team.name }}</option>
+                    {% endfor %}
+                </select>
+                {{ role_select('read') }}
+                <button type="submit" class="btn btn-primary btn-sm">Give access</button>
+            </form>
+            {% endif %}
+        {% endif %}
+        {% endif %}
+    </div>
+</body>
+</html>
