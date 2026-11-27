@@ -19,6 +19,7 @@
             {% if is_user_logged_in() %}
                 <li><a href="{{ url_for('main.show_github_repositories') }}">View Repositories</a></li>
                 <li><a href="{{ url_for('main.inbox') }}">Inbox</a></li>
+                <li><a href="{{ url_for('main.security_overview') }}">Security</a></li>
                 {% set unread = unread_notifications() %}
                 <li><a href="{{ url_for('main.notifications') }}">Notifications{% if unread %} ({{ unread }}){% endif %}</a></li>
                 <li><a href="{{ url_for('main.logout') }}">Log Out</a></li>
