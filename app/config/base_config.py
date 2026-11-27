@@ -33,6 +33,10 @@ class BaseConfig:
     # SQLite database for notifications. Defaults to <instance folder>/repomaster.db.
     DATABASE_PATH = os.getenv('DATABASE_PATH')
 
+    # Days a deleted repository stays archived (and can be restored) before it is really deleted.
+    # 0 deletes immediately. Due deletions are run by `flask run-scheduled-deletions`.
+    SOFT_DELETE_DAYS = int(os.getenv('SOFT_DELETE_DAYS') or '7')
+
     # Largest request body accepted (file uploads). Bigger requests get 413 before being read.
     MAX_CONTENT_LENGTH = 25 * 1024 * 1024
 
