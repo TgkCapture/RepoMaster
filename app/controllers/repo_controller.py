@@ -15,18 +15,27 @@ def _error_details(e):
     response = getattr(e, 'response', None)
     return response.text if response is not None else str(e)
 
+MAX_REPOSITORY_PAGES = 10  # 100 repositories per page
+
 def get_github_repositories(access_token):
     """
     Fetches the repositories the GitHub App installation has access to
-    (including private ones).
+    (including private ones), following pages up to MAX_REPOSITORY_PAGES.
     """
     url = 'https://api.github.com/installation/repositories'
     headers = {'Authorization': f'Bearer {access_token}'}
 
     try:
-        response = requests.get(url, headers=headers, params={'per_page': 100}, timeout=REQUEST_TIMEOUT)
-        response.raise_for_status()
-        repositories = response.json().get('repositories', [])
+        repositories = []
+        for page in range(1, MAX_REPOSITORY_PAGES + 1):
+            response = requests.get(url, headers=headers, params={'per_page': 100, 'page': page},
+                                    timeout=REQUEST_TIMEOUT)
+            response.raise_for_status()
+            data = response.json()
+            batch = data.get('repositories', [])
+            repositories.extend(batch)
+            if len(batch) < 100 or len(repositories) >= data.get('total_count', 0):
+                break
 
         for repo in repositories:
             repo['language_color'] = get_language_color(repo['language'])

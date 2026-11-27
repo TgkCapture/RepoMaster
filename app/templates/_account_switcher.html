@@ -1,0 +1,9 @@
+{#- Active account with a link to switch. Include on Bootstrap pages: {% include '_account_switcher.html' %} -#}
+{% set account = current_account() %}
+{% if account %}
+<a href="{{ url_for('main.accounts') }}" id="accountSwitcher" class="btn btn-outline-dark btn-sm d-inline-flex align-items-center gap-1"
+   title="Managing {{ account.login }}. Switch account">
+    {% if account.account_id %}<img src="{{ account_avatar_url(account.account_id, 40) }}" alt="" width="18" height="18" class="rounded{{ '-circle' if account.type != 'Organization' }}">{% endif %}
+    {{ account.login }} <span aria-hidden="true">&#9662;</span><span class="visually-hidden"> (switch account)</span>
+</a>
+{% endif %}

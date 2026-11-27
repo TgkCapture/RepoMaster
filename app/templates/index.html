@@ -22,6 +22,8 @@
                 <li><a href="{{ url_for('main.security_overview') }}">Security</a></li>
                 {% set unread = unread_notifications() %}
                 <li><a href="{{ url_for('main.notifications') }}">Notifications{% if unread %} ({{ unread }}){% endif %}</a></li>
+                {% set account = current_account() %}
+                <li><a href="{{ url_for('main.accounts') }}" title="Switch account">Account: {{ account.login if account else '' }}</a></li>
                 <li><a href="{{ url_for('main.logout') }}">Log Out</a></li>
                 
                 <!-- Profile section -->

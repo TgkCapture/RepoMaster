@@ -84,17 +84,22 @@ def github_callback():
     if user is None or installations is None:
         return "Failed to load your GitHub account details. Please try again.", 500
 
+    # Signing in again (e.g. to refresh the account list) keeps the account in use
+    previous_installation_id = (session.get('installation_id')
+                                if session.get('github_user_login') == user.get('login') else None)
+
     if not installations:
         flash("Install the RepoMaster GitHub App on your account to get started.", "info")
         return redirect(url_for('main.install_github_app'))
 
-    installation = choose_installation(installations, user.get('login'), requested_installation_id)
+    installation = choose_installation(installations, user.get('login'), requested_installation_id,
+                                       previous_installation_id)
     if installation is None:
         logging.warning(f"User '{user.get('login')}' requested installation {requested_installation_id} "
                         "which they cannot access.")
         return "That GitHub App installation is not available to your GitHub account.", 403
 
-    start_user_session(user, installation)
+    start_user_session(user, installation, installations)
     flash(f"Signed in as {user.get('login')}.", "success")
     return redirect(url_for('main.home'))
 

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accounts | RepoMaster</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+    <div class="container my-5" style="max-width: 720px;">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
+            <h1 class="h3 mb-0">Accounts</h1>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('main.home') }}" class="btn btn-outline-secondary btn-sm">Home</a>
+                <a href="{{ url_for('main.show_github_repositories') }}" class="btn btn-outline-secondary btn-sm">Repositories</a>
+            </div>
+        </div>
+        <p class="text-muted small mb-4">The accounts and organizations where RepoMaster is installed and you have access. Pages show the repositories of the account you're managing.</p>
+
+        {% include '_flash_messages.html' %}
+
+        <ul class="list-group shadow-sm mb-4">
+            {% for entry in installations %}
+            {% set active = entry.id|string == active_id|string %}
+            <li class="list-group-item d-flex justify-content-between align-items-center gap-3 {{ 'bg-body-tertiary' if active }}">
+                <span class="d-flex align-items-center gap-2">
+                    {% if entry.account_id %}<img src="{{ account_avatar_url(entry.account_id, 64) }}" alt="" width="32" height="32" class="rounded{{ '-circle' if entry.type != 'Organization' }}">{% endif %}
+                    <span>
+                        <span class="fw-semibold">{{ entry.login }}</span>
+                        <span class="d-block small text-muted">{{ 'Organization' if entry.type == 'Organization' else 'Personal account' }}</span>
+                    </span>
+                </span>
+                {% if active %}
+                    <span class="badge bg-primary">Managing</span>
+                {% else %}
+                <form method="POST" action="{{ url_for('main.switch_account') }}">
+                    <input type="hidden" name="installation_id" value="{{ entry.id }}">
+                    <button type="submit" class="btn btn-outline-primary btn-sm">Switch</button>
+                </form>
+                {% endif %}
+            </li>
+            {% else %}
+            <li class="list-group-item text-muted">Sign in again to load your accounts.</li>
+            {% endfor %}
+        </ul>
+
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ url_for('main.install_github_app') }}" class="btn btn-success btn-sm">Install on another account</a>
+            <a href="{{ url_for('main.login') }}" class="btn btn-outline-secondary btn-sm">Refresh list (sign in again)</a>
+        </div>
+        <p class="small text-muted mt-2">After installing RepoMaster on another account or organization, GitHub brings you back to RepoMaster managing it.</p>
+    </div>
+</body>
+</html>
