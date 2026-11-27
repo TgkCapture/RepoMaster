@@ -10,6 +10,16 @@
     <div class="container mt-5">
         <h1 class="mb-4">Delete Repositories</h1>
         <a href="{{ url_for('main.home') }}" class="btn btn-secondary mb-4">Back to Home</a>
+        <a href="{{ url_for('main.scheduled_deletions') }}" class="btn btn-outline-secondary mb-4">Scheduled deletions</a>
+
+        {% if days %}
+            <div class="alert alert-info">
+                Selected repositories are archived (read-only) now and permanently deleted after {{ days }} day{{ 's' if days != 1 }}.
+                You can undo it until then from <a href="{{ url_for('main.scheduled_deletions') }}">Scheduled deletions</a>.
+            </div>
+        {% else %}
+            <div class="alert alert-danger">Repositories are deleted immediately. This cannot be undone.</div>
+        {% endif %}
 
         {% include '_flash_messages.html' %}
 
