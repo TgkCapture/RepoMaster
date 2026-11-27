@@ -42,6 +42,18 @@
                             <input type="text" id="branch" name="branch" class="form-control" placeholder="e.g. main">
                             <div class="form-text">The branch must already exist in each selected repository.</div>
                         </div>
+                        <div class="col-md-3 d-none" id="loginField">
+                            <label for="login" class="form-label">GitHub username</label>
+                            <input type="text" id="login" name="login" class="form-control" placeholder="e.g. octocat" autocomplete="off">
+                        </div>
+                        <div class="col-md-2 d-none" id="roleField">
+                            <label for="role" class="form-label">Permission</label>
+                            <select id="role" name="role" class="form-select">
+                                {% for key, (label, help) in roles.items() %}
+                                    <option value="{{ key }}" title="{{ help }}" {{ 'selected' if key == 'write' }}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
                         <div class="col-md-3 ms-auto text-md-end">
                             <button type="submit" class="btn btn-primary w-100" id="reviewButton" disabled>Review changes</button>
                         </div>
@@ -108,6 +120,9 @@
             const branchField = document.getElementById('branchField');
             const topicsInput = document.getElementById('topics');
             const branchInput = document.getElementById('branch');
+            const loginField = document.getElementById('loginField');
+            const roleField = document.getElementById('roleField');
+            const loginInput = document.getElementById('login');
             const checkboxes = Array.from(form.querySelectorAll('.repo-checkbox'));
             const selectAll = document.getElementById('selectAll');
             const filter = document.getElementById('filter');
@@ -124,6 +139,10 @@
                 branchField.classList.toggle('d-none', needs !== 'branch');
                 topicsInput.required = needs === 'topics';
                 branchInput.required = needs === 'branch';
+                const needsLogin = needs === 'collaborator' || needs === 'login';
+                loginField.classList.toggle('d-none', !needsLogin);
+                roleField.classList.toggle('d-none', needs !== 'collaborator');
+                loginInput.required = needsLogin;
 
                 const selected = checkboxes.filter(cb => cb.checked).length;
                 selectedCount.textContent = selected;
