@@ -22,6 +22,7 @@ from app.routes import (  # noqa: E402,F401
     collaborator_routes,
     actions_routes,
     account_routes,
+    audit_routes,
     notification_routes,
     bulk_routes,
     cleanup_routes,
