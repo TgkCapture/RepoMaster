@@ -24,4 +24,5 @@ from app.routes import (  # noqa: E402,F401
     bulk_routes,
     cleanup_routes,
     inbox_routes,
+    security_routes,
 )
