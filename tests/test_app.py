@@ -60,6 +60,7 @@ EXPECTED_ENDPOINTS = {
     'main.notifications_read_all',
     'main.open_notification',
     'main.notifications_unread',
+    'main.security_overview',
 }
 
 
