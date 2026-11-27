@@ -163,36 +163,32 @@ def test_repositories_page_renders_with_no_repositories(logged_in_client, fake_t
     assert logged_in_client.get('/github/repositories').status_code == 200
 
 
-def test_delete_repository_uses_logged_in_username(app, fake_token, monkeypatch):
-    deleted_urls = []
-    monkeypatch.setattr(repo_controller.requests, 'delete',
-                        lambda url, headers, timeout: deleted_urls.append(url) or FakeResponse(204))
-
-    with app.test_request_context():
-        session['github_username'] = 'alice'
-        message = repo_controller.delete_repository(['repo-a'])
-
-    assert deleted_urls == ['https://api.github.com/repos/alice/repo-a']
-    assert 'repo-a' in message
+def test_delete_repository_uses_logged_in_username(logged_in_client, fake_token, monkeypatch):
+    scheduled = []
+    monkeypatch.setattr(repo_routes, 'schedule_deletion',
+                        lambda owner, repo, token: scheduled.append(f'{owner}/{repo}') or (True, 'scheduled'))
+    logged_in_client.post('/delete_repo', data={'repo_to_delete[]': ['repo-a', 'repo-a']})
+    assert scheduled == ['alice/repo-a']
 
 
-def test_delete_repository_refuses_without_username(app, fake_token, monkeypatch):
-    def must_not_delete(*args, **kwargs):
-        raise AssertionError("should not call the GitHub API")
-
-    monkeypatch.setattr(repo_controller.requests, 'delete', must_not_delete)
-    with app.test_request_context():
-        message = repo_controller.delete_repository(['repo-a'])
-    assert 'log in again' in message
+def test_delete_repository_refuses_without_username(logged_in_client, fake_token, monkeypatch):
+    monkeypatch.setattr(repo_routes, 'schedule_deletion', lambda *a: pytest.fail("must not delete"))
+    monkeypatch.setattr(repo_routes, 'get_github_repositories', lambda token: [])
+    with logged_in_client.session_transaction() as sess:
+        del sess['github_username']
+    response = logged_in_client.post('/delete_repo', data={'repo_to_delete[]': ['repo-a']}, follow_redirects=True)
+    assert b'log in again' in response.data
 
 
 def test_delete_repo_result_message_is_displayed(logged_in_client, fake_token, monkeypatch):
-    monkeypatch.setattr(repo_routes, 'delete_repository', lambda names: "Repositories 'repo-a' deleted successfully.")
+    monkeypatch.setattr(repo_routes, 'schedule_deletion',
+                        lambda owner, repo, token: (True, f"{owner}/{repo} archived and scheduled for deletion."))
     monkeypatch.setattr(repo_routes, 'get_github_repositories', lambda token: [])
 
     response = logged_in_client.post('/delete_repo', data={'repo_to_delete[]': ['repo-a']}, follow_redirects=True)
 
-    assert b"deleted successfully" in response.data
+    assert b"alice/repo-a archived and scheduled for deletion." in response.data
+    assert b'permanently deleted after 7 days' in response.data
 
 
 # --- Branches ----------------------------------------------------------------
