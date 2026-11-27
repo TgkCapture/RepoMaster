@@ -63,6 +63,8 @@ EXPECTED_ENDPOINTS = {
     'main.security_overview',
     'main.collaborators',
     'main.collaborators_action',
+    'main.accounts',
+    'main.switch_account',
 }
 
 
