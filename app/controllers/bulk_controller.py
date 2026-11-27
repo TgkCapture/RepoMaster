@@ -7,6 +7,7 @@ import logging
 from app.controllers.repo_controller import (
     update_repository, get_repository_topics, replace_repository_topics, delete_repository_by_name,
 )
+from app.controllers.collaborators_controller import LOGIN_PATTERN, ROLES, add_collaborator, remove_access, role_label
 
 # Text the user must type on the confirmation page before a bulk delete is applied
 DELETE_CONFIRMATION_TEXT = 'delete'
@@ -20,6 +21,8 @@ ACTIONS = {
     'add_topics': {'label': 'Add topics', 'needs': 'topics', 'done': 'Topics updated'},
     'remove_topics': {'label': 'Remove topics', 'needs': 'topics', 'done': 'Topics updated'},
     'set_default_branch': {'label': 'Change default branch', 'needs': 'branch', 'done': 'Default branch changed'},
+    'add_collaborator': {'label': 'Add a collaborator', 'needs': 'collaborator', 'done': 'Access granted'},
+    'remove_collaborator': {'label': 'Remove a collaborator', 'needs': 'login', 'done': 'Removed'},
     'delete': {'label': 'Delete permanently', 'needs': None, 'done': 'Deleted'},
 }
 
@@ -60,11 +63,11 @@ def parse_topics(raw):
     return topics, None
 
 
-def validate_bulk_request(action, repo_full_names, topics_raw='', branch=''):
+def validate_bulk_request(action, repo_full_names, topics_raw='', branch='', login='', role=''):
     """
     Check a bulk request from the form.
     Returns (bulk_request, None) or (None, error_message), where bulk_request is
-    {'action', 'repos', 'topics', 'branch'}.
+    {'action', 'repos', 'topics', 'branch', 'login', 'role'}.
     """
     if action not in ACTIONS:
         return None, "Choose an action."
@@ -80,7 +83,7 @@ def validate_bulk_request(action, repo_full_names, topics_raw='', branch=''):
     if invalid:
         return None, f"Invalid repository name(s): {', '.join(invalid)}"
 
-    bulk_request = {'action': action, 'repos': repos, 'topics': [], 'branch': ''}
+    bulk_request = {'action': action, 'repos': repos, 'topics': [], 'branch': '', 'login': '', 'role': ''}
 
     needs = ACTIONS[action]['needs']
     if needs == 'topics':
@@ -95,6 +98,17 @@ def validate_bulk_request(action, repo_full_names, topics_raw='', branch=''):
         if not BRANCH_PATTERN.match(branch) or branch.endswith('.lock'):
             return None, f"'{branch}' is not a valid branch name."
         bulk_request['branch'] = branch
+    elif needs in ('collaborator', 'login'):
+        login = (login or '').strip().lstrip('@')
+        if not LOGIN_PATTERN.match(login):
+            return None, "Enter a valid GitHub username."
+        if any(name.split('/', 1)[0].lower() == login.lower() for name in repos):
+            return None, "The repository owner's access can't be changed."
+        bulk_request['login'] = login
+        if needs == 'collaborator':
+            if role not in ROLES:
+                return None, "Choose a permission level."
+            bulk_request['role'] = role
 
     return bulk_request, None
 
@@ -115,6 +129,11 @@ def describe_bulk_request(bulk_request):
         return f"Remove topics: {', '.join(bulk_request['topics'])}"
     if action == 'set_default_branch':
         return f"Change the default branch to '{bulk_request['branch']}'"
+    if action == 'add_collaborator':
+        return (f"Give {bulk_request['login']} {role_label(bulk_request['role'])} access "
+                "(invites them where they aren't a collaborator yet)")
+    if action == 'remove_collaborator':
+        return f"Remove {bulk_request['login']}'s access (and cancel pending invitations)"
     return ACTIONS[action]['label']
 
 
@@ -152,6 +171,11 @@ def apply_bulk_action(access_token, bulk_request):
 
         if action in ('add_topics', 'remove_topics'):
             ok, message = _apply_topics(owner, repo, access_token, action, bulk_request['topics'])
+        elif action == 'add_collaborator':
+            message, error = add_collaborator(owner, repo, bulk_request['login'], bulk_request['role'], access_token)
+            ok, message = (error is None), (error or message)
+        elif action == 'remove_collaborator':
+            ok, message = remove_access(owner, repo, bulk_request['login'], access_token)
         elif action == 'delete':
             ok, error = delete_repository_by_name(owner, repo, access_token)
             message = error or ACTIONS[action]['done']

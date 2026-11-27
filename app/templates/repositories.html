@@ -65,6 +65,10 @@
                             class="btn btn-outline-secondary btn-sm" title="GitHub Actions for {{ repository.name }}">
                                 Actions
                             </a>
+                            <a href="{{ url_for('main.collaborators', owner=repository.owner.login, repo=repository.name) }}"
+                            class="btn btn-outline-secondary btn-sm" title="Collaborators of {{ repository.name }}">
+                                Collaborators
+                            </a>
                         </div>
                     </div>
                 </div>

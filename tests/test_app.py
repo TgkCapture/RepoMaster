@@ -61,6 +61,8 @@ EXPECTED_ENDPOINTS = {
     'main.open_notification',
     'main.notifications_unread',
     'main.security_overview',
+    'main.collaborators',
+    'main.collaborators_action',
 }
 
 

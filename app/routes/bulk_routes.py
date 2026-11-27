@@ -8,6 +8,7 @@ from flask import render_template, request, redirect, url_for, flash
 from app.routes import main_routes
 from app.controllers.auth_controller import get_installation_access_token, login_required
 from app.controllers.repo_controller import get_github_repositories
+from app.controllers.collaborators_controller import ROLES
 from app.controllers.bulk_controller import (
     ACTIONS, DELETE_CONFIRMATION_TEXT, validate_bulk_request, describe_bulk_request,
     apply_bulk_action, is_delete_confirmed,
@@ -24,6 +25,8 @@ def _bulk_request_from_form():
         repo_full_names=request.form.getlist('repos'),
         topics_raw=request.form.get('topics', ''),
         branch=request.form.get('branch', ''),
+        login=request.form.get('login', ''),
+        role=request.form.get('role', ''),
     )
 
 @main_routes.route('/repositories/bulk', methods=['GET'])
@@ -40,7 +43,7 @@ def bulk_actions():
     if repositories is None:
         return "Failed to fetch repositories from GitHub", 500
 
-    return render_template('bulk_actions.html', repositories=repositories, actions=ACTIONS)
+    return render_template('bulk_actions.html', repositories=repositories, actions=ACTIONS, roles=ROLES)
 
 @main_routes.route('/repositories/bulk/confirm', methods=['POST'])
 @login_required

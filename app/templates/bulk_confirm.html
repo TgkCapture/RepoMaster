@@ -30,6 +30,10 @@
                     <div class="alert alert-warning">Making a repository public exposes all of its code and history to everyone.</div>
                 {% elif bulk_request.action == 'archive' %}
                     <div class="alert alert-info">Archived repositories become read-only. You can unarchive them later.</div>
+                {% elif bulk_request.action == 'add_collaborator' %}
+                    <div class="alert alert-info">Where {{ bulk_request.login }} isn't a collaborator yet, GitHub sends an invitation they have to accept. Where they already are, their permission is changed.</div>
+                {% elif bulk_request.action == 'remove_collaborator' %}
+                    <div class="alert alert-warning">{{ bulk_request.login }} loses access to these repositories straight away. Repositories where they have no access are left unchanged.</div>
                 {% elif bulk_request.action == 'delete' %}
                     <div class="alert alert-danger">
                         <strong>This cannot be undone.</strong> Deleting a repository permanently removes its code,
@@ -41,6 +45,8 @@
                     <input type="hidden" name="action" value="{{ bulk_request.action }}">
                     <input type="hidden" name="topics" value="{{ bulk_request.topics|join(',') }}">
                     <input type="hidden" name="branch" value="{{ bulk_request.branch }}">
+                    <input type="hidden" name="login" value="{{ bulk_request.login }}">
+                    <input type="hidden" name="role" value="{{ bulk_request.role }}">
                     {% for repo in bulk_request.repos %}
                         <input type="hidden" name="repos" value="{{ repo }}">
                     {% endfor %}
