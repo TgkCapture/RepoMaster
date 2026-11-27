@@ -23,6 +23,9 @@ def create_app(config_name=None):
     app.config.from_object(config_class)
     config_class.setup_logging()
 
+    from app.db import init_db
+    init_db(app)
+
     from app.routes import main_routes
     app.register_blueprint(main_routes)
 

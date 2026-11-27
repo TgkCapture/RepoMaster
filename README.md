@@ -99,6 +99,18 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
   - **Secrets:** list names, add / replace and delete. Values are encrypted in RepoMaster with the repository's public key (libsodium sealed box, via PyNaCl) and are never shown, logged or sent in plain text
 - Needs the GitHub App permissions **Actions: Read & write** and **Secrets: Read & write**.
 
+### 3h. Notifications (Available)
+- **Routes:** `POST /github/webhook` (called by GitHub) and `/notifications`
+- **Functionality:** GitHub sends the App's events to RepoMaster's webhook, which turns the useful ones into notifications:
+  - Pull requests opened, ready for review, **review requested**, merged / closed, reopened
+  - Issues opened, closed, reopened, assigned
+  - Pushes to a branch
+  - **Failed CI**: failed workflow runs, and failed checks from other CI apps
+  - RepoMaster installed / suspended on an account
+- A **Notifications** button with an unread count (refreshed every minute) is on the repositories, inbox and home pages. Opening a notification marks it read and goes to the matching RepoMaster page.
+- Every delivery is verified with `GITHUB_WEBHOOK_SECRET` (the `X-Hub-Signature-256` HMAC); without the secret configured, deliveries are refused. GitHub's redeliveries are ignored, uninstalling removes that installation's notifications, and the newest 500 per installation are kept.
+- Notifications are stored in a small SQLite database (`instance/repomaster.db` by default, or `DATABASE_PATH`).
+
 ### 4. Manage Pull Requests (Available)
 - **Route:** `/repositories/<repo_name>/pull_requests?state=open|closed|all`
 - **Functionality:** Lists a repository's pull requests (open / closed / all) and creates new ones.
@@ -187,6 +199,8 @@ On the App's settings page (**GitHub → Settings → Developer settings → Git
 | **Request user authorization (OAuth) during installation** | Off. RepoMaster starts sign-in itself, with CSRF protection, after installation |
 | **Client secret** | Generate one and put it in `GITHUB_CLIENT_SECRET` |
 | **Private key** | Generate one and point `GITHUB_PRIVATE_KEY_PATH` at the `.pem` file |
+| **Webhook** | Active, URL `https://<your-domain>/github/webhook`, and a secret that matches `GITHUB_WEBHOOK_SECRET` |
+| **Subscribe to events** | Pull request, Issues, Push, Workflow run, Check run (installation events are always sent) |
 
 ### Prerequisites
 - Install the GitHub App on your account or organization (the **Login with GitHub** button sends you there if you haven't).
@@ -248,6 +262,8 @@ tests/                        # pytest suite
    | `GITHUB_CLIENT_ID` | The GitHub App's Client ID (for user sign-in) |
    | `GITHUB_CLIENT_SECRET` | A Client secret generated on the GitHub App |
    | `GITHUB_OAUTH_CALLBACK_URL` | Optional. Exact callback URL; set it when running behind a reverse proxy so it matches the App's Callback URL |
+   | `GITHUB_WEBHOOK_SECRET` | The secret set on the App's webhook. Webhook deliveries are refused until it's set |
+   | `DATABASE_PATH` | Optional. Where the SQLite database is stored (default `instance/repomaster.db`) |
 
 5. **Run the application:**
    ```bash

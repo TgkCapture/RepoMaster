@@ -20,6 +20,7 @@ from app.routes import (  # noqa: E402,F401
     release_routes,
     analytics_routes,
     actions_routes,
+    notification_routes,
     bulk_routes,
     cleanup_routes,
     inbox_routes,

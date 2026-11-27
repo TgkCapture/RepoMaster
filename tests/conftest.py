@@ -3,7 +3,10 @@ from app import create_app
 
 
 @pytest.fixture
-def app():
+def app(tmp_path, monkeypatch):
+    # A fresh SQLite database for every test
+    from app.config.testing_config import TestingConfig
+    monkeypatch.setattr(TestingConfig, 'DATABASE_PATH', str(tmp_path / 'repomaster.db'))
     return create_app('testing')
 
 

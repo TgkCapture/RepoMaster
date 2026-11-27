@@ -1,0 +1,26 @@
+{#- Notifications button with an unread badge that refreshes every minute. For Bootstrap pages. -#}
+{% set unread = unread_notifications() %}
+<a href="{{ url_for('main.notifications') }}" class="btn btn-outline-secondary btn-sm position-relative" id="notificationBell"
+   data-count-url="{{ url_for('main.notifications_unread') }}">
+    &#128276; Notifications
+    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notificationCount" {{ 'hidden' if not unread }}>
+        {{ unread }}<span class="visually-hidden"> unread</span>
+    </span>
+</a>
+<script>
+    (() => {
+        const bell = document.getElementById('notificationBell');
+        const badge = document.getElementById('notificationCount');
+        if (!bell || !window.fetch) return;
+        async function refresh() {
+            try {
+                const response = await fetch(bell.dataset.countUrl, { headers: { Accept: 'application/json' } });
+                if (!response.ok) return;
+                const { unread } = await response.json();
+                badge.hidden = !unread;
+                badge.firstChild.textContent = unread > 99 ? '99+' : String(unread);
+            } catch (e) { /* offline: keep the last count */ }
+        }
+        setInterval(refresh, 60000);
+    })();
+</script>
