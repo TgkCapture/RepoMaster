@@ -4,7 +4,6 @@ import requests
 import logging
 import base64
 from urllib.parse import quote
-from flask import session
 from requests.exceptions import RequestException
 from app.controllers.auth_controller import get_installation_access_token
 
@@ -65,48 +64,6 @@ def get_language_color(language):
         "CSS": "#563d7c"
     }
     return language_colors.get(language, "#cccccc")
-
-def delete_repository(repos_to_delete):
-    """Deletes GitHub repositories owned by the logged-in installation account."""
-
-    deleted_repos = []
-    failed_repos = []
-    username = session.get('github_username')
-    if not username:
-        logging.error("No GitHub username in session. Refusing to delete repositories.")
-        return "Could not determine the repository owner. Please log in again."
-
-    access_token = get_installation_access_token()
-
-    if not access_token:
-        logging.error("Access token is missing. Cannot delete GitHub repositories.")
-        return "Access token missing. Cannot delete repositories."
-
-    for repo_name in repos_to_delete:
-        delete_url = f'https://api.github.com/repos/{username}/{repo_name}'
-
-        headers = {
-            'Authorization': f'Bearer {access_token}',
-            'Accept': 'application/vnd.github.v3+json'
-        }
-
-        try:
-            response = requests.delete(delete_url, headers=headers, timeout=REQUEST_TIMEOUT)
-            response.raise_for_status()
-
-            if response.status_code == 204:
-                logging.info(f"Repository {repo_name} deleted successfully.")
-                deleted_repos.append(repo_name)
-        except requests.exceptions.RequestException as e:
-            logging.error(f"Failed to delete repository {repo_name}: {e}")
-            failed_repos.append(repo_name)
-
-    messages = []
-    if deleted_repos:
-        messages.append(f"Repositories '{', '.join(deleted_repos)}' deleted successfully.")
-    if failed_repos:
-        messages.append(f"Failed to delete '{', '.join(failed_repos)}'.")
-    return " ".join(messages) or "No repositories were deleted."
 
 def get_branches(owner, repo_name):
     """Fetches all branches of a repository."""
