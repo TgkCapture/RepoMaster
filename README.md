@@ -39,6 +39,8 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
   - Make private / public
   - Add / remove topics (merged with each repository's existing topics, max 20)
   - Change the default branch (the branch must exist in each repository)
+  - Add a collaborator with a chosen permission (invites them, or changes their permission if they already have access)
+  - Remove a collaborator (also cancels their pending invitations; repositories where they have no access are reported as "no change")
   - Delete permanently (you must type `delete` on the confirmation page)
 - **Flow:** select repositories (with filter and select-all) → review a confirmation page listing every repository that will change → apply and get a per-repository success/failure report. One failure doesn't stop the rest.
 
@@ -121,6 +123,16 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
 - GitHub doesn't rate leaked secrets, so RepoMaster lists them as **critical**. Code scanning rules without a security severity map error → high, warning → medium, note → low.
 - Repositories where a feature is off, or the App lacks permission, are listed under "Couldn't check" with GitHub's reason instead of failing the page. Up to 100 alerts per repository and type are shown.
 - Needs the GitHub App permissions **Dependabot alerts: Read**, **Secret scanning alerts: Read** and **Code scanning alerts: Read**.
+
+### 3j. Collaborators & Teams (Available)
+- **Route:** `/repos/<owner>/<repo>/collaborators` (the **Collaborators** button on each repository)
+- **Functionality:**
+  - List collaborators with their permission level (Read, Triage, Write, Maintain, Admin, or a custom organization role)
+  - Invite a collaborator, change their permission or remove them. The owner's access can't be changed
+  - Pending invitations: change the offered permission or cancel the invitation
+  - **Organization repositories:** teams with access, change a team's permission, remove a team, or give another team in the organization access
+- To add or remove one person across many repositories, use the collaborator actions in **Bulk Actions**.
+- Needs the GitHub App permission **Administration: Read & write** (collaborators and invitations), and for teams on organizations **Members: Read**.
 
 ### 4. Manage Pull Requests (Available)
 - **Route:** `/repositories/<repo_name>/pull_requests?state=open|closed|all`
@@ -235,6 +247,7 @@ app/
     cleanup_routes.py         #   cleanup dashboard and branch cleanup
     inbox_routes.py           #   cross-repository issue & PR inbox
     security_routes.py        #   security alerts across repositories
+    collaborator_routes.py    #   collaborators, invitations and teams
     repo_creation_routes.py   #   create repositories
   controllers/                # GitHub REST API calls (auth, repos, issues, pull requests)
   templates/                  # Jinja templates
