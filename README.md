@@ -6,7 +6,7 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
 
 ### 1. View Repositories (Available)
 - **Route:** `/github/repositories`
-- **Functionality:** Fetches a list of repositories accessible by the authenticated GitHub App installation.
+- **Functionality:** Fetches a list of repositories accessible by the authenticated GitHub App installation (including private ones, up to 1,000).
 - **Implementation Details:**
   - Uses a GitHub App to authenticate and retrieve repositories.
   - Displays fetched repositories in a user-friendly format on a webpage.
@@ -134,6 +134,11 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
 - To add or remove one person across many repositories, use the collaborator actions in **Bulk Actions**.
 - Needs the GitHub App permission **Administration: Read & write** (collaborators and invitations), and for teams on organizations **Members: Read**.
 
+### 3k. Multiple Accounts & Organizations (Available)
+- **Route:** `/accounts` (the account button with its avatar on the repositories, inbox and security pages, and **Account** on the home page)
+- **Functionality:** If RepoMaster is installed on your personal account and on organizations, switch between them without signing out. Every page then works on the repositories of the account you're managing.
+- At sign-in RepoMaster asks GitHub which installations *you* can access and keeps that list; switching only picks from it. **Refresh list** signs in again (keeping the account you're on) to pick up new or removed installations, and **Install on another account** adds RepoMaster to another account or organization.
+
 ### 4. Manage Pull Requests (Available)
 - **Route:** `/repositories/<repo_name>/pull_requests?state=open|closed|all`
 - **Functionality:** Lists a repository's pull requests (open / closed / all) and creates new ones.
@@ -208,7 +213,7 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
 
 ## Migration to GitHub App
 RepoMaster now uses a GitHub App for authentication and repository management, providing enhanced security and scalability:
-- **Sign-in:** Users sign in with GitHub (the App's user authorization / OAuth flow). RepoMaster then asks GitHub which App installations *that user* can access and only uses one of those, so nobody can act on an installation that isn't theirs.
+- **Sign-in:** Users sign in with GitHub (the App's user authorization / OAuth flow). RepoMaster then asks GitHub which App installations *that user* can access and only uses those, so nobody can act on an installation that isn't theirs. Users with several installations can switch between them (see 3k).
 - **API calls:** Repository operations use a short-lived installation access token for the verified installation.
 - **Benefits:** Fine-grained permissions, easier token management, and enhanced security.
 
@@ -248,6 +253,7 @@ app/
     inbox_routes.py           #   cross-repository issue & PR inbox
     security_routes.py        #   security alerts across repositories
     collaborator_routes.py    #   collaborators, invitations and teams
+    account_routes.py         #   switch between installations (accounts / organizations)
     repo_creation_routes.py   #   create repositories
   controllers/                # GitHub REST API calls (auth, repos, issues, pull requests)
   templates/                  # Jinja templates
