@@ -52,11 +52,12 @@ def get_jwt():
     logging.info("Generated JWT for GitHub App.")
     return token
 
-def get_installation_access_token():
+def get_installation_access_token(installation_id=None):
     """
-    Exchange the JWT for an access token for the session's verified installation.
+    Exchange the JWT for an access token for the session's verified installation, or for
+    `installation_id` when given (background jobs, which have no session).
     """
-    installation_id = session.get('installation_id')
+    installation_id = installation_id or session.get('installation_id')
 
     if not installation_id:
         logging.error("Missing installation ID in session.")
