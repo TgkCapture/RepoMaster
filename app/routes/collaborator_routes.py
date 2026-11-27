@@ -6,6 +6,7 @@ Bulk add / remove across repositories lives in the bulk actions (bulk_routes.py)
 import logging
 from flask import flash, redirect, render_template, request, session, url_for
 from app.routes import main_routes
+from app.controllers.audit_controller import record_audit
 from app.controllers.auth_controller import get_installation_access_token, login_required
 from app.controllers.branch_management_controller import valid_names
 from app.controllers.collaborators_controller import (
@@ -66,6 +67,9 @@ def collaborators_action(owner, repo):
         return back
 
     message, error = apply_collaborator_action(owner, repo, params, access_token)
+    target = params.get('login') or params.get('team') or (f"invitation {params['invitation_id']}"
+                                                           if 'invitation_id' in params else None)
+    record_audit(f"collaborator.{params['action']}", f'{owner}/{repo}', error is None, error or message, target=target)
     if error:
         flash(f"GitHub refused the change: {error}", 'danger')
     else:
