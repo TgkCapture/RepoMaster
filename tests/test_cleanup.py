@@ -265,23 +265,30 @@ def test_branch_delete_requires_a_selection(logged_in_client, fake_token, branch
 
 # --- Bulk delete (used by the dashboard's Delete button) -----------------------
 
-def test_bulk_delete_calls_github_delete(monkeypatch):
+def test_bulk_delete_schedules_deletion(monkeypatch):
     calls = []
-    monkeypatch.setattr(bulk_controller, 'delete_repository_by_name',
-                        lambda owner, name, token: calls.append(f'{owner}/{name}') or (True, None))
+    monkeypatch.setattr(bulk_controller, 'schedule_deletion',
+                        lambda owner, name, token: calls.append(f'{owner}/{name}') or (True, 'Scheduled'))
     bulk_request, _ = bulk_controller.validate_bulk_request('delete', ['alice/one'])
 
     assert bulk_controller.apply_bulk_action('tok', bulk_request) == [
-        {'repo': 'alice/one', 'ok': True, 'message': 'Deleted'}]
+        {'repo': 'alice/one', 'ok': True, 'message': 'Scheduled'}]
     assert calls == ['alice/one']
 
 
 def test_bulk_delete_confirm_page_asks_for_typed_confirmation(logged_in_client):
     html = logged_in_client.post('/repositories/bulk/confirm', data={
         'action': 'delete', 'repos': ['alice/one']}).data.decode()
-    assert 'This cannot be undone.' in html
+    assert 'permanently deleted after 7 days' in html
     assert 'name="confirmation"' in html
     assert 'Delete 1 repository' in html
+
+
+def test_bulk_delete_confirm_without_grace_period(app, logged_in_client):
+    app.config['SOFT_DELETE_DAYS'] = 0
+    html = logged_in_client.post('/repositories/bulk/confirm', data={
+        'action': 'delete', 'repos': ['alice/one']}).data.decode()
+    assert 'This cannot be undone.' in html
 
 
 @pytest.mark.parametrize('confirmation', [None, '', 'yes', 'DELETE IT'])
