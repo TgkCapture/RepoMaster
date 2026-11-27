@@ -5,6 +5,7 @@ Browsing repository contents and creating, updating and deleting files.
 import logging
 from flask import render_template, request, redirect, url_for, flash
 from app.routes import main_routes
+from app.controllers.audit_controller import record_audit
 from app.controllers.auth_controller import login_required
 from app.controllers.issues_controller import get_github_issues
 from app.controllers.repo_controller import get_branches, get_repository_contents, create_file, update_file, delete_file
@@ -92,6 +93,8 @@ def delete_existing_file(owner, repo, path):
     branch = request.form.get('branch')
 
     result = delete_file(owner, repo, path, sha, message, branch)
+    record_audit('file.delete', f'{owner}/{repo}', bool(result),
+                 ('Deleted' if result else 'Failed') + (f' on {branch}' if branch else ''), target=path)
     if result:
         flash(f"File '{path}' deleted successfully", "success")
     else:
