@@ -1,6 +1,7 @@
 """repo_controller.py
 """
 import requests
+from app import github_http
 import logging
 import base64
 from urllib.parse import quote
@@ -27,7 +28,7 @@ def get_github_repositories(access_token):
     try:
         repositories = []
         for page in range(1, MAX_REPOSITORY_PAGES + 1):
-            response = requests.get(url, headers=headers, params={'per_page': 100, 'page': page},
+            response = github_http.get(url, headers=headers, params={'per_page': 100, 'page': page},
                                     timeout=REQUEST_TIMEOUT)
             response.raise_for_status()
             data = response.json()
@@ -77,7 +78,7 @@ def get_branches(owner, repo_name):
     api_url = f'https://api.github.com/repos/{owner}/{repo_name}/branches'
 
     try:
-        response = requests.get(api_url, headers=headers, timeout=REQUEST_TIMEOUT)
+        response = github_http.get(api_url, headers=headers, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         branches = response.json()
         return [branch['name'] for branch in branches]
@@ -100,7 +101,7 @@ def create_branch(owner, repo, access_token, ref_name, sha):
     }
 
     try:
-        response = requests.post(url, json=payload, headers=headers, timeout=REQUEST_TIMEOUT)
+        response = github_http.post(url, json=payload, headers=headers, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         return response.json()
     except RequestException as e:
@@ -112,13 +113,13 @@ def get_default_branch_sha(owner, repo, access_token):
     headers = {'Authorization': f'Bearer {access_token}'}
 
     try:
-        response = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
+        response = github_http.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         repo_data = response.json()
         default_branch = repo_data['default_branch']
 
         branch_url = f'https://api.github.com/repos/{owner}/{repo}/git/refs/heads/{default_branch}'
-        branch_response = requests.get(branch_url, headers=headers, timeout=REQUEST_TIMEOUT)
+        branch_response = github_http.get(branch_url, headers=headers, timeout=REQUEST_TIMEOUT)
         branch_response.raise_for_status()
         branch_data = branch_response.json()
         return branch_data['object']['sha']
@@ -140,7 +141,7 @@ def get_branch_details(owner, repo_name, branch_name):
     headers = {'Authorization': f'Bearer {access_token}'}
 
     try:
-        response = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
+        response = github_http.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         branch_details = response.json()
         logging.info(f"Branch details fetched successfully for '{owner}/{repo_name}:{branch_name}'.")
@@ -161,7 +162,7 @@ def get_repository_contents(owner, repo, path, branch=None):
     params = {"ref": branch} if branch else {}
 
     try:
-        response = requests.get(url, headers=headers, params=params, timeout=REQUEST_TIMEOUT)
+        response = github_http.get(url, headers=headers, params=params, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
@@ -186,7 +187,7 @@ def create_file(owner, repo, file_name, content, message, branch=None):
         data["branch"] = branch
 
     try:
-        response = requests.put(url, headers=headers, json=data, timeout=REQUEST_TIMEOUT)
+        response = github_http.put(url, headers=headers, json=data, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
@@ -212,7 +213,7 @@ def update_file(owner, repo, path, content, sha, message, branch=None):
         data["branch"] = branch
 
     try:
-        response = requests.put(url, headers=headers, json=data, timeout=REQUEST_TIMEOUT)
+        response = github_http.put(url, headers=headers, json=data, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
@@ -229,7 +230,7 @@ def fetch_file_sha(owner, repo, path, branch=None):
     params = {"ref": branch} if branch else {}
 
     try:
-        response = requests.get(url, headers=headers, params=params, timeout=REQUEST_TIMEOUT)
+        response = github_http.get(url, headers=headers, params=params, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         return response.json().get('sha')
     except requests.RequestException as e:
@@ -254,7 +255,7 @@ def delete_file(owner, repo, path, sha, message, branch=None):
         data["branch"] = branch
 
     try:
-        response = requests.delete(url, headers=headers, json=data, timeout=REQUEST_TIMEOUT)
+        response = github_http.delete(url, headers=headers, json=data, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
@@ -266,6 +267,9 @@ def _github_error_message(e):
     response = getattr(e, 'response', None)
     if response is None:
         return "Could not reach GitHub"
+    rate_limited = github_http.rate_limit_message(response)
+    if rate_limited:
+        return rate_limited
     try:
         message = response.json().get('message')
     except ValueError:
@@ -279,7 +283,7 @@ def github_api(method, path, access_token, **kwargs):
     """
     headers = {'Authorization': f'Bearer {access_token}', 'Accept': 'application/vnd.github+json'}
     try:
-        response = requests.request(method, f'https://api.github.com{path}', headers=headers,
+        response = github_http.request(method, f'https://api.github.com{path}', headers=headers,
                                     timeout=REQUEST_TIMEOUT, **kwargs)
         response.raise_for_status()
         # Some endpoints answer 201/202/204 with an empty body
@@ -338,7 +342,7 @@ def update_repository(owner, repo, access_token, fields):
     headers = {'Authorization': f'Bearer {access_token}', 'Accept': 'application/vnd.github+json'}
 
     try:
-        response = requests.patch(url, headers=headers, json=fields, timeout=REQUEST_TIMEOUT)
+        response = github_http.patch(url, headers=headers, json=fields, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         return response.json(), None
     except RequestException as e:
@@ -353,7 +357,7 @@ def get_repository_topics(owner, repo, access_token):
     headers = {'Authorization': f'Bearer {access_token}', 'Accept': 'application/vnd.github+json'}
 
     try:
-        response = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
+        response = github_http.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         return response.json().get('names', []), None
     except RequestException as e:
@@ -369,7 +373,7 @@ def replace_repository_topics(owner, repo, access_token, topics):
     headers = {'Authorization': f'Bearer {access_token}', 'Accept': 'application/vnd.github+json'}
 
     try:
-        response = requests.put(url, headers=headers, json={'names': topics}, timeout=REQUEST_TIMEOUT)
+        response = github_http.put(url, headers=headers, json={'names': topics}, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         return response.json().get('names', []), None
     except RequestException as e:
