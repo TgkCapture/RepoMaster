@@ -1,10 +1,11 @@
 """bulk_routes.py
 
 Bulk repository actions (issue #35): choose repositories and an action, confirm the
-exact list of changes, then apply it and see a per-repository report.
+exact list of changes, then apply it as a background job and follow its progress and
+per-repository report on the job page (issue #54).
 """
 import logging
-from flask import render_template, request, redirect, url_for, flash
+from flask import render_template, request, redirect, url_for, flash, session
 from app.routes import main_routes
 from app.controllers.auth_controller import get_installation_access_token, login_required
 from app.controllers.repo_controller import get_github_repositories
@@ -12,8 +13,9 @@ from app.controllers.collaborators_controller import ROLES
 from app.controllers.soft_delete_controller import soft_delete_days
 from app.controllers.bulk_controller import (
     ACTIONS, DELETE_CONFIRMATION_TEXT, validate_bulk_request, describe_bulk_request,
-    apply_bulk_action, is_delete_confirmed,
+    is_delete_confirmed, run_bulk_job,
 )
+from app.controllers.jobs_controller import create_job, start_job
 
 def _render_confirm(bulk_request, error=None, status=200):
     return render_template('bulk_confirm.html', bulk_request=bulk_request,
@@ -63,7 +65,7 @@ def bulk_actions_confirm():
 @login_required
 def bulk_actions_apply():
     """
-    Step 3: apply the confirmed action and report the result for each repository.
+    Step 3: start the confirmed action as a background job and go to its progress page.
     """
     bulk_request, error = _bulk_request_from_form()
     if error:
@@ -74,13 +76,15 @@ def bulk_actions_apply():
         return _render_confirm(bulk_request, status=400,
                                error=f"Type '{DELETE_CONFIRMATION_TEXT}' to confirm permanent deletion.")
 
-    access_token = get_installation_access_token()
-    if not access_token:
+    # Fail fast, while the user is still here, if GitHub won't give us a token
+    if not get_installation_access_token():
         flash("Failed to authenticate with GitHub.", "danger")
         return redirect(url_for('main.bulk_actions'))
 
-    results = apply_bulk_action(access_token, bulk_request)
-    logging.info(f"Bulk action '{bulk_request['action']}' applied to {len(results)} repositories.")
-    return render_template('bulk_results.html', results=results,
-                           summary=describe_bulk_request(bulk_request),
-                           succeeded=sum(1 for r in results if r['ok']))
+    installation_id = session['installation_id']
+    actor = session.get('github_user_login')
+    job_id = create_job(installation_id, actor, 'bulk', describe_bulk_request(bulk_request),
+                        len(bulk_request['repos']))
+    logging.info(f"Bulk action '{bulk_request['action']}' on {len(bulk_request['repos'])} repositories: job {job_id}.")
+    start_job(job_id, run_bulk_job, bulk_request, installation_id, actor)
+    return redirect(url_for('main.job_status', job_id=job_id))

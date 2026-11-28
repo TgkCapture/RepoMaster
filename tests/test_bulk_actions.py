@@ -58,9 +58,9 @@ def github(monkeypatch):
         state['topics'][repo_of(url)] = json['names']
         return maybe_fail(url) or FakeResponse(200, {'names': json['names']})
 
-    monkeypatch.setattr(repo_controller.requests, 'patch', fake_patch)
-    monkeypatch.setattr(repo_controller.requests, 'get', fake_get)
-    monkeypatch.setattr(repo_controller.requests, 'put', fake_put)
+    monkeypatch.setattr(repo_controller.github_http, 'patch', fake_patch)
+    monkeypatch.setattr(repo_controller.github_http, 'get', fake_get)
+    monkeypatch.setattr(repo_controller.github_http, 'put', fake_put)
     return state
 
 
@@ -179,7 +179,7 @@ def test_network_error_is_reported(monkeypatch):
     def offline(*args, **kwargs):
         raise requests.ConnectionError("down")
 
-    monkeypatch.setattr(repo_controller.requests, 'patch', offline)
+    monkeypatch.setattr(repo_controller.github_http, 'patch', offline)
     results = apply_bulk_action('tok', bulk('archive'))
     assert results == [{'repo': 'alice/one', 'ok': False, 'message': 'Could not reach GitHub'}]
 
@@ -216,7 +216,7 @@ def test_bulk_page_lists_repositories_and_actions(logged_in_client, fake_token, 
 
 
 def test_confirm_lists_every_repository_without_changing_anything(logged_in_client, monkeypatch):
-    monkeypatch.setattr(bulk_routes, 'apply_bulk_action', lambda *a: pytest.fail("must not apply on confirm"))
+    monkeypatch.setattr(bulk_controller, 'apply_bulk_action', lambda *a, **k: pytest.fail("must not apply on confirm"))
 
     response = logged_in_client.post('/repositories/bulk/confirm', data={
         'action': 'add_topics', 'topics': 'flask', 'repos': ['alice/one', 'org/two'],
@@ -241,25 +241,32 @@ def test_confirm_with_invalid_input_goes_back_with_message(logged_in_client):
 def test_apply_runs_the_action_and_shows_report(logged_in_client, fake_token, monkeypatch):
     received = {}
 
-    def fake_apply(token, bulk_request):
-        received.update(token=token, bulk_request=bulk_request)
-        return [{'repo': 'alice/one', 'ok': True, 'message': 'Archived'},
-                {'repo': 'alice/two', 'ok': False, 'message': 'Not Found'}]
+    def fake_apply(token, bulk_request, installation_id, actor, on_progress):
+        received.update(token=token(), bulk_request=bulk_request, installation_id=installation_id, actor=actor)
+        results = [{'repo': 'alice/one', 'ok': True, 'message': 'Archived'},
+                   {'repo': 'alice/two', 'ok': False, 'message': 'Not Found'}]
+        for result in results:
+            on_progress(result)
+        return results
 
-    monkeypatch.setattr(bulk_routes, 'apply_bulk_action', fake_apply)
+    monkeypatch.setattr(bulk_controller, 'apply_bulk_action', fake_apply)
+    monkeypatch.setattr(bulk_controller, 'get_installation_access_token', lambda installation_id: 'tok')
 
     response = logged_in_client.post('/repositories/bulk/apply', data={
         'action': 'archive', 'repos': ['alice/one', 'alice/two'],
     })
+    assert response.status_code == 302 and response.headers['Location'].startswith('/jobs/')
+    response = logged_in_client.get(response.headers['Location'])
 
     assert received['token'] == 'tok'
     assert received['bulk_request']['repos'] == ['alice/one', 'alice/two']
+    assert (received['installation_id'], received['actor']) == (1, 'alice')
     assert b'1 of 2 repositories updated, 1 failed.' in response.data
     assert b'Not Found' in response.data
 
 
 def test_apply_revalidates_input(logged_in_client, monkeypatch):
-    monkeypatch.setattr(bulk_routes, 'apply_bulk_action', lambda *a: pytest.fail("must not apply invalid input"))
+    monkeypatch.setattr(bulk_controller, 'apply_bulk_action', lambda *a, **k: pytest.fail("must not apply invalid input"))
     response = logged_in_client.post('/repositories/bulk/apply', data={
         'action': 'set_default_branch', 'branch': 'bad..name', 'repos': ['alice/one'],
     })

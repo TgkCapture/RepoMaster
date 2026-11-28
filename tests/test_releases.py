@@ -152,7 +152,7 @@ def test_upload_assets(monkeypatch):
         return FakeUploadResponse(400 if params['name'] == 'bad.bin' else 201,
                                   {'message': 'Validation Failed'} if params['name'] == 'bad.bin' else {})
 
-    monkeypatch.setattr(releases_controller.requests, 'post', fake_post)
+    monkeypatch.setattr(releases_controller.github_http, 'post', fake_post)
     files = [FileStorage(io.BytesIO(b'\x00zip'), filename='build.zip', content_type='application/zip'),
              FileStorage(io.BytesIO(b'x'), filename='app.zip'),
              FileStorage(io.BytesIO(b'y'), filename='bad.bin', content_type='weird type'),

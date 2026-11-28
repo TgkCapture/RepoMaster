@@ -13,6 +13,7 @@ import os
 import hmac
 import secrets
 import requests
+from app import github_http, token_cache
 import logging
 import time
 from functools import lru_cache, wraps
@@ -56,12 +57,17 @@ def get_installation_access_token(installation_id=None):
     """
     Exchange the JWT for an access token for the session's verified installation, or for
     `installation_id` when given (background jobs, which have no session).
+    Tokens are cached until shortly before they expire (see token_cache).
     """
     installation_id = installation_id or session.get('installation_id')
 
     if not installation_id:
         logging.error("Missing installation ID in session.")
         return None
+
+    cached = token_cache.get(installation_id)
+    if cached:
+        return cached
 
     logging.info(f"Requesting access token for installation ID: {installation_id}")
     jwt_token = get_jwt()
@@ -73,14 +79,18 @@ def get_installation_access_token(installation_id=None):
     }
 
     try:
-        token_response = requests.post(token_url, headers=headers, timeout=REQUEST_TIMEOUT)
+        token_response = github_http.post(token_url, headers=headers, timeout=REQUEST_TIMEOUT)
     except requests.RequestException as e:
         logging.error(f"Failed to reach GitHub for installation token: {e}")
         return None
 
     if token_response.status_code == 201:
         logging.info("Fetched GitHub App installation access token.")
-        return token_response.json().get('token')
+        data = token_response.json()
+        token = data.get('token')
+        if token:
+            token_cache.put(installation_id, token, data.get('expires_at'))
+        return token
 
     logging.error(f"Failed to get installation token: {token_response.status_code}, {token_response.text}")
     return None
@@ -139,7 +149,7 @@ def exchange_code_for_user_token(code, redirect_uri):
         'redirect_uri': redirect_uri,
     }
     try:
-        response = requests.post(OAUTH_TOKEN_URL, data=data, headers={'Accept': 'application/json'},
+        response = github_http.post(OAUTH_TOKEN_URL, data=data, headers={'Accept': 'application/json'},
                                  timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
     except requests.RequestException as e:
@@ -158,7 +168,7 @@ def _user_api_get(user_token, path, params=None):
         'Authorization': f'Bearer {user_token}',
         'Accept': 'application/vnd.github+json',
     }
-    response = requests.get(f'{GITHUB_API_URL}{path}', headers=headers, params=params, timeout=REQUEST_TIMEOUT)
+    response = github_http.get(f'{GITHUB_API_URL}{path}', headers=headers, params=params, timeout=REQUEST_TIMEOUT)
     response.raise_for_status()
     return response.json()
 

@@ -1,0 +1,61 @@
+/*
+ * Dark mode support (issue #54). Bootstrap 5.3 themes its own components through
+ * data-bs-theme; these rules fix the utility classes that are always light, and style
+ * the floating theme toggle added by theme.js.
+ */
+.theme-toggle {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 1080;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    border: 1px solid var(--bs-border-color);
+    background: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    font-size: 1.15rem;
+    line-height: 1;
+    box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .15);
+    cursor: pointer;
+}
+
+.theme-toggle:focus-visible {
+    outline: 3px solid var(--bs-primary);
+    outline-offset: 2px;
+}
+
+@media print {
+    .theme-toggle { display: none; }
+}
+
+[data-bs-theme="dark"] body.bg-light {
+    background-color: #16191d !important;
+}
+
+[data-bs-theme="dark"] .bg-light:not(body),
+[data-bs-theme="dark"] .text-bg-light {
+    background-color: var(--bs-tertiary-bg) !important;
+    color: var(--bs-body-color) !important;
+}
+
+[data-bs-theme="dark"] .bg-white {
+    background-color: var(--bs-body-bg) !important;
+}
+
+[data-bs-theme="dark"] .text-dark {
+    color: var(--bs-body-color) !important;
+}
+
+[data-bs-theme="dark"] .table-light {
+    --bs-table-color: var(--bs-body-color);
+    --bs-table-bg: var(--bs-tertiary-bg);
+    --bs-table-border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+    border-color: var(--bs-border-color);
+}
+
+/* Diffs and code blocks with fixed light backgrounds stay readable */
+[data-bs-theme="dark"] pre {
+    color: var(--bs-body-color);
+}

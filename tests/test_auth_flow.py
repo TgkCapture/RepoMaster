@@ -203,7 +203,7 @@ class FakeResponse:
 
 
 def test_code_exchange_treats_error_payload_as_failure(app, monkeypatch):
-    monkeypatch.setattr(auth_controller.requests, 'post',
+    monkeypatch.setattr(auth_controller.github_http, 'post',
                         lambda *a, **k: FakeResponse({'error': 'bad_verification_code'}))
     with app.test_request_context():
         assert auth_controller.exchange_code_for_user_token('abc', 'http://localhost/github/callback') is None
@@ -216,7 +216,7 @@ def test_code_exchange_returns_token(app, monkeypatch):
         sent.update(url=url, data=data)
         return FakeResponse({'access_token': 'ghu_token'})
 
-    monkeypatch.setattr(auth_controller.requests, 'post', fake_post)
+    monkeypatch.setattr(auth_controller.github_http, 'post', fake_post)
     with app.test_request_context():
         token = auth_controller.exchange_code_for_user_token('abc', 'http://localhost/github/callback')
 

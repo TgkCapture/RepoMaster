@@ -162,7 +162,7 @@ def test_repositories_are_fetched_across_pages(app, monkeypatch):
         return FakeResponse({'total_count': 220, 'repositories': [{'name': f'r{params["page"]}-{i}', 'language': None}
                                                                    for i in range(count)]})
 
-    monkeypatch.setattr(repo_controller.requests, 'get', fake_get)
+    monkeypatch.setattr(repo_controller.github_http, 'get', fake_get)
     repositories = repo_controller.get_github_repositories('tok')
     assert pages == [1, 2, 3] and len(repositories) == 220
 
@@ -174,6 +174,6 @@ def test_repository_paging_stops_at_total_and_limit(app, monkeypatch):
         pages.append(params['page'])
         return FakeResponse({'total_count': 5000, 'repositories': [{'name': 'r', 'language': None}] * 100})
 
-    monkeypatch.setattr(repo_controller.requests, 'get', fake_get)
+    monkeypatch.setattr(repo_controller.github_http, 'get', fake_get)
     assert len(repo_controller.get_github_repositories('tok')) == 100 * repo_controller.MAX_REPOSITORY_PAGES
     assert len(pages) == repo_controller.MAX_REPOSITORY_PAGES

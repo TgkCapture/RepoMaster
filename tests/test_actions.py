@@ -135,15 +135,15 @@ def test_logs_url_is_taken_from_the_redirect(monkeypatch):
         seen.update(url=url, allow_redirects=allow_redirects)
         return FakeResponse(302, {'Location': 'https://pipelines.example/logs.zip?sig=x'})
 
-    monkeypatch.setattr(actions_controller.requests, 'get', fake_get)
+    monkeypatch.setattr(actions_controller.github_http, 'get', fake_get)
     assert get_logs_url('alice', 'app', 5, 'tok') == ('https://pipelines.example/logs.zip?sig=x', None)
     assert seen == {'url': 'https://api.github.com/repos/alice/app/actions/runs/5/logs', 'allow_redirects': False}
 
 
 def test_logs_errors(monkeypatch):
-    monkeypatch.setattr(actions_controller.requests, 'get', lambda *a, **k: FakeResponse(404))
+    monkeypatch.setattr(actions_controller.github_http, 'get', lambda *a, **k: FakeResponse(404))
     assert get_logs_url('alice', 'app', 5, 'tok') == (None, 'Not Found')
-    monkeypatch.setattr(actions_controller.requests, 'get',
+    monkeypatch.setattr(actions_controller.github_http, 'get',
                         lambda *a, **k: FakeResponse(302, {'Location': 'http://insecure.example/x'}))
     assert get_logs_url('alice', 'app', 5, 'tok')[1] == "GitHub didn't return a download link."
 
@@ -242,7 +242,7 @@ def test_github_api_accepts_empty_success_bodies(monkeypatch):
         def json(self):
             raise ValueError('no JSON')
 
-    monkeypatch.setattr(repo_controller.requests, 'request', lambda *a, **k: Empty())
+    monkeypatch.setattr(repo_controller.github_http, 'request', lambda *a, **k: Empty())
     assert repo_controller.github_api('PUT', '/x', 'tok') == (None, None)
 
 

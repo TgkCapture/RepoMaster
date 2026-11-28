@@ -41,7 +41,8 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
   - Add a collaborator with a chosen permission (invites them, or changes their permission if they already have access)
   - Remove a collaborator (also cancels their pending invitations; repositories where they have no access are reported as "no change")
   - Delete (you must type `delete` on the confirmation page; repositories are archived and deleted after the grace period, see 3l)
-- **Flow:** select repositories (with filter and select-all) → review a confirmation page listing every repository that will change → apply and get a per-repository success/failure report. One failure doesn't stop the rest.
+- **Flow:** select repositories (with filter and select-all) → review a confirmation page listing every repository that will change → apply. The action runs as a **background job**: you land on a progress page (`/jobs/<id>`) that updates as repositories are processed and ends with a per-repository success/failure report. One failure doesn't stop the rest, and leaving the page doesn't stop the job. Recent jobs are listed at `/jobs`.
+- **Rate limits:** if GitHub's rate limit refuses a repository, the job waits (up to 90 seconds) and retries it; a longer limit stops the job and the remaining repositories are reported as skipped.
 
 ### 3b. Cleanup Dashboard (Available)
 - **Route:** `/repositories/cleanup?months=6`
@@ -177,6 +178,14 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
   A token belongs to the account (installation) that was active when it was created and only serves that account's repositories. It is shown once; RepoMaster stores only a hash. Tokens can be revoked at any time, and creating or revoking one is recorded in the audit log. The browser session is never accepted by the API.
 - Errors are JSON: `{"error": {"status": 404, "message": "..."}}`.
 
+### 3n. Performance & Dark Mode (Available)
+- **Installation tokens are cached** until 5 minutes before they expire (they last an hour), instead of being requested from GitHub on every page and often several times per page. A token GitHub rejects is dropped and replaced.
+- **One HTTP client for GitHub** (`app/github_http.py`): connections are reused (one `requests.Session` per thread), and the session never stores cookies.
+- **Conditional requests:** successful GETs are remembered with their `ETag` and asked again with `If-None-Match`. When nothing changed GitHub answers `304 Not Modified`, which is faster and doesn't count against the rate limit. GitHub is always asked, so pages never show stale data after a change.
+- **Rate limits:** remaining quota is tracked and logged when it runs low, and rate-limited requests show a clear message ("Try again after 15:30 UTC") instead of a generic error.
+- **Background jobs:** bulk actions run in a background thread with progress saved in SQLite (see 3a). No Redis or worker process is needed. A job that is cut off by a server restart shows as interrupted, with the results it had saved.
+- **Dark mode:** the round button at the bottom right of every page switches between light and dark. The choice is remembered in the browser; until you choose, the operating system's setting is used.
+
 ### 4. Manage Pull Requests (Available)
 - **Route:** `/repositories/<repo_name>/pull_requests?state=open|closed|all`
 - **Functionality:** Lists a repository's pull requests (open / closed / all) and creates new ones.
@@ -295,8 +304,11 @@ app/
     audit_routes.py           #   audit log and scheduled deletions
     api_token_routes.py       #   API token management and API docs page
     api_routes.py             #   the JSON API (its own "api_v1" blueprint, /api/v1)
+    job_routes.py             #   progress and results of background jobs (bulk actions)
     repo_creation_routes.py   #   create repositories
   controllers/                # GitHub REST API calls (auth, repos, issues, pull requests)
+  github_http.py              # shared GitHub HTTP client: connection reuse, ETags, rate limits
+  token_cache.py              # installation access token cache
   templates/                  # Jinja templates
   static/                     # CSS, JS, images
 tests/                        # pytest suite

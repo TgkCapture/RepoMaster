@@ -9,7 +9,7 @@ import binascii
 import logging
 import re
 from urllib.parse import quote
-import requests
+from app import github_http
 import yaml
 from nacl import encoding, public
 from requests.exceptions import RequestException
@@ -110,7 +110,7 @@ def get_logs_url(owner, repo, run_id, access_token):
     """
     url = f'https://api.github.com{_repo_path(owner, repo)}/actions/runs/{int(run_id)}/logs'
     try:
-        response = requests.get(url, allow_redirects=False, timeout=REQUEST_TIMEOUT,
+        response = github_http.get(url, allow_redirects=False, timeout=REQUEST_TIMEOUT,
                                 headers={'Authorization': f'Bearer {access_token}', 'Accept': 'application/vnd.github+json'})
         if response.status_code == 302 and response.headers.get('Location', '').startswith('https://'):
             return response.headers['Location'], None

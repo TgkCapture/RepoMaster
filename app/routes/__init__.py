@@ -24,6 +24,7 @@ from app.routes import (  # noqa: E402,F401
     account_routes,
     audit_routes,
     api_token_routes,
+    job_routes,
     notification_routes,
     bulk_routes,
     cleanup_routes,

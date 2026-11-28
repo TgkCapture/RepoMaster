@@ -7,7 +7,7 @@ instead of raising. Asset uploads go to uploads.github.com, so they use requests
 import logging
 import re
 from urllib.parse import quote
-import requests
+from app import github_http
 from requests.exceptions import RequestException
 from app.controllers.branch_management_controller import valid_branch
 from app.controllers.file_editor_controller import upload_name
@@ -163,7 +163,7 @@ def upload_assets(owner, repo, release, files, access_token):
             continue
         content_type = uploaded.mimetype if MIME_PATTERN.match(uploaded.mimetype or '') else 'application/octet-stream'
         try:
-            response = requests.post(upload_url, params={'name': name}, data=uploaded.read(), timeout=REQUEST_TIMEOUT,
+            response = github_http.post(upload_url, params={'name': name}, data=uploaded.read(), timeout=REQUEST_TIMEOUT,
                                      headers={'Authorization': f'Bearer {access_token}', 'Content-Type': content_type,
                                               'Accept': 'application/vnd.github+json'})
             response.raise_for_status()
