@@ -49,6 +49,8 @@ AUDIT_ACTIONS = {
     'pull_request.merge': 'Pull request merged',
     'pull_request.close': 'Pull request closed',
     'workflow.cancel': 'Workflow run cancelled',
+    'api_token.create': 'API token created',
+    'api_token.revoke': 'API token revoked',
 }
 
 RESULTS = {'': 'Any result', 'ok': 'Succeeded', 'failed': 'Failed'}
