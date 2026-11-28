@@ -37,6 +37,10 @@ class BaseConfig:
     # 0 deletes immediately. Due deletions are run by `flask run-scheduled-deletions`.
     SOFT_DELETE_DAYS = int(os.getenv('SOFT_DELETE_DAYS') or '7')
 
+    # Run background jobs (bulk actions) in the request instead of a background thread.
+    # Only meant for tests and debugging.
+    BACKGROUND_JOBS_SYNC = False
+
     # Largest request body accepted (file uploads). Bigger requests get 413 before being read.
     MAX_CONTENT_LENGTH = 25 * 1024 * 1024
 
