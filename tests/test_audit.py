@@ -243,7 +243,7 @@ def test_installation_token_for_background_jobs(app, monkeypatch):
             return {'token': 'inst-token'}
 
     monkeypatch.setattr(auth_controller, 'get_jwt', lambda: 'jwt')
-    monkeypatch.setattr(auth_controller.requests, 'post', lambda url, headers, timeout: posted.append(url) or Response())
+    monkeypatch.setattr(auth_controller.github_http, 'post', lambda url, headers, timeout: posted.append(url) or Response())
     with app.app_context():  # no request, no session
         assert auth_controller.get_installation_access_token(42) == 'inst-token'
     assert posted == ['https://api.github.com/app/installations/42/access_tokens']
@@ -322,7 +322,7 @@ def test_branch_delete_is_audited(logged_in_client, app, monkeypatch):
     class Response:
         status_code = 204
     monkeypatch.setattr(branch_routes, 'get_installation_access_token', lambda: 'tok')
-    monkeypatch.setattr(branch_routes.requests, 'delete', lambda url, headers, timeout: Response())
+    monkeypatch.setattr(branch_routes.github_http, 'delete', lambda url, headers, timeout: Response())
     logged_in_client.post('/repos/alice/app/branches/old/delete')
     with app.app_context():
         entry = dict(get_db().execute('SELECT * FROM audit_log').fetchone())
