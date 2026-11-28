@@ -1,12 +1,15 @@
 """repo_routes.py
 
-Repository listing, repository details and bulk deletion.
+Repository listing, repository details and deletion (archived first, deleted after a
+grace period; see soft_delete_controller).
 """
 import logging
-from flask import render_template, request, redirect, url_for, flash
+from flask import render_template, request, redirect, url_for, flash, session
 from app.routes import main_routes
 from app.controllers.auth_controller import get_installation_access_token, login_required
-from app.controllers.repo_controller import get_github_repositories, delete_repository, get_branches
+from app.controllers.branch_management_controller import valid_names
+from app.controllers.repo_controller import get_github_repositories, get_branches
+from app.controllers.soft_delete_controller import schedule_deletion, soft_delete_days
 
 @main_routes.route('/github/repositories')
 @login_required
@@ -56,14 +59,28 @@ def delete_repositories():
         repositories = get_github_repositories(access_token)
         if repositories is None:
             return "Failed to fetch repositories", 500
-        return render_template('delete_repo.html', repositories=repositories)
+        return render_template('delete_repo.html', repositories=repositories, days=soft_delete_days())
 
-    # POST: delete selected repositories
-    repos_to_delete = request.form.getlist('repo_to_delete[]')
+    # POST: archive the selected repositories and schedule their deletion
+    repos_to_delete = list(dict.fromkeys(request.form.getlist('repo_to_delete[]')))
     if not repos_to_delete:
         return "No repositories selected for deletion", 400
 
-    result_message = delete_repository(repos_to_delete)
-    logging.info(result_message)
-    flash(result_message)
+    owner = session.get('github_username')
+    if not owner:
+        flash("Could not determine the repository owner. Please log in again.", 'danger')
+        return redirect(url_for('main.delete_repositories'))
+
+    access_token = get_installation_access_token()
+    if not access_token:
+        flash("Access token missing. Cannot delete repositories.", 'danger')
+        return redirect(url_for('main.delete_repositories'))
+
+    for repo_name in repos_to_delete:
+        if not valid_names(owner, repo_name):
+            flash(f"Invalid repository name: {repo_name}", 'danger')
+            continue
+        ok, message = schedule_deletion(owner, repo_name, access_token)
+        logging.info(f"Delete {owner}/{repo_name}: {message}")
+        flash(message if ok else f"Couldn't delete {owner}/{repo_name}: {message}", 'success' if ok else 'danger')
     return redirect(url_for('main.delete_repositories'))

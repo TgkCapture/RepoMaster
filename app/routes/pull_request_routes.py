@@ -5,6 +5,7 @@ Listing, creating, reviewing and merging pull requests (issue #40).
 import logging
 from flask import flash, render_template, request, redirect, url_for, session
 from app.routes import main_routes
+from app.controllers.audit_controller import record_audit
 from app.controllers.auth_controller import get_installation_access_token, login_required
 from app.controllers.cleanup_controller import parse_github_date
 from app.controllers.inbox_controller import time_ago
@@ -130,6 +131,9 @@ def pull_request_action(repo_name, pr_number):
     action = request.form.get('action')
 
     messages, error = apply_pull_request_action(owner, repo_name, pr_number, access_token, action, request.form)
+    if action in ('merge', 'close'):
+        record_audit(f'pull_request.{action}', f'{owner}/{repo_name}', error is None,
+                     error or '; '.join(message for _, message in messages), target=f'#{pr_number}')
     if error:
         logging.warning(f"Pull request action '{action}' on {repo_name}#{pr_number} failed: {error}")
         flash(error, 'error')

@@ -5,6 +5,7 @@ GitHub Actions panel (issue #45).
 import logging
 from flask import flash, redirect, render_template, request, url_for
 from app.routes import main_routes
+from app.controllers.audit_controller import record_audit
 from app.controllers.auth_controller import get_installation_access_token, login_required
 from app.controllers.branch_management_controller import valid_names
 from app.controllers.cleanup_controller import parse_github_date
@@ -110,6 +111,9 @@ def actions_run_action(owner, repo, run_id):
     run, error = get_run(owner, repo, run_id, access_token)
     if not error:
         message, error = run_action(owner, repo, run, request.form.get('action'), access_token)
+        if request.form.get('action') == 'cancel':
+            record_audit('workflow.cancel', f'{owner}/{repo}', error is None, error or message,
+                         target=f"{run.get('name') or 'run'} #{run.get('run_number', run_id)}")
     if error:
         flash(error, 'error')
     else:
@@ -187,12 +191,15 @@ def actions_secrets(owner, repo):
         if action == 'delete':
             name = request.form.get('name', '')
             error = delete_secret(owner, repo, name, access_token)
+            record_audit('secret.delete', f'{owner}/{repo}', error is None, error or 'Deleted', target=name[:100])
             flash(f"Couldn't delete {name}: {error}" if error else f"Secret {name} deleted.",
                   'error' if error else 'success')
         else:
             name, error = validate_secret(request.form.get('name'), request.form.get('value'))
             if not error:
                 error = set_secret(owner, repo, name, request.form.get('value'), access_token)
+                # Only the name is recorded, never the value
+                record_audit('secret.set', f'{owner}/{repo}', error is None, error or 'Saved', target=name)
             # The value is never echoed back or logged, even when saving fails.
             flash(f"Couldn't save the secret: {error}" if error else f"Secret {name} saved.",
                   'error' if error else 'success')

@@ -34,6 +34,11 @@
                     <div class="alert alert-info">Where {{ bulk_request.login }} isn't a collaborator yet, GitHub sends an invitation they have to accept. Where they already are, their permission is changed.</div>
                 {% elif bulk_request.action == 'remove_collaborator' %}
                     <div class="alert alert-warning">{{ bulk_request.login }} loses access to these repositories straight away. Repositories where they have no access are left unchanged.</div>
+                {% elif bulk_request.action == 'delete' and days %}
+                    <div class="alert alert-warning">
+                        These repositories are archived (read-only) now and <strong>permanently deleted after {{ days }} day{{ 's' if days != 1 }}</strong>,
+                        with their code, issues, pull requests, wiki and settings. Until then you can undo it from Scheduled deletions.
+                    </div>
                 {% elif bulk_request.action == 'delete' %}
                     <div class="alert alert-danger">
                         <strong>This cannot be undone.</strong> Deleting a repository permanently removes its code,

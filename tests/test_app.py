@@ -65,6 +65,9 @@ EXPECTED_ENDPOINTS = {
     'main.collaborators_action',
     'main.accounts',
     'main.switch_account',
+    'main.audit_log',
+    'main.scheduled_deletions',
+    'main.undo_deletion',
 }
 
 

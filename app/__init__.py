@@ -29,4 +29,7 @@ def create_app(config_name=None):
     from app.routes import main_routes
     app.register_blueprint(main_routes)
 
+    from app.commands import register_commands
+    register_commands(app)
+
     return app

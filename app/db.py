@@ -1,7 +1,8 @@
 """db.py
 
 A small SQLite database (Python's built-in sqlite3) for data RepoMaster has to keep
-between requests: notifications created from GitHub webhooks (issue #46).
+between requests: notifications created from GitHub webhooks (issue #46), the audit log
+and scheduled repository deletions (issue #51).
 
 The file lives at DATABASE_PATH, or <instance folder>/repomaster.db by default.
 One connection per request, closed when the app context ends.
@@ -26,6 +27,35 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 CREATE INDEX IF NOT EXISTS notifications_by_installation
     ON notifications (installation_id, read, id DESC);
+
+CREATE TABLE IF NOT EXISTS audit_log (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    installation_id INTEGER NOT NULL,
+    actor           TEXT NOT NULL,
+    action          TEXT NOT NULL,
+    repo            TEXT,
+    target          TEXT,
+    ok              INTEGER NOT NULL,
+    message         TEXT,
+    created_at      TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+);
+CREATE INDEX IF NOT EXISTS audit_log_by_installation
+    ON audit_log (installation_id, id DESC);
+
+CREATE TABLE IF NOT EXISTS scheduled_deletions (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    installation_id INTEGER NOT NULL,
+    repo            TEXT NOT NULL,
+    requested_by    TEXT NOT NULL,
+    requested_at    TEXT NOT NULL,
+    delete_after    TEXT NOT NULL,
+    was_archived    INTEGER NOT NULL DEFAULT 0,
+    status          TEXT NOT NULL DEFAULT 'pending',
+    finished_at     TEXT,
+    message         TEXT
+);
+CREATE INDEX IF NOT EXISTS scheduled_deletions_due
+    ON scheduled_deletions (status, delete_after);
 """
 
 

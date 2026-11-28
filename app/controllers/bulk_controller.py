@@ -5,8 +5,10 @@ Validate and apply one action to many repositories at once (issue #35).
 import re
 import logging
 from app.controllers.repo_controller import (
-    update_repository, get_repository_topics, replace_repository_topics, delete_repository_by_name,
+    update_repository, get_repository_topics, replace_repository_topics,
 )
+from app.controllers.soft_delete_controller import schedule_deletion
+from app.controllers.audit_controller import record_audit
 from app.controllers.collaborators_controller import LOGIN_PATTERN, ROLES, add_collaborator, remove_access, role_label
 
 # Text the user must type on the confirmation page before a bulk delete is applied
@@ -23,7 +25,7 @@ ACTIONS = {
     'set_default_branch': {'label': 'Change default branch', 'needs': 'branch', 'done': 'Default branch changed'},
     'add_collaborator': {'label': 'Add a collaborator', 'needs': 'collaborator', 'done': 'Access granted'},
     'remove_collaborator': {'label': 'Remove a collaborator', 'needs': 'login', 'done': 'Removed'},
-    'delete': {'label': 'Delete permanently', 'needs': None, 'done': 'Deleted'},
+    'delete': {'label': 'Delete (archived first, restorable for a few days)', 'needs': None, 'done': 'Deleted'},
 }
 
 # Fields sent to PATCH /repos/{owner}/{repo} for the simple actions
@@ -39,6 +41,15 @@ TOPIC_PATTERN = re.compile(r'^[a-z0-9][a-z0-9-]{0,49}$')
 REPO_FULL_NAME_PATTERN = re.compile(r'^[A-Za-z0-9-]+/[A-Za-z0-9._-]+$')
 # Simplified git ref-name rules: no whitespace or ~^:?*[\ , no "..", "//" or "@{",
 # and it must not start or end with "/" or "." or end with ".lock"
+# bulk action -> audit log action
+AUDIT_ACTION = {
+    'archive': 'repository.archive', 'unarchive': 'repository.unarchive',
+    'make_private': 'repository.make_private', 'make_public': 'repository.make_public',
+    'add_topics': 'repository.add_topics', 'remove_topics': 'repository.remove_topics',
+    'set_default_branch': 'repository.set_default_branch',
+    'add_collaborator': 'collaborator.invite', 'remove_collaborator': 'collaborator.remove',
+}
+
 BRANCH_PATTERN = re.compile(r'^(?![/.])(?!.*(?:\.\.|//|@\{))[^\s~^:?*\[\\]+(?<![/.])$')
 
 
@@ -177,8 +188,7 @@ def apply_bulk_action(access_token, bulk_request):
         elif action == 'remove_collaborator':
             ok, message = remove_access(owner, repo, bulk_request['login'], access_token)
         elif action == 'delete':
-            ok, error = delete_repository_by_name(owner, repo, access_token)
-            message = error or ACTIONS[action]['done']
+            ok, message = schedule_deletion(owner, repo, access_token)
         else:
             fields = (REPOSITORY_FIELDS[action] if action in REPOSITORY_FIELDS
                       else {'default_branch': bulk_request['branch']})
@@ -186,6 +196,9 @@ def apply_bulk_action(access_token, bulk_request):
             ok, message = (error is None), (error or ACTIONS[action]['done'])
 
         results.append({'repo': full_name, 'ok': ok, 'message': message})
+        if action in AUDIT_ACTION:
+            target = (bulk_request['login'] or bulk_request['branch'] or ', '.join(bulk_request['topics'])) or None
+            record_audit(AUDIT_ACTION[action], full_name, ok, message, target=target)
 
     succeeded = sum(1 for r in results if r['ok'])
     logging.info(f"Bulk action '{action}': {succeeded}/{len(results)} repositories succeeded.")

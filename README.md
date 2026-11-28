@@ -27,10 +27,7 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
 
 ### 3. Delete Repositories (Available)
 - **Route:** `/delete_repo`
-- **Functionality:** Allows users to select and delete multiple repositories.
-- **Planned Features:**
-  - A page where users can see a list of repositories and select those for deletion.
-  - Confirmation mechanism before proceeding with the deletion.
+- **Functionality:** Select repositories to delete, with a confirmation prompt. They're archived at once and permanently deleted after a grace period, and can be restored until then (see 3l).
 
 ### 3a. Bulk Repository Actions (Available)
 - **Route:** `/repositories/bulk`
@@ -41,7 +38,7 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
   - Change the default branch (the branch must exist in each repository)
   - Add a collaborator with a chosen permission (invites them, or changes their permission if they already have access)
   - Remove a collaborator (also cancels their pending invitations; repositories where they have no access are reported as "no change")
-  - Delete permanently (you must type `delete` on the confirmation page)
+  - Delete (you must type `delete` on the confirmation page; repositories are archived and deleted after the grace period, see 3l)
 - **Flow:** select repositories (with filter and select-all) → review a confirmation page listing every repository that will change → apply and get a per-repository success/failure report. One failure doesn't stop the rest.
 
 ### 3b. Cleanup Dashboard (Available)
@@ -138,6 +135,24 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
 - **Route:** `/accounts` (the account button with its avatar on the repositories, inbox and security pages, and **Account** on the home page)
 - **Functionality:** If RepoMaster is installed on your personal account and on organizations, switch between them without signing out. Every page then works on the repositories of the account you're managing.
 - At sign-in RepoMaster asks GitHub which installations *you* can access and keeps that list; switching only picks from it. **Refresh list** signs in again (keeping the account you're on) to pick up new or removed installations, and **Install on another account** adds RepoMaster to another account or organization.
+
+### 3l. Audit Log & Recoverable Deletion (Available)
+- **Routes:** `/audit` (the **Audit Log** button on the repositories page) and `/deletions`
+- **Audit log:** every destructive or access-changing action taken through RepoMaster is recorded with who did it, the repository, what was affected, when, and whether it worked:
+  - repository deletion (scheduled, undone, carried out or skipped) and bulk changes (archive, visibility, topics, default branch)
+  - branch deletion (including cleanup), renaming and protection changes
+  - file, release and release-file deletion
+  - secrets saved or deleted (the name only, never the value)
+  - collaborator, invitation and team changes
+  - pull requests merged or closed, and workflow runs cancelled
+- Filter by action, result, repository and person. Each account (installation) only sees its own entries.
+- **Soft delete:** deleting a repository (the Delete Repositories page or the bulk delete) **archives it straight away** and permanently deletes it after `SOFT_DELETE_DAYS` (7 by default). Until then, **Undo** on the Scheduled Deletions page unarchives it (a repository that was already archived stays archived). If someone unarchives it on GitHub in the meantime, it is kept. `SOFT_DELETE_DAYS=0` deletes immediately, as before.
+- **Scheduled job:** due deletions are carried out by a command that needs to run regularly, e.g. hourly from cron:
+  ```
+  0 * * * *  cd /path/to/RepoMaster && flask --app run run-scheduled-deletions
+  ```
+  Without it, repositories stay archived and listed as scheduled, but are never deleted.
+- Stored in the same SQLite database as notifications.
 
 ### 4. Manage Pull Requests (Available)
 - **Route:** `/repositories/<repo_name>/pull_requests?state=open|closed|all`
@@ -254,6 +269,7 @@ app/
     security_routes.py        #   security alerts across repositories
     collaborator_routes.py    #   collaborators, invitations and teams
     account_routes.py         #   switch between installations (accounts / organizations)
+    audit_routes.py           #   audit log and scheduled deletions
     repo_creation_routes.py   #   create repositories
   controllers/                # GitHub REST API calls (auth, repos, issues, pull requests)
   templates/                  # Jinja templates
@@ -295,6 +311,7 @@ tests/                        # pytest suite
    | `GITHUB_OAUTH_CALLBACK_URL` | Optional. Exact callback URL; set it when running behind a reverse proxy so it matches the App's Callback URL |
    | `GITHUB_WEBHOOK_SECRET` | The secret set on the App's webhook. Webhook deliveries are refused until it's set |
    | `DATABASE_PATH` | Optional. Where the SQLite database is stored (default `instance/repomaster.db`) |
+   | `SOFT_DELETE_DAYS` | Optional. Days a deleted repository stays archived and restorable before it is deleted (default 7; 0 = delete immediately) |
 
 5. **Run the application:**
    ```bash
@@ -311,6 +328,8 @@ tests/                        # pytest suite
 
 Point your WSGI server at `run:app` (e.g. `gunicorn run:app`) and set `FLASK_CONFIG=production`.
 The production config refuses to start if `SECRET_KEY` or any GitHub App setting (including the Client ID and secret) is missing.
+
+Schedule `flask --app run run-scheduled-deletions` (e.g. hourly with cron or a systemd timer) so repositories are deleted once their grace period ends.
 
 
 ### Production Version

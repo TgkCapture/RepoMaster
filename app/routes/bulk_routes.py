@@ -9,6 +9,7 @@ from app.routes import main_routes
 from app.controllers.auth_controller import get_installation_access_token, login_required
 from app.controllers.repo_controller import get_github_repositories
 from app.controllers.collaborators_controller import ROLES
+from app.controllers.soft_delete_controller import soft_delete_days
 from app.controllers.bulk_controller import (
     ACTIONS, DELETE_CONFIRMATION_TEXT, validate_bulk_request, describe_bulk_request,
     apply_bulk_action, is_delete_confirmed,
@@ -17,7 +18,7 @@ from app.controllers.bulk_controller import (
 def _render_confirm(bulk_request, error=None, status=200):
     return render_template('bulk_confirm.html', bulk_request=bulk_request,
                            summary=describe_bulk_request(bulk_request), error=error,
-                           delete_confirmation_text=DELETE_CONFIRMATION_TEXT), status
+                           delete_confirmation_text=DELETE_CONFIRMATION_TEXT, days=soft_delete_days()), status
 
 def _bulk_request_from_form():
     return validate_bulk_request(

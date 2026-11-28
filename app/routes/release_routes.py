@@ -5,6 +5,7 @@ Releases, tags and release assets (issue #43).
 import logging
 from flask import flash, redirect, render_template, request, url_for
 from app.routes import main_routes
+from app.controllers.audit_controller import record_audit
 from app.controllers.auth_controller import get_installation_access_token, login_required
 from app.controllers.branch_management_controller import valid_names
 from app.controllers.cleanup_controller import parse_github_date
@@ -166,6 +167,8 @@ def delete_release_route(owner, repo, release_id):
     if failure:
         return failure
     messages, error = delete_release(owner, repo, release, request.form.get('delete_tag') == 'on', access_token)
+    record_audit('release.delete', f'{owner}/{repo}', error is None,
+                 error or '; '.join(message for _, message in messages), target=release.get('tag_name'))
     if error:
         flash(f"Couldn't delete the release: {error}", 'error')
         return redirect(_release_url(owner, repo, release_id))
@@ -198,5 +201,7 @@ def delete_release_asset(owner, repo, release_id, asset_id):
     if failure:
         return failure
     name, error = delete_asset(owner, repo, release, asset_id, access_token)
+    record_audit('release.asset_delete', f'{owner}/{repo}', error is None, error or 'Deleted',
+                 target=name or str(asset_id))
     flash(f"Deleted {name}." if not error else f"Couldn't delete the file: {error}", 'success' if not error else 'error')
     return redirect(_release_url(owner, repo, release_id))

@@ -7,6 +7,7 @@ Archive/delete of repositories goes through the bulk actions confirm/apply flow.
 import logging
 from flask import render_template, request, redirect, url_for, flash
 from app.routes import main_routes
+from app.controllers.audit_controller import record_audit
 from app.controllers.auth_controller import get_installation_access_token, login_required
 from app.controllers.repo_controller import get_github_repositories, list_branches, get_repository, delete_branch_ref
 from app.controllers.bulk_controller import REPO_FULL_NAME_PATTERN
@@ -114,6 +115,7 @@ def cleanup_delete_branches():
             failed.append(f"{branch} (protected)")
         else:
             ok, error = delete_branch_ref(owner, name, branch, access_token)
+            record_audit('branch.delete', f'{owner}/{name}', ok, error or 'Deleted (cleanup)', target=branch)
             if ok:
                 deleted.append(branch)
             else:

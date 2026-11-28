@@ -6,6 +6,7 @@ import logging
 import requests
 from flask import render_template, request, redirect, url_for, session, flash
 from app.routes import main_routes
+from app.controllers.audit_controller import record_audit
 from app.controllers.auth_controller import get_installation_access_token, login_required
 from app.controllers.repo_controller import (
     get_branch_details, create_branch, get_default_branch_sha, get_repository, list_branches,
@@ -99,7 +100,9 @@ def delete_branch(owner, repo_name, branch_name):
         logging.error(f"Failed to delete branch '{branch_name}' in '{owner}/{repo_name}': {e}")
         response = None
 
-    if response is not None and response.status_code == 204:
+    deleted = response is not None and response.status_code == 204
+    record_audit('branch.delete', f'{owner}/{repo_name}', deleted, 'Deleted' if deleted else 'GitHub refused', target=branch_name)
+    if deleted:
         flash(f"Branch '{branch_name}' successfully deleted.", "success")
     else:
         flash(f"Failed to delete branch '{branch_name}'.", "error")
@@ -129,10 +132,12 @@ def rename_branch(owner, repo_name, branch_name):
         response = requests.post(url, json=payload, headers=headers, timeout=REQUEST_TIMEOUT)
     except requests.RequestException as e:
         logging.error(f"Failed to rename branch '{branch_name}' in '{owner}/{repo_name}': {e}")
+        record_audit('branch.rename', f'{owner}/{repo_name}', False, 'Could not reach GitHub', target=branch_name)
         flash(f"Failed to rename branch '{branch_name}'.", "error")
         return redirect(_branch_details_url(owner, repo_name, branch_name))
 
     if response.status_code == 201:
+        record_audit('branch.rename', f'{owner}/{repo_name}', True, f"Renamed to {new_name}", target=branch_name)
         flash(f"Branch '{branch_name}' renamed to '{new_name}'.", "success")
         return redirect(url_for('main.show_repo_details', owner=owner, repo_name=repo_name))
 
@@ -140,6 +145,7 @@ def rename_branch(owner, repo_name, branch_name):
         error_message = response.json().get('message', 'An error occurred.')
     except ValueError:
         error_message = 'An error occurred.'
+    record_audit('branch.rename', f'{owner}/{repo_name}', False, error_message, target=branch_name)
     flash(f"Failed to rename branch '{branch_name}': {error_message}", "error")
     return redirect(_branch_details_url(owner, repo_name, branch_name))
 
@@ -182,6 +188,7 @@ def branch_protection(owner, repo_name):
             flash(f"{branch} isn't protected.", 'info')
             return redirect(_protection_url(owner, repo_name, branch))
         removed, error = remove_protection(owner, repo_name, branch, access_token)
+        record_audit('branch.protection_remove', f'{owner}/{repo_name}', removed, error or 'Removed', target=branch)
         flash(f"Protection removed from {branch}." if removed else f"Couldn't remove protection: {error}",
               'success' if removed else 'error')
         return redirect(_protection_url(owner, repo_name, branch))
@@ -189,6 +196,7 @@ def branch_protection(owner, repo_name):
     payload, error = build_protection_payload(request.form, protection)
     if not error:
         _, error = save_protection(owner, repo_name, branch, access_token, payload)
+        record_audit('branch.protection_update', f'{owner}/{repo_name}', error is None, error or 'Saved', target=branch)
     if error:
         logging.warning(f"Saving protection for {owner}/{repo_name}:{branch} failed: {error}")
         flash(f"Couldn't save protection rules: {error}", 'error')
