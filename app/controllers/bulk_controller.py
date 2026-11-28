@@ -1,15 +1,24 @@
 """bulk_controller.py
 
-Validate and apply one action to many repositories at once (issue #35).
+Validate and apply one action to many repositories at once (issue #35). The action runs
+as a background job with progress reporting (issue #54).
 """
 import re
 import logging
+import time
+from app import github_http
+from app.controllers.auth_controller import get_installation_access_token
+from app.controllers.jobs_controller import finish_job, save_progress
 from app.controllers.repo_controller import (
     update_repository, get_repository_topics, replace_repository_topics,
 )
 from app.controllers.soft_delete_controller import schedule_deletion
 from app.controllers.audit_controller import record_audit
 from app.controllers.collaborators_controller import LOGIN_PATTERN, ROLES, add_collaborator, remove_access, role_label
+
+# Longest wait for a rate limit to clear before retrying a repository. Longer limits
+# stop the job; the remaining repositories are reported as skipped.
+MAX_RATE_LIMIT_WAIT = 90  # seconds
 
 # Text the user must type on the confirmation page before a bulk delete is applied
 DELETE_CONFIRMATION_TEXT = 'delete'
@@ -169,37 +178,81 @@ def _apply_topics(owner, repo, access_token, action, topics):
     return True, f"Topics: {', '.join(result) or 'none'}"
 
 
-def apply_bulk_action(access_token, bulk_request):
+def _apply_one(full_name, access_token, bulk_request, installation_id, actor):
+    owner, repo = full_name.split('/', 1)
+    action = bulk_request['action']
+    if action in ('add_topics', 'remove_topics'):
+        return _apply_topics(owner, repo, access_token, action, bulk_request['topics'])
+    if action == 'add_collaborator':
+        message, error = add_collaborator(owner, repo, bulk_request['login'], bulk_request['role'], access_token)
+        return (error is None), (error or message)
+    if action == 'remove_collaborator':
+        return remove_access(owner, repo, bulk_request['login'], access_token)
+    if action == 'delete':
+        return schedule_deletion(owner, repo, access_token, installation_id=installation_id, actor=actor)
+    fields = (REPOSITORY_FIELDS[action] if action in REPOSITORY_FIELDS
+              else {'default_branch': bulk_request['branch']})
+    _, error = update_repository(owner, repo, access_token, fields)
+    return (error is None), (error or ACTIONS[action]['done'])
+
+
+def apply_bulk_action(access_token, bulk_request, installation_id=None, actor=None, on_progress=None,
+                      sleep=time.sleep):
     """
     Apply the action to every repository, continuing past failures.
     Returns a list of {'repo', 'ok', 'message'} in the order the repositories were given.
+
+    access_token may be a function returning a token, so long jobs pick up a fresh one.
+    on_progress(result) is called after each repository. When GitHub's rate limit refuses
+    a repository, it waits (up to MAX_RATE_LIMIT_WAIT) and retries once; every bulk action
+    is safe to repeat. A longer limit stops the job and the rest are reported as skipped.
     """
     action = bulk_request['action']
     results = []
+    stopped = None
+
+    def token():
+        return access_token() if callable(access_token) else access_token
 
     for full_name in bulk_request['repos']:
-        owner, repo = full_name.split('/', 1)
-
-        if action in ('add_topics', 'remove_topics'):
-            ok, message = _apply_topics(owner, repo, access_token, action, bulk_request['topics'])
-        elif action == 'add_collaborator':
-            message, error = add_collaborator(owner, repo, bulk_request['login'], bulk_request['role'], access_token)
-            ok, message = (error is None), (error or message)
-        elif action == 'remove_collaborator':
-            ok, message = remove_access(owner, repo, bulk_request['login'], access_token)
-        elif action == 'delete':
-            ok, message = schedule_deletion(owner, repo, access_token)
+        skipped = bool(stopped)
+        if skipped:
+            ok, message = False, f"Skipped: {stopped}"
         else:
-            fields = (REPOSITORY_FIELDS[action] if action in REPOSITORY_FIELDS
-                      else {'default_branch': bulk_request['branch']})
-            _, error = update_repository(owner, repo, access_token, fields)
-            ok, message = (error is None), (error or ACTIONS[action]['done'])
+            github_http.pop_rate_limited()
+            ok, message = _apply_one(full_name, token(), bulk_request, installation_id, actor)
+            delay = github_http.pop_rate_limited()
+            if not ok and delay is not None:
+                if delay <= MAX_RATE_LIMIT_WAIT:
+                    logging.info(f"Bulk '{action}': rate limited on {full_name}, retrying in {delay}s.")
+                    sleep(delay)
+                    ok, message = _apply_one(full_name, token(), bulk_request, installation_id, actor)
+                    github_http.pop_rate_limited()
+                else:
+                    stopped = message
 
-        results.append({'repo': full_name, 'ok': ok, 'message': message})
-        if action in AUDIT_ACTION:
+        result = {'repo': full_name, 'ok': ok, 'message': message}
+        results.append(result)
+        if action in AUDIT_ACTION and not skipped:
             target = (bulk_request['login'] or bulk_request['branch'] or ', '.join(bulk_request['topics'])) or None
-            record_audit(AUDIT_ACTION[action], full_name, ok, message, target=target)
+            record_audit(AUDIT_ACTION[action], full_name, ok, message, target=target,
+                         installation_id=installation_id, actor=actor)
+        if on_progress:
+            on_progress(result)
 
     succeeded = sum(1 for r in results if r['ok'])
     logging.info(f"Bulk action '{action}': {succeeded}/{len(results)} repositories succeeded.")
     return results
+
+
+def run_bulk_job(job_id, bulk_request, installation_id, actor):
+    """The background job behind a bulk action: apply it, saving progress after each repository."""
+    results = []
+
+    def progress(result):
+        results.append(result)
+        save_progress(job_id, results)
+
+    apply_bulk_action(lambda: get_installation_access_token(installation_id), bulk_request,
+                      installation_id=installation_id, actor=actor, on_progress=progress)
+    finish_job(job_id, results)
