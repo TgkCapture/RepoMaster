@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Tokens | RepoMaster</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+    <div class="container my-5" style="max-width: 820px;">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
+            <h1 class="h3 mb-0">API Tokens</h1>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('main.home') }}" class="btn btn-outline-secondary btn-sm">Home</a>
+                <a href="{{ url_for('main.show_github_repositories') }}" class="btn btn-outline-secondary btn-sm">Repositories</a>
+                <a href="{{ url_for('main.api_docs') }}" class="btn btn-outline-primary btn-sm">API Docs</a>
+            </div>
+        </div>
+        <p class="text-muted small mb-4">
+            Tokens let scripts and other tools read <strong>{{ account }}</strong>'s repositories, issues, pull requests,
+            branches and files through the read-only JSON API at <code>/api/v1</code>. They can't change anything.
+            Each token belongs to this account; switch account to manage another account's tokens.
+        </p>
+
+        {% include '_flash_messages.html' %}
+
+        {% if new_token %}
+        <div class="alert alert-success" role="status">
+            <p class="fw-semibold mb-2">Token created. Copy it now: it won't be shown again.</p>
+            <div class="input-group mb-2">
+                <input type="text" id="newToken" class="form-control font-monospace" value="{{ new_token }}" readonly aria-label="New API token">
+                <button type="button" class="btn btn-outline-success" id="copyToken">Copy</button>
+            </div>
+            <p class="small mb-0">Use it like this:</p>
+            <pre class="small bg-white border rounded p-2 mb-0"><code>curl -H "Authorization: Bearer {{ new_token }}" {{ url_for('api_v1.repositories', _external=True) }}</code></pre>
+        </div>
+        {% endif %}
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h2 class="h6">New token</h2>
+                <form method="POST" action="{{ url_for('main.create_api_token') }}" class="d-flex flex-wrap gap-2">
+                    <label for="name" class="visually-hidden">Token name</label>
+                    <input type="text" id="name" name="name" value="{{ name }}" maxlength="{{ max_name_length }}" required
+                           class="form-control form-control-sm" style="max-width: 360px;" placeholder="What will use it? e.g. backup script">
+                    <button type="submit" class="btn btn-primary btn-sm">Create token</button>
+                </form>
+            </div>
+        </div>
+
+        <h2 class="h6">Tokens for {{ account }}</h2>
+        {% if tokens %}
+        <div class="table-responsive">
+            <table class="table table-sm align-middle bg-white shadow-sm">
+                <thead>
+                    <tr><th>Name</th><th>Token</th><th>Created</th><th>Last used</th><th></th></tr>
+                </thead>
+                <tbody>
+                    {% for token in tokens %}
+                    <tr class="{{ 'text-muted' if token.revoked_at }}">
+                        <td>{{ token.name }}<span class="d-block small text-muted">by {{ token.created_by }}</span></td>
+                        <td><code>{{ token.prefix }}…</code></td>
+                        <td class="small">{{ token.created_at[:10] }}</td>
+                        <td class="small">{{ token.last_used_at[:16]|replace('T', ' ') if token.last_used_at else 'Never' }}</td>
+                        <td class="text-end">
+                            {% if token.revoked_at %}
+                            <span class="badge text-bg-secondary">Revoked {{ token.revoked_at[:10] }}</span>
+                            {% else %}
+                            <form method="POST" action="{{ url_for('main.revoke_api_token', token_id=token.id) }}"
+                                  onsubmit="return confirm('Revoke this token? Tools using it will stop working.');">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Revoke</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted small">No tokens yet.</p>
+        {% endif %}
+    </div>
+
+    {% if new_token %}
+    <script>
+        document.getElementById('copyToken').addEventListener('click', () => {
+            const field = document.getElementById('newToken');
+            field.select();
+            navigator.clipboard.writeText(field.value).then(() => {
+                document.getElementById('copyToken').textContent = 'Copied';
+            });
+        });
+    </script>
+    {% endif %}
+</body>
+</html>
