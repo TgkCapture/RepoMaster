@@ -23,6 +23,7 @@ from app.routes import (  # noqa: E402,F401
     actions_routes,
     account_routes,
     audit_routes,
+    api_token_routes,
     notification_routes,
     bulk_routes,
     cleanup_routes,

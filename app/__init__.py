@@ -29,6 +29,9 @@ def create_app(config_name=None):
     from app.routes import main_routes
     app.register_blueprint(main_routes)
 
+    from app.routes.api_routes import api_v1
+    app.register_blueprint(api_v1)
+
     from app.commands import register_commands
     register_commands(app)
 

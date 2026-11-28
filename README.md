@@ -156,6 +156,27 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
   Without it, repositories stay archived and listed as scheduled, but are never deleted.
 - Stored in the same SQLite database as notifications.
 
+### 3m. JSON API (Available)
+- **Routes:** `/api/v1/...` (the API), `/api/tokens` (the **API** button on the repositories page) and `/api/docs` (interactive docs)
+- A **read-only** JSON API for scripts and other tools, described in [`OpenAPI.json`](OpenAPI.json) (also served at `/api/v1/openapi.json`):
+
+  | Endpoint | Returns |
+  |---|---|
+  | `GET /api/v1/me` | the account the token acts as |
+  | `GET /api/v1/repos` | repositories, with the same `q`, `language`, `visibility`, `type`, `status`, `sort` filters as the repositories page, plus `page` and `per_page` (max 100) |
+  | `GET /api/v1/repos/{owner}/{repo}` | one repository |
+  | `GET /api/v1/repos/{owner}/{repo}/issues?state=` | issues (pull requests left out) |
+  | `GET /api/v1/repos/{owner}/{repo}/pulls?state=` | pull requests |
+  | `GET /api/v1/repos/{owner}/{repo}/branches` | branches |
+  | `GET /api/v1/repos/{owner}/{repo}/contents/{path}?ref=` | a directory listing, or a file (UTF-8 text, or base64 for binary files) |
+
+- **Authentication:** create a token on the API Tokens page and send it as `Authorization: Bearer <token>`:
+  ```
+  curl -H "Authorization: Bearer rm_..." https://repomaster.example.com/api/v1/repos?sort=stars
+  ```
+  A token belongs to the account (installation) that was active when it was created and only serves that account's repositories. It is shown once; RepoMaster stores only a hash. Tokens can be revoked at any time, and creating or revoking one is recorded in the audit log. The browser session is never accepted by the API.
+- Errors are JSON: `{"error": {"status": 404, "message": "..."}}`.
+
 ### 4. Manage Pull Requests (Available)
 - **Route:** `/repositories/<repo_name>/pull_requests?state=open|closed|all`
 - **Functionality:** Lists a repository's pull requests (open / closed / all) and creates new ones.
@@ -258,7 +279,7 @@ run.py                        # Entry point: creates the app via the factory
 app/
   __init__.py                 # create_app() application factory
   config/                     # BaseConfig + Development / Production / Testing configs
-  routes/                     # HTTP routes, one module per feature (all on the "main" blueprint)
+  routes/                     # HTTP routes, one module per feature (on the "main" blueprint, except the API)
     auth_routes.py            #   home, sign-in with GitHub, App install/setup, logout
     repo_routes.py            #   repository list, details, bulk delete
     issue_routes.py           #   issues
@@ -272,6 +293,8 @@ app/
     collaborator_routes.py    #   collaborators, invitations and teams
     account_routes.py         #   switch between installations (accounts / organizations)
     audit_routes.py           #   audit log and scheduled deletions
+    api_token_routes.py       #   API token management and API docs page
+    api_routes.py             #   the JSON API (its own "api_v1" blueprint, /api/v1)
     repo_creation_routes.py   #   create repositories
   controllers/                # GitHub REST API calls (auth, repos, issues, pull requests)
   templates/                  # Jinja templates

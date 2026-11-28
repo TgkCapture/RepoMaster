@@ -2,7 +2,7 @@
 
 A small SQLite database (Python's built-in sqlite3) for data RepoMaster has to keep
 between requests: notifications created from GitHub webhooks (issue #46), the audit log
-and scheduled repository deletions (issue #51).
+and scheduled repository deletions (issue #51), and API tokens (issue #53).
 
 The file lives at DATABASE_PATH, or <instance folder>/repomaster.db by default.
 One connection per request, closed when the app context ends.
@@ -56,6 +56,22 @@ CREATE TABLE IF NOT EXISTS scheduled_deletions (
 );
 CREATE INDEX IF NOT EXISTS scheduled_deletions_due
     ON scheduled_deletions (status, delete_after);
+
+CREATE TABLE IF NOT EXISTS api_tokens (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    installation_id INTEGER NOT NULL,
+    account         TEXT NOT NULL,
+    account_type    TEXT,
+    created_by      TEXT NOT NULL,
+    name            TEXT NOT NULL,
+    token_hash      TEXT NOT NULL UNIQUE,
+    prefix          TEXT NOT NULL,
+    created_at      TEXT NOT NULL,
+    last_used_at    TEXT,
+    revoked_at      TEXT
+);
+CREATE INDEX IF NOT EXISTS api_tokens_by_installation
+    ON api_tokens (installation_id, id DESC);
 """
 
 
