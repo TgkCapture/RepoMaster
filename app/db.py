@@ -2,7 +2,8 @@
 
 A small SQLite database (Python's built-in sqlite3) for data RepoMaster has to keep
 between requests: notifications created from GitHub webhooks (issue #46), the audit log
-and scheduled repository deletions (issue #51), and API tokens (issue #53).
+and scheduled repository deletions (issue #51), API tokens (issue #53) and background
+jobs (issue #54).
 
 The file lives at DATABASE_PATH, or <instance folder>/repomaster.db by default.
 One connection per request, closed when the app context ends.
@@ -72,6 +73,24 @@ CREATE TABLE IF NOT EXISTS api_tokens (
 );
 CREATE INDEX IF NOT EXISTS api_tokens_by_installation
     ON api_tokens (installation_id, id DESC);
+
+CREATE TABLE IF NOT EXISTS jobs (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    installation_id INTEGER NOT NULL,
+    created_by      TEXT NOT NULL,
+    kind            TEXT NOT NULL,
+    title           TEXT NOT NULL,
+    status          TEXT NOT NULL DEFAULT 'queued',
+    total           INTEGER NOT NULL,
+    done            INTEGER NOT NULL DEFAULT 0,
+    results         TEXT NOT NULL DEFAULT '[]',
+    error           TEXT,
+    created_at      TEXT NOT NULL,
+    updated_at      TEXT NOT NULL,
+    finished_at     TEXT
+);
+CREATE INDEX IF NOT EXISTS jobs_by_installation
+    ON jobs (installation_id, id DESC);
 """
 
 
