@@ -16,5 +16,7 @@ class TestingConfig(BaseConfig):
     GITHUB_OAUTH_CALLBACK_URL = None
     LOG_FILE_PATH = os.devnull
     GITHUB_WEBHOOK_SECRET = 'test-webhook-secret'
+    # Jobs finish before the response, so tests can check their results straight away
+    BACKGROUND_JOBS_SYNC = True
     # The test suite's `app` fixture points this at a fresh file for every test.
     DATABASE_PATH = os.path.join(tempfile.gettempdir(), 'repomaster-test.db')
