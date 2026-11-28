@@ -7,6 +7,7 @@ deleting the head branch after merging, and close / reopen.
 import logging
 from urllib.parse import quote
 import requests
+from app import github_http
 from requests.exceptions import RequestException
 from app.controllers.auth_controller import get_installation_access_token
 from app.controllers.repo_controller import delete_branch_ref, github_api
@@ -38,7 +39,7 @@ def get_pull_requests(owner, repo_name):
     api_url = f'https://api.github.com/repos/{owner}/{repo_name}/pulls'
 
     try:
-        response = requests.get(api_url, headers=headers, timeout=60)
+        response = github_http.get(api_url, headers=headers, timeout=60)
         response.raise_for_status()
 
         pulls = response.json()
@@ -63,7 +64,7 @@ def create_pull_request(owner, repo_name, title, body, base, head):
     logging.debug(f"Payload for creating PR: {payload}")
 
     try:
-        response = requests.post(api_url, headers=headers, json=payload, timeout=60)
+        response = github_http.post(api_url, headers=headers, json=payload, timeout=60)
         response.raise_for_status()
 
         pull = response.json()
