@@ -68,6 +68,18 @@ EXPECTED_ENDPOINTS = {
     'main.audit_log',
     'main.scheduled_deletions',
     'main.undo_deletion',
+    'main.api_tokens',
+    'main.create_api_token',
+    'main.revoke_api_token',
+    'main.api_docs',
+    'api_v1.openapi_spec',
+    'api_v1.me',
+    'api_v1.repositories',
+    'api_v1.repository',
+    'api_v1.issues',
+    'api_v1.pull_requests',
+    'api_v1.branches',
+    'api_v1.contents',
 }
 
 
