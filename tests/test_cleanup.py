@@ -158,7 +158,7 @@ def test_branch_names_are_url_encoded(monkeypatch):
 
         return Response()
 
-    monkeypatch.setattr(repo_controller.requests, 'request', fake_request)
+    monkeypatch.setattr(repo_controller.github_http, 'request', fake_request)
     assert repo_controller.delete_branch_ref('alice', 'app', 'feature/a#b', 'tok') == (True, None)
     assert seen['url'] == 'https://api.github.com/repos/alice/app/git/refs/heads/feature/a%23b'
 
@@ -268,7 +268,7 @@ def test_branch_delete_requires_a_selection(logged_in_client, fake_token, branch
 def test_bulk_delete_schedules_deletion(monkeypatch):
     calls = []
     monkeypatch.setattr(bulk_controller, 'schedule_deletion',
-                        lambda owner, name, token: calls.append(f'{owner}/{name}') or (True, 'Scheduled'))
+                        lambda owner, name, token, **who: calls.append(f'{owner}/{name}') or (True, 'Scheduled'))
     bulk_request, _ = bulk_controller.validate_bulk_request('delete', ['alice/one'])
 
     assert bulk_controller.apply_bulk_action('tok', bulk_request) == [
@@ -293,7 +293,7 @@ def test_bulk_delete_confirm_without_grace_period(app, logged_in_client):
 
 @pytest.mark.parametrize('confirmation', [None, '', 'yes', 'DELETE IT'])
 def test_bulk_delete_without_typed_confirmation_is_refused(logged_in_client, fake_token, monkeypatch, confirmation):
-    monkeypatch.setattr(bulk_routes, 'apply_bulk_action', lambda *a: pytest.fail("must not delete"))
+    monkeypatch.setattr(bulk_controller, 'apply_bulk_action', lambda *a, **k: pytest.fail("must not delete"))
     data = {'action': 'delete', 'repos': ['alice/one']}
     if confirmation is not None:
         data['confirmation'] = confirmation
@@ -305,9 +305,11 @@ def test_bulk_delete_without_typed_confirmation_is_refused(logged_in_client, fak
 
 
 def test_bulk_delete_with_typed_confirmation_runs(logged_in_client, fake_token, monkeypatch):
-    monkeypatch.setattr(bulk_routes, 'apply_bulk_action',
-                        lambda token, req: [{'repo': 'alice/one', 'ok': True, 'message': 'Deleted'}])
+    def fake_apply(token, req, on_progress, **who):
+        on_progress({'repo': 'alice/one', 'ok': True, 'message': 'Deleted'})
+
+    monkeypatch.setattr(bulk_controller, 'apply_bulk_action', fake_apply)
     response = logged_in_client.post('/repositories/bulk/apply', data={
-        'action': 'delete', 'repos': ['alice/one'], 'confirmation': ' Delete '})
+        'action': 'delete', 'repos': ['alice/one'], 'confirmation': ' Delete '}, follow_redirects=True)
     assert response.status_code == 200
     assert b'1 of 1 repository updated.' in response.data
