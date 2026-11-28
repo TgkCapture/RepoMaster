@@ -1,5 +1,15 @@
 import pytest
-from app import create_app
+from app import create_app, github_http, token_cache
+
+
+@pytest.fixture(autouse=True)
+def fresh_github_caches():
+    """Installation tokens and cached GitHub responses never leak from one test into another."""
+    token_cache.clear()
+    github_http.clear_cache()
+    yield
+    token_cache.clear()
+    github_http.clear_cache()
 
 
 @pytest.fixture
