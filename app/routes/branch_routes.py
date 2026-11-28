@@ -4,6 +4,7 @@ Creating, viewing, renaming and deleting branches.
 """
 import logging
 import requests
+from app import github_http
 from flask import render_template, request, redirect, url_for, session, flash
 from app.routes import main_routes
 from app.controllers.audit_controller import record_audit
@@ -95,7 +96,7 @@ def delete_branch(owner, repo_name, branch_name):
     headers = {'Authorization': f'Bearer {access_token}'}
 
     try:
-        response = requests.delete(url, headers=headers, timeout=REQUEST_TIMEOUT)
+        response = github_http.delete(url, headers=headers, timeout=REQUEST_TIMEOUT)
     except requests.RequestException as e:
         logging.error(f"Failed to delete branch '{branch_name}' in '{owner}/{repo_name}': {e}")
         response = None
@@ -129,7 +130,7 @@ def rename_branch(owner, repo_name, branch_name):
     payload = {'new_name': new_name}
 
     try:
-        response = requests.post(url, json=payload, headers=headers, timeout=REQUEST_TIMEOUT)
+        response = github_http.post(url, json=payload, headers=headers, timeout=REQUEST_TIMEOUT)
     except requests.RequestException as e:
         logging.error(f"Failed to rename branch '{branch_name}' in '{owner}/{repo_name}': {e}")
         record_audit('branch.rename', f'{owner}/{repo_name}', False, 'Could not reach GitHub', target=branch_name)
