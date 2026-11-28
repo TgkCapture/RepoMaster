@@ -109,7 +109,7 @@ def test_create_file_sends_base64_content_and_branch(app, fake_token, monkeypatc
         sent.update(url=url, json=json)
         return FakeResponse(201, {'content': {}})
 
-    monkeypatch.setattr(repo_controller.requests, 'put', fake_put)
+    monkeypatch.setattr(repo_controller.github_http, 'put', fake_put)
     with app.test_request_context():
         repo_controller.create_file('alice', 'repo', '/notes/héllo.txt', 'héllo', 'add', 'dev')
 
@@ -122,7 +122,7 @@ def test_update_file_failure_returns_none_instead_of_crashing(app, fake_token, m
     def failing_put(*args, **kwargs):
         raise requests.ConnectionError("network down")  # no response object
 
-    monkeypatch.setattr(repo_controller.requests, 'put', failing_put)
+    monkeypatch.setattr(repo_controller.github_http, 'put', failing_put)
     with app.test_request_context():
         assert repo_controller.update_file('alice', 'repo', 'a.txt', 'x', 'sha', 'msg') is None
 
@@ -150,7 +150,7 @@ def test_get_github_repositories_uses_installation_endpoint(app, monkeypatch):
         seen['url'] = url
         return FakeResponse(200, {'repositories': [{'name': 'private-repo', 'language': 'Python'}]})
 
-    monkeypatch.setattr(repo_controller.requests, 'get', fake_get)
+    monkeypatch.setattr(repo_controller.github_http, 'get', fake_get)
     repos = repo_controller.get_github_repositories('fake-token')
 
     assert seen['url'] == 'https://api.github.com/installation/repositories'
@@ -197,7 +197,7 @@ def test_get_branch_details_failure_returns_error_tuple(app, fake_token, monkeyp
     def failing_get(*args, **kwargs):
         raise requests.ConnectionError("network down")
 
-    monkeypatch.setattr(repo_controller.requests, 'get', failing_get)
+    monkeypatch.setattr(repo_controller.github_http, 'get', failing_get)
     with app.test_request_context():
         details, error = repo_controller.get_branch_details('alice', 'repo', 'main')
     assert details is None
@@ -211,7 +211,7 @@ def test_create_branch_failure_redirects_instead_of_500(logged_in_client, fake_t
 
 
 def test_rename_failure_redirects_to_valid_branch_details_url(logged_in_client, fake_token, monkeypatch):
-    monkeypatch.setattr(branch_routes.requests, 'post',
+    monkeypatch.setattr(branch_routes.github_http, 'post',
                         lambda *args, **kwargs: FakeResponse(422, {'message': 'Invalid name'}))
 
     response = logged_in_client.post('/repos/alice/repo/branches/main/rename', data={'new_name': 'bad name'})
