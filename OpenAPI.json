@@ -1,9 +1,9 @@
 {
-  "openapi": "3.0.0",
+  "openapi": "3.0.3",
   "info": {
     "title": "RepoMaster API",
     "version": "1.0.0",
-    "description": "The RepoMaster API allows users to manage repositories.",
+    "description": "Read-only JSON API for the repositories of the account (GitHub App installation) an API token belongs to.\n\n**Authentication:** create a token on RepoMaster's *API Tokens* page (`/api/tokens`) and send it as `Authorization: Bearer <token>`. Tokens can be revoked there at any time.\n\n**Errors** are JSON: `{\"error\": {\"status\": 404, \"message\": \"...\"}}`.\n\nLists of issues, pull requests and branches return up to the first 100 items GitHub returns.",
     "contact": {
       "name": "Tawonga Grant Kanyenda",
       "email": "tawongakanyenda5@gmail.com"
@@ -11,39 +11,290 @@
   },
   "servers": [
     {
-      "url": "https://tgkcapture.online",
-      "description": "Production Server"
+      "url": "/api/v1",
+      "description": "This RepoMaster server"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account"
+    },
+    {
+      "name": "Repositories"
+    },
+    {
+      "name": "Issues & pull requests"
+    },
+    {
+      "name": "Branches & files"
+    },
+    {
+      "name": "Meta"
     }
   ],
   "paths": {
-    "/repositories": {
+    "/me": {
       "get": {
-        "summary": "Retrieve repositories",
-        "description": "Retrieves a list of repositories.",
-        "operationId": "getRepositories",
-        "security": [],
+        "tags": [
+          "Account"
+        ],
+        "operationId": "getMe",
+        "summary": "The token's account",
         "responses": {
           "200": {
-            "description": "A list of repositories",
+            "description": "The account the token acts as.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "type": "string",
-                        "description": "The unique identifier of the repository."
-                      },
-                      "name": {
-                        "type": "string",
-                        "description": "The name of the repository."
-                      },
-                      "url": {
-                        "type": "string",
-                        "format": "uri",
-                        "description": "The URL of the repository."
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/repos": {
+      "get": {
+        "tags": [
+          "Repositories"
+        ],
+        "operationId": "listRepositories",
+        "summary": "List repositories",
+        "description": "Repositories the installation can access (up to 1,000), with the same search, filters and sorting as the repositories page. Unknown filter values are ignored.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": "Text to find in the name or description (case-insensitive)."
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exact language, e.g. `Python`."
+          },
+          {
+            "name": "visibility",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "public",
+                "private"
+              ]
+            },
+            "description": "`private` includes internal repositories."
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sources",
+                "forks"
+              ]
+            },
+            "description": "Only non-forks or only forks."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "archived"
+              ]
+            },
+            "description": "Only non-archived or only archived."
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "updated",
+                "name",
+                "stars"
+              ],
+              "default": "updated"
+            },
+            "description": "`updated` and `stars` are descending, `name` is ascending."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "description": "Page number. Past the last page gives the last page."
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 30
+            },
+            "description": "Items per page."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of repositories.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RepositoryPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/GitHubError"
+          }
+        }
+      }
+    },
+    "/repos/{owner}/{repo}": {
+      "get": {
+        "tags": [
+          "Repositories"
+        ],
+        "operationId": "getRepository",
+        "summary": "Get a repository",
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The repository owner. Must be the token's account."
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Repository name."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The repository.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Repository"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "502": {
+            "$ref": "#/components/responses/GitHubError"
+          }
+        }
+      }
+    },
+    "/repos/{owner}/{repo}/issues": {
+      "get": {
+        "tags": [
+          "Issues & pull requests"
+        ],
+        "operationId": "listIssues",
+        "summary": "List issues",
+        "description": "Issues only; pull requests are left out.",
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The repository owner. Must be the token's account."
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Repository name."
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "open",
+                "closed",
+                "all"
+              ],
+              "default": "open"
+            },
+            "description": "Which items to list. Unknown values mean `open`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Issues.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "count",
+                    "items"
+                  ],
+                  "properties": {
+                    "count": {
+                      "type": "integer",
+                      "description": "Number of items returned."
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Issue"
                       }
                     }
                   }
@@ -51,217 +302,742 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
           "404": {
-            "description": "Repositories not found"
+            "$ref": "#/components/responses/NotFound"
+          },
+          "502": {
+            "$ref": "#/components/responses/GitHubError"
           }
         }
-      },
-      "post": {
-        "summary": "Create a new repository",
-        "description": "Creates a new repository.",
-        "operationId": "createRepository",
-        "security": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "description": "The name of the repository."
-                  },
-                  "url": {
-                    "type": "string",
-                    "format": "uri",
-                    "description": "The URL of the repository."
-                  }
-                }
-              }
-            }
+      }
+    },
+    "/repos/{owner}/{repo}/pulls": {
+      "get": {
+        "tags": [
+          "Issues & pull requests"
+        ],
+        "operationId": "listPullRequests",
+        "summary": "List pull requests",
+        "description": "Most recently updated first.",
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The repository owner. Must be the token's account."
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Repository name."
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "open",
+                "closed",
+                "all"
+              ],
+              "default": "open"
+            },
+            "description": "Which items to list. Unknown values mean `open`."
           }
-        },
+        ],
         "responses": {
-          "201": {
-            "description": "Repository created successfully",
+          "200": {
+            "description": "Pull requests.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "required": [
+                    "count",
+                    "items"
+                  ],
                   "properties": {
-                    "id": {
-                      "type": "string",
-                      "description": "The unique identifier of the created repository."
+                    "count": {
+                      "type": "integer",
+                      "description": "Number of items returned."
                     },
-                    "name": {
-                      "type": "string",
-                      "description": "The name of the created repository."
-                    },
-                    "url": {
-                      "type": "string",
-                      "format": "uri",
-                      "description": "The URL of the created repository."
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/repositories/{repo_name}/issues": {
-      "get": {
-        "summary": "Get GitHub Repository Issues",
-        "description": "Retrieves a list of issues for a specific GitHub repository",
-        "operationId": "getRepositoriesIssues",
-        "security": [],
-        "parameters": [
-          {
-            "name": "repo_name",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "The name of the GitHub repository"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Issue"
-                  }
-                }
-              }
-            }
-          },
-          "default": {
-            "description": "Error response"
-          }
-        }
-      }
-    },
-    "/repositories/{repo_name}/pulls": {
-      "get": {
-        "summary": "Get GitHub Repository Pull Requests",
-        "description": "Retrieves a list of pull requests for a specific GitHub repository",
-        "operationId": "getPullRequests",
-        "security": [],
-        "parameters": [
-          {
-            "name": "repo_name",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "The name of the GitHub repository"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/PullRequest"
-                  }
-                }
-              }
-            }
-          },
-          "default": {
-            "description": "Error response"
-          }
-        }
-      }
-    },
-    "/repositories/{repo_name}": {
-      "delete": {
-        "summary": "Delete GitHub Repository",
-        "description": "Deletes a GitHub repository",
-        "operationId": "delRepositories",
-        "security": [],
-        "parameters": [
-          {
-            "name": "repo_name",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "The name of the GitHub repository"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Repository deleted successfully"
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PullRequest"
+                      }
                     }
                   }
                 }
               }
             }
           },
-          "default": {
-            "description": "Error response"
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "502": {
+            "$ref": "#/components/responses/GitHubError"
+          }
+        }
+      }
+    },
+    "/repos/{owner}/{repo}/branches": {
+      "get": {
+        "tags": [
+          "Branches & files"
+        ],
+        "operationId": "listBranches",
+        "summary": "List branches",
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The repository owner. Must be the token's account."
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Repository name."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Branches.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "count",
+                    "items"
+                  ],
+                  "properties": {
+                    "count": {
+                      "type": "integer",
+                      "description": "Number of items returned."
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Branch"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "502": {
+            "$ref": "#/components/responses/GitHubError"
+          }
+        }
+      }
+    },
+    "/repos/{owner}/{repo}/contents": {
+      "get": {
+        "tags": [
+          "Branches & files"
+        ],
+        "operationId": "getRootContents",
+        "summary": "List the root directory",
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The repository owner. Must be the token's account."
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Repository name."
+          },
+          {
+            "name": "ref",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Branch, tag or commit SHA. Defaults to the default branch."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A directory listing or a file.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Directory"
+                    },
+                    {
+                      "$ref": "#/components/schemas/File"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "502": {
+            "$ref": "#/components/responses/GitHubError"
+          }
+        }
+      }
+    },
+    "/repos/{owner}/{repo}/contents/{path}": {
+      "get": {
+        "tags": [
+          "Branches & files"
+        ],
+        "operationId": "getContents",
+        "summary": "Get a file or directory",
+        "description": "A directory gives its entries (directories first). A file gives its content: UTF-8 text when it is text, base64 when it is binary, and `null` when it is over 1 MB.",
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The repository owner. Must be the token's account."
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Repository name."
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Path in the repository, e.g. `src/app.py`. Slashes are allowed."
+          },
+          {
+            "name": "ref",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Branch, tag or commit SHA. Defaults to the default branch."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A directory listing or a file.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Directory"
+                    },
+                    {
+                      "$ref": "#/components/schemas/File"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "502": {
+            "$ref": "#/components/responses/GitHubError"
+          }
+        }
+      }
+    },
+    "/openapi.json": {
+      "get": {
+        "tags": [
+          "Meta"
+        ],
+        "operationId": "getOpenApi",
+        "summary": "This API description",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The OpenAPI document.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
           }
         }
       }
     }
   },
   "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "A RepoMaster API token (starts with `rm_`), created at /api/tokens."
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "A parameter is invalid.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "The token is missing, invalid or revoked.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Not found, or not one of the token's account's repositories.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "GitHubError": {
+        "description": "GitHub couldn't be reached or returned an error.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
     "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "status",
+              "message"
+            ],
+            "properties": {
+              "status": {
+                "type": "integer"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Me": {
+        "type": "object",
+        "properties": {
+          "account": {
+            "type": "string",
+            "description": "The GitHub account or organization."
+          },
+          "account_type": {
+            "type": "string",
+            "description": "`User` or `Organization`.",
+            "nullable": true
+          },
+          "installation_id": {
+            "type": "integer"
+          },
+          "token": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "created_by": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
       "Repository": {
         "type": "object",
         "properties": {
+          "id": {
+            "type": "integer"
+          },
           "name": {
             "type": "string"
           },
-          "url": {
+          "full_name": {
             "type": "string"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "private": {
+            "type": "boolean"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "public",
+              "private",
+              "internal"
+            ]
+          },
+          "fork": {
+            "type": "boolean"
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "language": {
+            "type": "string",
+            "nullable": true
+          },
+          "stars": {
+            "type": "integer"
+          },
+          "forks": {
+            "type": "integer"
+          },
+          "open_issues": {
+            "type": "integer",
+            "description": "Open issues and pull requests, as GitHub counts them."
+          },
+          "default_branch": {
+            "type": "string"
+          },
+          "html_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "pushed_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "RepositoryPage": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "description": "Repositories the installation can access."
+          },
+          "matching": {
+            "type": "integer",
+            "description": "Repositories matching the filters."
+          },
+          "page": {
+            "type": "integer"
+          },
+          "pages": {
+            "type": "integer"
+          },
+          "per_page": {
+            "type": "integer"
+          },
+          "filters": {
+            "type": "object",
+            "description": "The filters that were applied.",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Repository"
+            }
           }
         }
       },
       "Issue": {
         "type": "object",
         "properties": {
+          "number": {
+            "type": "integer"
+          },
           "title": {
             "type": "string"
           },
-          "body": {
-            "type": "string"
+          "state": {
+            "type": "string",
+            "enum": [
+              "open",
+              "closed"
+            ]
+          },
+          "author": {
+            "type": "string",
+            "nullable": true
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "assignees": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "comments": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "closed_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "html_url": {
+            "type": "string",
+            "format": "uri"
           }
         }
       },
       "PullRequest": {
         "type": "object",
         "properties": {
+          "number": {
+            "type": "integer"
+          },
           "title": {
             "type": "string"
           },
-          "body": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "open",
+              "closed"
+            ]
+          },
+          "draft": {
+            "type": "boolean"
+          },
+          "author": {
+            "type": "string",
+            "nullable": true
+          },
+          "head": {
+            "type": "string",
+            "description": "Source branch."
+          },
+          "base": {
+            "type": "string",
+            "description": "Target branch."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "merged_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "html_url": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "Branch": {
+        "type": "object",
+        "properties": {
+          "name": {
             "type": "string"
+          },
+          "protected": {
+            "type": "boolean"
+          },
+          "sha": {
+            "type": "string",
+            "description": "Latest commit."
+          }
+        }
+      },
+      "DirectoryEntry": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "file",
+              "dir",
+              "symlink",
+              "submodule"
+            ]
+          },
+          "size": {
+            "type": "integer"
+          },
+          "sha": {
+            "type": "string"
+          }
+        }
+      },
+      "Directory": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "dir"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "description": "`\"\"` for the root."
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DirectoryEntry"
+            }
+          }
+        }
+      },
+      "File": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "file"
+            ]
+          },
+          "path": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sha": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "html_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "encoding": {
+            "type": "string",
+            "description": "`utf-8`, `base64`, or null when the file is over 1 MB.",
+            "nullable": true
+          },
+          "content": {
+            "type": "string",
+            "nullable": true
           }
         }
       }
     }
   }
 }
-
