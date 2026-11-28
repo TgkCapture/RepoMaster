@@ -27,13 +27,78 @@
             <a href="{{ url_for('main.delete_repositories') }}" class="btn btn-outline-danger btn-sm">Delete Repositories</a>
         </div>
 
+        {% if total %}
+        <form method="get" action="{{ url_for('main.show_github_repositories') }}" class="row g-2 align-items-end mb-3" role="search">
+            <div class="col-12 col-md-4">
+                <label for="q" class="form-label small mb-1">Search</label>
+                <input type="search" id="q" name="q" value="{{ filters.q }}" maxlength="100" class="form-control form-control-sm"
+                       placeholder="Name or description">
+            </div>
+            <div class="col-6 col-md">
+                <label for="language" class="form-label small mb-1">Language</label>
+                <select id="language" name="language" class="form-select form-select-sm">
+                    <option value="">Any</option>
+                    {% for language in languages %}
+                    <option value="{{ language }}" {% if filters.language == language %}selected{% endif %}>{{ language }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-6 col-md">
+                <label for="visibility" class="form-label small mb-1">Visibility</label>
+                <select id="visibility" name="visibility" class="form-select form-select-sm">
+                    <option value="">Any</option>
+                    {% for visibility in visibilities %}
+                    <option value="{{ visibility }}" {% if filters.visibility == visibility %}selected{% endif %}>{{ visibility|capitalize }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-6 col-md">
+                <label for="type" class="form-label small mb-1">Type</label>
+                <select id="type" name="type" class="form-select form-select-sm">
+                    <option value="">Any</option>
+                    <option value="sources" {% if filters.type == 'sources' %}selected{% endif %}>Not forks</option>
+                    <option value="forks" {% if filters.type == 'forks' %}selected{% endif %}>Forks</option>
+                </select>
+            </div>
+            <div class="col-6 col-md">
+                <label for="status" class="form-label small mb-1">Status</label>
+                <select id="status" name="status" class="form-select form-select-sm">
+                    <option value="">Any</option>
+                    <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Not archived</option>
+                    <option value="archived" {% if filters.status == 'archived' %}selected{% endif %}>Archived</option>
+                </select>
+            </div>
+            <div class="col-6 col-md">
+                <label for="sort" class="form-label small mb-1">Sort by</label>
+                <select id="sort" name="sort" class="form-select form-select-sm">
+                    {% for key, sort in sorts.items() %}
+                    <option value="{{ key }}" {% if filters.sort == key %}selected{% endif %}>{{ sort[0] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-md-auto d-flex gap-2">
+                <button type="submit" class="btn btn-primary btn-sm">Apply</button>
+                {% if link_filters %}
+                <a href="{{ url_for('main.show_github_repositories') }}" class="btn btn-outline-secondary btn-sm">Clear</a>
+                {% endif %}
+            </div>
+        </form>
+        <p class="text-muted small mb-3">
+            {% if matching == total %}{{ total }} repositor{{ 'y' if total == 1 else 'ies' }}{% else %}{{ matching }} of {{ total }} repositories match{% endif %}{% if pages > 1 %} · page {{ page }} of {{ pages }}{% endif %}
+        </p>
+        {% endif %}
+
         {% if repositories %}
             <div class="row row-cols-1 row-cols-md-3 g-4">
                 {% for repository in repositories %}
                 <div class="col">
                     <div class="card shadow-sm h-100">
                         <div class="card-body">
-                            <h5 class="card-title">{{ repository.name }}</h5>
+                            <h5 class="card-title">{{ repository.name }}
+                                {% if repository.private %}<span class="badge text-bg-secondary align-middle fw-normal" style="font-size: .6em;">Private</span>{% endif %}
+                                {% if repository.fork %}<span class="badge text-bg-info align-middle fw-normal" style="font-size: .6em;">Fork</span>{% endif %}
+                                {% if repository.archived %}<span class="badge text-bg-warning align-middle fw-normal" style="font-size: .6em;">Archived</span>{% endif %}
+                            </h5>
                             <p class="card-text">{{ repository.description or "No description provided." }}</p>
                             
                             <div class="d-flex align-items-center mb-2">
@@ -75,6 +140,33 @@
                     </div>
                 </div>
                 {% endfor %}
+            </div>
+            {% if pages > 1 %}
+            <nav aria-label="Repository pages" class="mt-4">
+                <ul class="pagination pagination-sm justify-content-center flex-wrap">
+                    <li class="page-item {% if page == 1 %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('main.show_github_repositories', page=page - 1, **link_filters) }}">Previous</a>
+                    </li>
+                    {% for number in range(1, pages + 1) %}
+                    {% if number == 1 or number == pages or (number - page)|abs <= 2 %}
+                    <li class="page-item {% if number == page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('main.show_github_repositories', page=number, **link_filters) }}"
+                           {% if number == page %}aria-current="page"{% endif %}>{{ number }}</a>
+                    </li>
+                    {% elif (number - page)|abs == 3 %}
+                    <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                    {% endif %}
+                    {% endfor %}
+                    <li class="page-item {% if page == pages %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('main.show_github_repositories', page=page + 1, **link_filters) }}">Next</a>
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
+        {% elif total %}
+            <div class="text-center text-muted py-5">
+                <p>No repositories match these filters.</p>
+                <a href="{{ url_for('main.show_github_repositories') }}" class="btn btn-outline-secondary btn-sm">Clear filters</a>
             </div>
         {% else %}
             <div class="text-center text-muted py-5">

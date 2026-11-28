@@ -10,12 +10,16 @@ from app.controllers.auth_controller import get_installation_access_token, login
 from app.controllers.branch_management_controller import valid_names
 from app.controllers.repo_controller import get_github_repositories, get_branches
 from app.controllers.soft_delete_controller import schedule_deletion, soft_delete_days
+from app.controllers.repo_list_controller import (
+    SORTS, VISIBILITIES, active_filters, filter_and_sort, language_options, paginate, parse_repo_filters,
+)
 
 @main_routes.route('/github/repositories')
 @login_required
 def show_github_repositories():
     """
-    Display the repositories the GitHub App installation can access.
+    Display the repositories the GitHub App installation can access, with search,
+    filters, sorting and pagination (all in the query string, so links can be shared).
     """
     access_token = get_installation_access_token()
     if not access_token:
@@ -28,7 +32,14 @@ def show_github_repositories():
         return "Failed to fetch repositories from GitHub", 500
 
     logging.info(f"Fetched {len(repositories)} repositories for the installation.")
-    return render_template('repositories.html', repositories=repositories)
+    languages = language_options(repositories)
+    filters = parse_repo_filters(request.args, languages)
+    matching = filter_and_sort(repositories, filters)
+    page_items, page, pages = paginate(matching, request.args.get('page'))
+    return render_template('repositories.html', repositories=page_items, total=len(repositories),
+                           matching=len(matching), page=page, pages=pages, filters=filters,
+                           link_filters=active_filters(filters), languages=languages,
+                           sorts=SORTS, visibilities=VISIBILITIES)
 
 @main_routes.route('/github/repository/<owner>/<repo_name>')
 @login_required

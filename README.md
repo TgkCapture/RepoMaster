@@ -9,7 +9,9 @@ RepoMaster is a Flask-based web application designed to interact with the GitHub
 - **Functionality:** Fetches a list of repositories accessible by the authenticated GitHub App installation (including private ones, up to 1,000).
 - **Implementation Details:**
   - Uses a GitHub App to authenticate and retrieve repositories.
-  - Displays fetched repositories in a user-friendly format on a webpage.
+  - Displays fetched repositories in a user-friendly format on a webpage, 30 per page, with Private / Fork / Archived badges.
+  - **Search** by name or description, **filter** by language, visibility, fork and archived status, and **sort** by last updated (default), name or stars. Filters live in the query string (e.g. `/github/repositories?language=Python&sort=stars`), so a filtered view can be bookmarked; page links keep the filters.
+  - Filtering and paging work on the list already fetched, so they cost no extra GitHub requests.
   - Requires the GitHub App to be installed on the user’s account or organization.
 
 ### 2. Manage Issues (Available)
