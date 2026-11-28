@@ -6,7 +6,7 @@ detail, edit, close/reopen, comments, labels, assignees and milestones.
 import logging
 import re
 from urllib.parse import quote
-import requests
+from app import github_http
 from flask import session
 from requests.exceptions import RequestException
 from app.controllers.auth_controller import get_installation_access_token
@@ -45,7 +45,7 @@ def get_github_issues(repo_name):
     headers = {'Authorization': f'Bearer {access_token}'}
 
     try:
-        response = requests.get(url, headers=headers, timeout=60)
+        response = github_http.get(url, headers=headers, timeout=60)
         response.raise_for_status()
         issues = response.json()
         logging.info(f"Fetched {len(issues)} issues for repository {repo_name}.")
@@ -68,7 +68,7 @@ def create_github_issue(repo_name, title, body=None):
     data = {"title": title, "body": body}
 
     try:
-        response = requests.post(url, json=data, headers=headers, timeout=60)
+        response = github_http.post(url, json=data, headers=headers, timeout=60)
         response.raise_for_status()
         issue = response.json()
         logging.info(f"Issue created successfully in repository {repo_name}.")
@@ -91,7 +91,7 @@ def close_github_issue(repo_name, issue_number):
     data = {"state": "closed"}
 
     try:
-        response = requests.patch(url, json=data, headers=headers, timeout=60)
+        response = github_http.patch(url, json=data, headers=headers, timeout=60)
         response.raise_for_status()
         closed_issue = response.json()
         logging.info(f"Issue #{issue_number} successfully closed in repository {repo_name}.")
